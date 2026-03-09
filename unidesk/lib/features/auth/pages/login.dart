@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/colors.dart';
 import '../../language/langProvider.dart';
+import '../mock_auth.dart';
 import '../../../shared/widgets/langToggle.dart';
 import '../../../core/constants/sizes.dart';
 
@@ -19,10 +20,36 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    userID.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
   void _handleLogin() async {
+    final enteredUser = userID.text.trim();
+    final enteredPass = password.text.trim();
+
+    if (enteredUser.isEmpty || enteredPass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your ID and password.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
     setState(() => _isLoading = false);
+
+    Navigator.of(context).pushReplacementNamed(
+      '/home',
+      arguments: {
+        'token': MockAuth.token,
+        'userId': enteredUser,
+      },
+    );
   }
 
   @override
@@ -62,6 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: sw * 0.8,
                       child: Center(
                         child: TextField(
+                          controller: userID,
                           decoration: InputDecoration(
                             prefixIcon: Icon(Icons.person_outline),
                             hintText: "Enter Your ID @aabu.edu.jo",
@@ -81,6 +109,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: sw * 0.8,
                       child: Center(
                         child: TextField(
+                          controller: password,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             prefixIcon: Icon(Icons.lock_open),
