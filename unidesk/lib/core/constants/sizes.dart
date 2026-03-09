@@ -8,5 +8,8 @@ class AppSizes {
   static const double fontHeading       = 32.0;
   static const double fontMedium        = 18.0;
   static const double fontSmall         = 14.0;
+  static const double cardElevation     = 4.0;
+  static const double spacingSmall     = 8.0;
+
   
 }
