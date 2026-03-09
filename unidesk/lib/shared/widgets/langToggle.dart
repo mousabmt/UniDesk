@@ -14,7 +14,7 @@ class LangToggle extends StatelessWidget {
       child: Text(
         lang.isArabic ? 'EN' : 'ع',
         style: TextStyle(
-          color: AppColors.primaryBlue,
+          color: AppColors.black,
           fontWeight: FontWeight.w600,
         ),
       ),

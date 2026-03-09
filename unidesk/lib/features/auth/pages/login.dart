@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../core/constants/colors.dart';
 import '../../language/langProvider.dart';
-import '../mock_auth.dart';
 import '../../../shared/widgets/langToggle.dart';
-import '../../../core/constants/sizes.dart';
+import '../authProvider.dart';
+import '../../../core/constants/constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +16,6 @@ class _LoginPageState extends State<LoginPage> {
   final userID = TextEditingController();
   final password = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -28,33 +25,27 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handleLogin() async {
+    final lang = context.read<LangProvider>();
     final enteredUser = userID.text.trim();
     final enteredPass = password.text.trim();
 
     if (enteredUser.isEmpty || enteredPass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your ID and password.')),
+        SnackBar(content: Text(lang.translate('please_enter_id_password'))),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    Navigator.of(context).pushReplacementNamed(
-      '/home',
-      arguments: {
-        'token': MockAuth.token,
-        'userId': enteredUser,
-      },
-    );
+    await context.read<AuthProvider>().login(enteredUser, enteredPass);
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
     return Directionality(
@@ -89,10 +80,11 @@ class _LoginPageState extends State<LoginPage> {
                       width: sw * 0.8,
                       child: Center(
                         child: TextField(
+                          keyboardType: TextInputType.emailAddress,
                           controller: userID,
                           decoration: InputDecoration(
                             prefixIcon: Icon(Icons.person_outline),
-                            hintText: "Enter Your ID @aabu.edu.jo",
+                            hintText: lang.translate('enter_id'),
                             hintStyle: TextStyle(
                               color: Colors.black,
                               fontSize: 14,
@@ -113,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             prefixIcon: Icon(Icons.lock_open),
-                            hintText: "Password",
+                            hintText: lang.translate('password'),
                             hintStyle: TextStyle(
                               color: Colors.black,
                               fontSize: 14,
@@ -142,14 +134,14 @@ class _LoginPageState extends State<LoginPage> {
                         alignment: Alignment.bottomRight,
                         child: TextButton(
                           onPressed: () {},
-                          child: Text("Forgot Password?"),
+                          child: Text(lang.translate('forgot_password')),
                         ),
                       ),
                     ),
                     SizedBox(
                       width: sw * 0.6,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
+                        onPressed: auth.isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue,
                           padding: EdgeInsets.symmetric(
@@ -160,9 +152,9 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: _isLoading
+                        child: auth.isLoading
                             ? CircularProgressIndicator(color: Colors.grey)
-                            : Text("Login"),
+                            : Text(lang.translate('login')),
                       ),
                     ),
                   ],
