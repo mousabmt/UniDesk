@@ -18,7 +18,7 @@ class MockApi {
           'name': 'Mousa Al-Ahmad',
           'email': 'student@aabu.edu.jo',
           'gpa': 3.7,
-          'credits':96,
+          'credits':90,
           'totalCredits': 133,
           'completionPrecentage':133/96*100,
         },
