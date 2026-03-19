@@ -27,7 +27,7 @@ class AdvertisementsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.spacingSmall),
-          ...ads.map((ad) => _AdCard(ad: ad)).toList(),
+          ...ads.map((ad) => _AdCard(ad: ad)),
         ],
       ),
     );
@@ -50,7 +50,7 @@ class _AdCard extends StatelessWidget {
           width: double.infinity,
           height: 160,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ),
     );

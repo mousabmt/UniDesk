@@ -48,52 +48,52 @@ class StatsRow extends StatelessWidget {
           color: AppColors.primaryBlue,
           borderRadius: BorderRadius.circular(AppSizes.borderRadius),
         ),
-        child: Row(
-          children: stats.asMap().entries.map((entry) {
-            final index = entry.key;
-            final stat  = entry.value;
-            final isLast = index == stats.length - 1;
+       child: IntrinsicHeight(
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch, // stretch all to same height
+    children: stats.asMap().entries.map((entry) {
+      final index = entry.key;
+      final stat = entry.value;
+      final isLast = index == stats.length - 1;
 
-            return Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: !isLast
-                      ? const Border(
-                          right: BorderSide(
-                            color: Colors.white24,
-                            width: 1,
-                          ),
-                        )
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      stat.value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      stat.label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: AppSizes.fontSmall,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: !isLast
+                ? const Border(
+                    right: BorderSide(color: Colors.white24, width: 1),
+                  )
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // 👈 push value to top, label to bottom
+            children: [
+              Text(
+                stat.value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            );
-          }).toList(),
+              const SizedBox(height: 4),
+              Text(
+                stat.label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: AppSizes.fontSmall,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
+      );
+    }).toList(),
+  ),
+),
       ),
     );
   }

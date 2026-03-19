@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/constants.dart';
 import '../../features/language/langProvider.dart';
@@ -14,16 +15,16 @@ class AppFooter extends StatelessWidget {
 
     switch (index) {
       case NavIndexes.home:
-        Navigator.of(context).pushReplacementNamed('/home');
+        context.go('/home');
         break;
       case NavIndexes.courses:
-        Navigator.of(context).pushReplacementNamed('/courses');
+        context.go('/courses');
         break;
       case NavIndexes.schedule:
-        Navigator.of(context).pushReplacementNamed('/schedule');
+        context.go('/schedule');
         break;
       case NavIndexes.profile:
-        Navigator.of(context).pushReplacementNamed('/profile');
+        context.go('/profile');
         break;
     }
   }

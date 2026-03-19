@@ -39,13 +39,6 @@ class QuickActionsRow extends StatelessWidget {
         label: lang.translate('current_semester'),
 
         onTap: () {}, 
-        // onTap:
-        // () => Navigator.push(        
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (_) => CurrentSemesterScreen(courses: courses),
-        //   ),
-        // ),
       ),
     ];
 
@@ -86,15 +79,15 @@ class _QuickActionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, color: Colors.white, size: 28),
+            Icon(item.icon, color: Colors.white, size: 25),
             const SizedBox(height: 6),
             Text(
               item.label,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: AppSizes.fontSmall,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ],

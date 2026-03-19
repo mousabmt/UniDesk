@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/constants.dart';
 import '../../features/language/langProvider.dart';
@@ -14,7 +15,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final lang        = Provider.of<LangProvider>(context);
-    final canGoBack   = Navigator.of(context).canPop(); //checks if there's a page behind
+    final canGoBack   = context.canPop(); //checks if there's a page behind
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
@@ -27,7 +28,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
                 lang.isArabic ? Icons.arrow_forward : Icons.arrow_back,
                 color: AppColors.black,
               ),
-              onPressed: () => Navigator.of(context).pop(), //go back
+              onPressed: () => context.pop(), //go back
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
@@ -60,20 +61,20 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           onSelected: (value) {
             switch (value) {
               case 'home':
-                Navigator.of(context).pushNamed('/home');
+                context.go('/home');
                 break;
               case 'courses':
-                Navigator.of(context).pushNamed('/courses');
+                context.go('/courses');
                 break;
               case 'schedule':
-                Navigator.of(context).pushNamed('/schedule');
+                context.go('/schedule');
                 break;
               case 'profile':
-                Navigator.of(context).pushNamed('/profile');
+                context.go('/profile');
                 break;
               case 'logout':
                 context.read<AuthProvider>().logout();
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                context.go('/login');
                 break;
             }
           },

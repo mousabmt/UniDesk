@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/core/services/mockApi.dart';
@@ -33,11 +34,13 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
-    if(auth.userId == null || !auth.isValidToken){
-WidgetsBinding.instance.addPostFrameCallback((_) {
-context.read<AuthProvider>().logout();
-Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-});
+    if (auth.userId == null || !auth.isValidToken) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<AuthProvider>().logout();
+        if (context.mounted) {
+          context.go('/login');
+        }
+      });
 
     }
 
@@ -47,19 +50,32 @@ Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+FutureBuilder<Map<String, dynamic>>(
+future: _profileFuture,
+builder: (context, snapshot) {
+  if(snapshot.connectionState==ConnectionState.waiting){
+    return CircularProgressIndicator();
+
+  }
+  if(snapshot.hasError){
+    return Text("Error loading data, please try again later.");
+  }
+  final profile = snapshot.data!;
         // 1. Welcome text
-      Text(
- ' ${lang.translate('welcome_back')} ${auth.userId }!',
+
+  return  Text(
+ ' ${lang.translate('welcome_back')} ${profile['name']}!',
           style: const TextStyle(
-            fontSize: 24,
+            fontSize:17,
             fontWeight: FontWeight.bold,
           ),
-        ),
+        );
+},
 
-        // 2. Search bar
-        SearchBar(),
-
-        // 3. Quick actions row (3 buttons)
+),
+     
+      SizedBox(
+child:  // 3. Quick actions row (3 buttons)
          FutureBuilder<List<Map<String, dynamic>>>(
           future: _coursesFuture,
           builder: (context, snapshot) {
@@ -72,8 +88,10 @@ Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
             return QuickActionsRow(courses: snapshot.data!);
           },
         ),
-
-        // 4. Stats row from profile loaded in Home
+      ),
+       
+SizedBox(
+  child:        // 4. Stats row from profile loaded in Home
         FutureBuilder<Map<String, dynamic>>(
           future: _profileFuture,
           builder: (context, snapshot) {
@@ -86,8 +104,10 @@ Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
             return StatsRow(profile: snapshot.data!);
           },
         ),
-
-        // 5. Advertisements section
+),
+ 
+      SizedBox(
+        child:   // 5. Advertisements section
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _adsFuture,
           builder: (context, snapshot) {
@@ -100,6 +120,8 @@ Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
             return AdvertisementsSection(ads: snapshot.data!);
           },
         ),
+        
+      ),
   
       ],
     ),
