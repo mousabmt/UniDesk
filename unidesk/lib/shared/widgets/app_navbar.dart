@@ -14,14 +14,14 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang        = Provider.of<LangProvider>(context);
-    final canGoBack   = context.canPop(); //checks if there's a page behind
+    final lang = Provider.of<LangProvider>(context);
+    final canGoBack = context.canPop(); //checks if there's a page behind
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
       elevation: 0,
 
-      // Back button 
+      // Back button
       leading: canGoBack
           ? IconButton(
               icon: Icon(
@@ -32,7 +32,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
-                   child: const LangToggle(),
+              child: const LangToggle(),
             ),
 
       // App name
@@ -50,14 +50,12 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           color: AppColors.black,
-          onPressed: () {
-            
-          },
+          onPressed: () {},
         ),
-  // hamburger menu for 3 features (Current courses, techincal support, electronic payment)
 
+        // hamburger menu for 3 features (Current courses, techincal support, electronic payment)
         PopupMenuButton<String>(
-          icon: const Icon(Icons.menu, color:AppColors.black,),
+          icon: const Icon(Icons.menu, color: AppColors.black),
           onSelected: (value) {
             switch (value) {
               case 'home':
@@ -80,16 +78,24 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           },
           itemBuilder: (context) => [
             PopupMenuItem(
+             value: "home",
+             child: Text(lang.translate("home"))
+             ),
+            PopupMenuItem(
               value: 'courses',
               child: Text(lang.translate('current_courses')),
             ),
             PopupMenuItem(
-              value: 'support',
-              child: Text(lang.translate('technical_support')),
+              value: 'schedule',
+              child: Text(lang.translate('schedule')),
             ),
             PopupMenuItem(
-              value: 'payment',
-              child: Text(lang.translate('electronic_payment')),
+              value: "profile",
+              child: Text(lang.translate("profile")),
+            ),
+            PopupMenuItem(
+              value: 'logout',
+              child: Text(lang.translate('logout')),
             ),
           ],
         ),

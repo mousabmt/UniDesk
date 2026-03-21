@@ -8,7 +8,7 @@ class MockApi {
       String userId, String password) async {
     await _delay();
 
-    if (userId == 'student@aabu.edu.jo' && password == '1234') {
+    if (userId == 'std' && password == '123') {
       return {
         'success': true,
         'token': 'mock_token_xyz_123',
@@ -49,25 +49,28 @@ class MockApi {
     await _delay();
     return [
       {
-        'id': 'CS101',
+        'id': '120414',
         'name': 'Introduction to Programming',
         'instructor': 'Dr. Ahmad',
         'credits': 3,
-        'grade': 'A',
+        'grade': '95',
+        'absences': 2,
       },
       {
-        'id': 'CS201',
+        'id': '120313',
         'name': 'Data Structures',
         'instructor': 'Dr. Sara',
         'credits': 3,
-        'grade': 'B+',
+        'grade': '91',
+        'absences': 0,
       },
       {
-        'id': 'MATH101',
+        'id': '132120',
         'name': 'Calculus I',
         'instructor': 'Dr. Khalid',
         'credits': 3,
-        'grade': 'A-',
+        'grade': '70',
+        'absences': 1,
       },
     ];
   }
@@ -79,14 +82,14 @@ class MockApi {
       {
         'day': 'Sunday',
         'courses': [
-          {'name': 'CS101', 'time': '08:00 - 09:30', 'room': 'A101'},
-          {'name': 'MATH101', 'time': '10:00 - 11:30', 'room': 'B203'},
+          {'id': '120414','name': 'Introduction to Programming', 'time': '08:00 - 09:30', 'room': 'A101'},
+          {'id': '132120', 'name': 'Calculus I', 'time': '10:00 - 11:30', 'room': 'B203'},
         ],
       },
       {
         'day': 'Monday',
         'courses': [
-          {'name': 'CS201', 'time': '09:00 - 10:30', 'room': 'C305'},
+          {'id': '120313', 'name': 'Data Structures', 'time': '09:00 - 10:30', 'room': 'C305'},
         ],
       },
     ];
@@ -109,6 +112,8 @@ class MockApi {
   }
 // ads
   static Future<List<Map<String, dynamic>>> getAds() async {
+
+    
   await Future.delayed(const Duration(milliseconds: 800));
   return [
     {
@@ -131,4 +136,52 @@ class MockApi {
     },
   ];
 }
+
+  static Future<Map<String, dynamic>> getAcademicProgress() async {
+  await _delay();
+  return {                                  
+    "completed_courses": [
+      {
+        'semester': 'Fall 2021',
+        'gpa': 3.5,
+        'creditsEarned': 15,
+        'totalCredits': 18,
+        'courses': [
+          {'id': '120313', 'name': 'Introduction to Programming', 'grade': 'A'},
+          {'id': '132120', 'name': 'Calculus I', 'grade': 'A-'},
+        ],
+      },
+      {
+        'semester': 'Spring 2022',
+        'gpa': 3.7,
+        'creditsEarned': 18,
+        'totalCredits': 18,
+        'courses': [
+          {'id': '120414', 'name': 'Data Structures', 'grade': 'A'},
+          {'id': '132121', 'name': 'Calculus II', 'grade': 'B+'},
+        ],
+      },
+      {
+        'semester': 'Fall 2022',
+        'gpa': 3.8,
+        'creditsEarned': 18,
+        'courses': [
+          {'id': '120415', 'name': 'Operating Systems', 'grade': 'A'},
+          {'id': '132122', 'name': 'Linear Algebra', 'grade': 'A-'},
+        ],
+      },
+      {
+        'semester': 'Spring 2023',
+        'gpa': 3.9,
+        'creditsEarned': 18,
+        'courses': [
+          {'id': '120416', 'name': 'Database Systems', 'grade': 'A'},
+          {'id': '132123', 'name': 'Discrete Mathematics', 'grade': 'A'},
+        ],
+      }
+    ],
+    
+  };
+}
+     
 }

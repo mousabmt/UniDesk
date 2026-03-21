@@ -10,23 +10,24 @@ class AppFooter extends StatelessWidget {
   const AppFooter({super.key, required this.currentIndex});
 
   void _onTabTapped(BuildContext context, int index) {
-    // avoid navigating to same page
     if (index == currentIndex) return;
 
-    switch (index) {
-      case NavIndexes.home:
-        context.go('/home');
-        break;
-      case NavIndexes.courses:
-        context.go('/courses');
-        break;
-      case NavIndexes.schedule:
-        context.go('/schedule');
-        break;
-      case NavIndexes.profile:
-        context.go('/profile');
-        break;
+    final routes = {
+      NavIndexes.home: '/home',
+      NavIndexes.courses: '/courses',
+      NavIndexes.schedule: '/schedule',
+      NavIndexes.profile: '/profile',
+    };
+
+    final route = routes[index];
+    if (route == null) return;
+
+    // Dismiss any open dialogs/bottom sheets before navigating
+    if (context.canPop()) {
+      context.pop();
     }
+
+    context.go(route);
   }
 
   @override

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/constants.dart';
-import '../../language/langProvider.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../language/langProvider.dart';
 
 class QuickActionItem {
   final IconData icon;

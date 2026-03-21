@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/constants.dart';
-import '../../language/langProvider.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../language/langProvider.dart';
 
 class StatItem {
   final String value;
@@ -77,7 +77,9 @@ class StatsRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(
+                height: 4,
+              ),
               Text(
                 stat.label,
                 textAlign: TextAlign.center,

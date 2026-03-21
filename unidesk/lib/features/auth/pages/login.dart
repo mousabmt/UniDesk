@@ -49,10 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     final auth = Provider.of<AuthProvider>(context);
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-    return Directionality(
-      textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-
-      child: Scaffold(
+    return Scaffold(
         body: Stack(
           children: [
             Positioned.fill(
@@ -164,7 +161,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );  
+      }
 }
