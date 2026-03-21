@@ -27,8 +27,9 @@ class _PrevsemestersState extends State<Prevsemesters> {
     final lang = context.watch<LangProvider>();
     return AppLayout(
       currentIndex: NavIndexes.courses,
-      child: Scaffold(
-        body: Builder(
+      child: Directionality(
+        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child:  Builder(
           builder: (_) {
             // Loading
             if (provider.isLoading) {

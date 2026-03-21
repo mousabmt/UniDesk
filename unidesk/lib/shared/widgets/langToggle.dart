@@ -12,7 +12,7 @@ class LangToggle extends StatelessWidget {
     return TextButton(
       onPressed: lang.toggleLanguage,
       child: Text(
-        lang.isArabic ? 'EN' : 'ع',
+        lang.isArabic ? 'E' : 'ع',
         style: TextStyle(
           color: AppColors.black,
           fontWeight: FontWeight.w600,

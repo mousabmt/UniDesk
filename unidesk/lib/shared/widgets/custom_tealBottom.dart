@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/colors.dart';
 
 class TealButton extends StatelessWidget {
   final String label;
@@ -13,7 +14,7 @@ class TealButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1A7A6E),
+          backgroundColor:AppColors.primaryBlue,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: const StadiumBorder(),

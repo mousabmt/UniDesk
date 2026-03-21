@@ -43,44 +43,51 @@ class _HomePageState extends State<HomePage> {
 
     return AppLayout(
       currentIndex: NavIndexes.home,
-      child: SingleChildScrollView(
+      
+      child: Directionality(
+        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome text
-            if (profile.isLoading)
-              const CircularProgressIndicator()
-            else if (profile.error != null)
-              const Text('Error loading data, please try again later.')
-            else
-              Text(
-                '${lang.translate('welcome_back')} ${profile.profile!['name']}!',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-              ),
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    // Welcome text — fixed height, no Expanded
+    if (profile.isLoading)
+      const CircularProgressIndicator()
+    else if (profile.error != null)
+      const Text('Error loading data, please try again later.')
+    else
+      Text(
+        '${lang.translate('welcome_back')} ${profile.profile!['name']}!',
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+      ),
 
-            const SizedBox(height: 20),
+    const SizedBox(height: 10),
 
-            // Quick actions
-            if (courses.isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (courses.courses != null)
-              QuickActionsRow(courses: courses.courses!),
+    // Quick actions — let it grow
+    if (courses.isLoading)
+      const Center(child: CircularProgressIndicator())
+    else if (courses.courses != null)
+      Expanded(
+        flex: 0,
+        child: QuickActionsRow(courses: courses.courses!),
+      ),
 
-            const SizedBox(height: 20),
+    const SizedBox(height: 10),
 
-            // Stats
-            if (profile.profile != null)
-              StatsRow(profile: profile.profile!),
+    if (profile.profile != null)
+      StatsRow(profile: profile.profile!),
 
-            const SizedBox(height: 20),
+    const SizedBox(height: 10),
 
-            // Ads
-            if (ads.isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (ads.ads != null)
-              AdvertisementsSection(ads: ads.ads!),
-          ],
-        ),
+    // Ads — take the most space
+    if (ads.isLoading)
+      const Center(child: CircularProgressIndicator())
+    else if (ads.ads != null)
+      Expanded(
+        flex:3,
+        child: AdvertisementsSection(ads: ads.ads!),
+      ),
+  ],
+),
       ),
     );
   }

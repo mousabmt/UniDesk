@@ -30,8 +30,9 @@ class _GradesPageState extends State<GradesPage> {
 
     return AppLayout(
       currentIndex: NavIndexes.courses,
-      child: Scaffold(
-        body: Builder(builder: (_) {
+      child: Directionality(
+        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: Builder(builder: (_) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }

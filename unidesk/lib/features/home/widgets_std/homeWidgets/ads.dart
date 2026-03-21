@@ -29,86 +29,78 @@ class _AdvertisementsSectionState extends State<AdvertisementsSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          /// ===============================
-          /// CAROUSEL 
-          /// ===============================
-          CarouselSlider(
-            options: CarouselOptions(
-              height: 220,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 3),
-              enlargeCenterPage: true,
-              viewportFraction: 0.85,
-              onPageChanged: (index, reason) {
-                setState(() {
-                  currentIndex = index;
-                });
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CarouselSlider(
+                  options: CarouselOptions(
+                    height:250,
+                    autoPlay: true,
+                    autoPlayInterval: const Duration(seconds: 3),
+                    enlargeCenterPage: true,
+                    viewportFraction: 0.85,
+                    onPageChanged: (index, reason) {
+                      setState(() => currentIndex = index);
+                    },
+                  ),
+                  items: widget.ads.map((ad) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            ad['imageUrl'] ?? '',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: Colors.grey.shade300),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.center,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.4),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (ad['title'] != null)
+                            Positioned(
+                              bottom: 12,
+                              left: 12,
+                              right: 12,
+                              child: Text(
+                                ad['title'],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
               },
             ),
-
-            items: widget.ads.map((ad) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-
-                    /// IMAGE
-                    Image.network(
-                      ad['imageUrl'] ?? '',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: Colors.grey.shade300),
-                    ),
-                    /// OPTIONAL GRADIENT OVERLAY
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.center,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.4),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    /// OPTIONAL TITLE
-                    if (ad['title'] != null)
-                      Positioned(
-                        bottom: 12,
-                        left: 12,
-                        right: 12,
-                        child: Text(
-                          ad['title'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }).toList(),
           ),
 
           const SizedBox(height: 12),
 
-          /// ===============================
-          /// DOT INDICATOR
-          /// ===============================
+          /// DOT INDICATOR — fixed height, stays at bottom
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: widget.ads.asMap().entries.map((entry) {
               final isActive = currentIndex == entry.key;
-
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: isActive ? 10 : 6,
@@ -125,4 +117,4 @@ class _AdvertisementsSectionState extends State<AdvertisementsSection> {
       ),
     );
   }
-}
+}  

@@ -102,12 +102,17 @@ class MockApi {
       'id': '2021001',
       'name': 'Mousab Al-Ahmad',
       'email': 'student@aabu.edu.jo',
+      'personal_email':"mousabtamari0799@gmail.com",
       'major': 'Computer Science',
       'year': 3,
       'gpa': 3.7,
       'credits': 90,
           'totalHours': 133,
-          'completionPrecentage':133/96*100,
+      'address':"Amman,tabarbor",
+      'identifiers':[
+        "07914214142",
+        "123456789",
+      ]
     };
   }
 // ads

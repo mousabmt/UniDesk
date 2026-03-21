@@ -32,61 +32,65 @@ class _CoursePageState extends State<CoursePage> {
     final lang = context.watch<LangProvider>();
     return AppLayout(
       currentIndex: NavIndexes.courses,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFEDF0EE),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  lang.translate('absence_record'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+      child: Directionality(
+        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          color: const Color(0xFFEDF0EE),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lang.translate('absence_record'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                if (courseProvider.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (courseProvider.error != null)
-                  const Center(child: Text('Failed to load courses'))
-                else
-                  AbsenceCard(courses: courseProvider.courses ?? []),
-                const SizedBox(height: 12),
-                TealButton(
-                  label: lang.translate('attendance_policy'),
-                  onTap: () {},
-                ),
-                const SizedBox(height: 10),
-                TealButton(
-                  label: lang.translate('request_excuse'),
-                  onTap: () {},
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  lang.translate('academic_progress'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 12),
+                  if (courseProvider.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (courseProvider.error != null)
+                    const Center(child: Text('Failed to load courses'))
+                  else
+                    AbsenceCard(courses: courseProvider.courses ?? []),
+                  const SizedBox(height: 12),
+                  TealButton(
+                    label: lang.translate('attendance_policy'),
+                    onTap: () {},
                   ),
-                ),
-                const SizedBox(height: 12),
-                if (courseProvider.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (courseProvider.error != null)
-                  const Center(child: Text('Failed to load academic progress'))
-                else if (courseProvider.academicProgress != null)
-                  AcademicProgressCard(
-                    progress: courseProvider.academicProgress!,
-                    completedCourses: courseProvider.courses ?? [],
-                  )
-                else
-                  const Center(
-                    child: Text('No academic progress data available'),
+                  const SizedBox(height: 10),
+                  TealButton(
+                    label: lang.translate('request_excuse'),
+                    onTap: () {},
                   ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    lang.translate('academic_progress'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (courseProvider.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (courseProvider.error != null)
+                    const Center(
+                        child: Text('Failed to load academic progress'))
+                  else if (courseProvider.academicProgress != null)
+                    AcademicProgressCard(
+                      progress: courseProvider.academicProgress!,
+                      completedCourses: courseProvider.courses ?? [],
+                    )
+                  else
+                    const Center(
+                      child: Text('No academic progress data available'),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
