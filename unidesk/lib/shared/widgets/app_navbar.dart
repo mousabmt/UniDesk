@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/constants.dart';
 import '../../features/language/langProvider.dart';
@@ -13,25 +14,25 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang        = Provider.of<LangProvider>(context);
-    final canGoBack   = Navigator.of(context).canPop(); //checks if there's a page behind
+    final lang = Provider.of<LangProvider>(context);
+    final canGoBack = context.canPop(); //checks if there's a page behind
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
       elevation: 0,
 
-      // Back button 
+      // Back button
       leading: canGoBack
           ? IconButton(
               icon: Icon(
                 lang.isArabic ? Icons.arrow_forward : Icons.arrow_back,
                 color: AppColors.black,
               ),
-              onPressed: () => Navigator.of(context).pop(), //go back
+              onPressed: () => context.pop(), //go back
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
-                   child: const LangToggle(),
+              child: const LangToggle(),
             ),
 
       // App name
@@ -49,46 +50,52 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           color: AppColors.black,
-          onPressed: () {
-            
-          },
+          onPressed: () {},
         ),
-  // hamburger menu for 3 features (Current courses, techincal support, electronic payment)
 
+        // hamburger menu for 3 features (Current courses, techincal support, electronic payment)
         PopupMenuButton<String>(
-          icon: const Icon(Icons.menu, color:AppColors.black,),
+          icon: const Icon(Icons.menu, color: AppColors.black),
           onSelected: (value) {
             switch (value) {
               case 'home':
-                Navigator.of(context).pushNamed('/home');
+                context.go('/home');
                 break;
               case 'courses':
-                Navigator.of(context).pushNamed('/courses');
+                context.go('/courses');
                 break;
               case 'schedule':
-                Navigator.of(context).pushNamed('/schedule');
+                context.go('/schedule');
                 break;
               case 'profile':
-                Navigator.of(context).pushNamed('/profile');
+                context.go('/profile');
                 break;
               case 'logout':
                 context.read<AuthProvider>().logout();
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                context.go('/login');
                 break;
             }
           },
           itemBuilder: (context) => [
             PopupMenuItem(
+             value: "home",
+             child: Text(lang.translate("home"))
+             ),
+            PopupMenuItem(
               value: 'courses',
               child: Text(lang.translate('current_courses')),
             ),
             PopupMenuItem(
-              value: 'support',
-              child: Text(lang.translate('technical_support')),
+              value: 'schedule',
+              child: Text(lang.translate('schedule')),
             ),
             PopupMenuItem(
-              value: 'payment',
-              child: Text(lang.translate('electronic_payment')),
+              value: "profile",
+              child: Text(lang.translate("profile")),
+            ),
+            PopupMenuItem(
+              value: 'logout',
+              child: Text(lang.translate('logout')),
             ),
           ],
         ),

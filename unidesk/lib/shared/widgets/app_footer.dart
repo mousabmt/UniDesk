@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/constants.dart';
 import '../../features/language/langProvider.dart';
@@ -9,23 +10,24 @@ class AppFooter extends StatelessWidget {
   const AppFooter({super.key, required this.currentIndex});
 
   void _onTabTapped(BuildContext context, int index) {
-    // avoid navigating to same page
     if (index == currentIndex) return;
 
-    switch (index) {
-      case NavIndexes.home:
-        Navigator.of(context).pushReplacementNamed('/home');
-        break;
-      case NavIndexes.courses:
-        Navigator.of(context).pushReplacementNamed('/courses');
-        break;
-      case NavIndexes.schedule:
-        Navigator.of(context).pushReplacementNamed('/schedule');
-        break;
-      case NavIndexes.profile:
-        Navigator.of(context).pushReplacementNamed('/profile');
-        break;
+    final routes = {
+      NavIndexes.home: '/home',
+      NavIndexes.courses: '/courses',
+      NavIndexes.schedule: '/schedule',
+      NavIndexes.profile: '/profile',
+    };
+
+    final route = routes[index];
+    if (route == null) return;
+
+    // Dismiss any open dialogs/bottom sheets before navigating
+    if (context.canPop()) {
+      context.pop();
     }
+
+    context.go(route);
   }
 
   @override

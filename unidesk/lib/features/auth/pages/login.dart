@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../language/langProvider.dart';
 import '../../../shared/widgets/langToggle.dart';
@@ -38,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
 
     await context.read<AuthProvider>().login(enteredUser, enteredPass);
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      context.go('/home');
     }
   }
 
@@ -48,10 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     final auth = Provider.of<AuthProvider>(context);
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-    return Directionality(
-      textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-
-      child: Scaffold(
+    return Scaffold(
         body: Stack(
           children: [
             Positioned.fill(
@@ -163,7 +161,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );  
+      }
 }
