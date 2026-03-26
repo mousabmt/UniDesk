@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
-import 'package:unidesk/core/services/mockApi.dart';
 import 'package:unidesk/features/home/widgets_std/homeWidgets/actions_row.dart';
 import 'package:unidesk/features/home/widgets_std/homeWidgets/stats_row.dart';
 import 'package:unidesk/features/home/widgets_std/homeWidgets/ads.dart';
@@ -26,11 +25,10 @@ class _HomePageState extends State<HomePage> {
 
 
       // Trigger all cached loads
-          Future.microtask(() =>{
-      context.read<ProfileProvider>().loadIfNeeded(),
-      context.read<CoursesProvider>().loadIfNeeded(),
-      context.read<AnnoucProvider>().loadIfNeeded(),
-      });
+      context.read<ProfileProvider>().loadIfNeeded();
+      context.read<CoursesProvider>().loadIfNeeded();
+      context.read<AnnoucProvider>().loadIfNeeded();
+      
     });
   }
 
@@ -68,7 +66,7 @@ class _HomePageState extends State<HomePage> {
     else if (courses.courses != null)
       Expanded(
         flex: 0,
-        child: QuickActionsRow(courses: courses.courses!),
+        child: QuickActionsRow(),
       ),
 
     const SizedBox(height: 10),

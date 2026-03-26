@@ -5,53 +5,35 @@ import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import '../providers_std/prevSemesters_provider.dart';
 
-class Prevsemesters extends StatefulWidget {
+class Prevsemesters extends StatelessWidget {
   const Prevsemesters({super.key});
-
-  @override
-  State<Prevsemesters> createState() => _PrevsemestersState();
-}
-
-class _PrevsemestersState extends State<Prevsemesters> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(
-      () => context.read<PrevsemestersProvider>().loadIfNeeded(),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PrevsemestersProvider>();
     final lang = context.watch<LangProvider>();
+
     return AppLayout(
       currentIndex: NavIndexes.courses,
       child: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child:  Builder(
+        child: Builder(
           builder: (_) {
-            // Loading
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // Error
             if (provider.error != null) {
               return Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      provider.error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                    Text(provider.error!,
+                        style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 12),
                     ElevatedButton(
-onPressed: () async {
-  await context.read<PrevsemestersProvider>().refresh();
-  if (!mounted) return; 
-},
+                      onPressed: () =>
+                          context.read<PrevsemestersProvider>().refresh(),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -59,9 +41,7 @@ onPressed: () async {
               );
             }
 
-            // Empty
-            final semesters =
-                provider.completedCourses?['completed_courses']
+            final semesters = provider.completedCourses?['completed_courses']
                     as List<dynamic>? ??
                 [];
 
@@ -69,16 +49,18 @@ onPressed: () async {
               return Center(child: Text(lang.translate('no_courses')));
             }
 
-            // Data
             return RefreshIndicator(
-              onRefresh: () => context.read<PrevsemestersProvider>().refresh(),
+              onRefresh: () =>
+                  context.read<PrevsemestersProvider>().refresh(),
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: semesters.length,
                 itemBuilder: (context, i) {
                   final semester = semesters[i] as Map<String, dynamic>;
-                  final courses = semester['courses'] as List<dynamic>? ?? [];
-                  return _SemesterSection(semester: semester, courses: courses);
+                  final courses =
+                      semester['courses'] as List<dynamic>? ?? [];
+                  return _SemesterSection(
+                      semester: semester, courses: courses);
                 },
               ),
             );

@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
 
     await context.read<AuthProvider>().login(enteredUser, enteredPass);
     if (mounted) {
-      context.go('/home');
+      context.go('/');
     }
   }
 
@@ -151,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         child: auth.isLoading
-                            ? CircularProgressIndicator(color: Colors.grey)
+                            ? SizedBox(height: 20,width: 20,child: CircularProgressIndicator(color: Colors.grey))
                             : Text(lang.translate('login')),
                       ),
                     ),

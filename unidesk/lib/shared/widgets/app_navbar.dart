@@ -59,7 +59,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           onSelected: (value) {
             switch (value) {
               case 'home':
-                context.go('/home');
+                context.go('/');
                 break;
               case 'courses':
                 context.go('/courses');

@@ -61,8 +61,14 @@ class AppStrings {
       'changes_saved': 'Changes saved successfully.',
       'cancel': 'Cancel',
       'personal_email': 'Personal Email',
-
-    
+      'retry': 'Retry',
+      'no_grades': 'No grades available.',
+      'instructor':'Instructor',
+      'sunday':'Sunday',
+      'monday':'Monday',
+      'tuesday':'Tuesday',
+      'wednesday':'Wednesday',
+      'thursday':'Thursday',
     },
     'ar': {
       'login': 'تسجيل الدخول',
@@ -125,6 +131,14 @@ class AppStrings {
       'changes_saved': 'تم حفظ التغييرات بنجاح.',
       'cancel': 'إلغاء',
       'personal_email': 'البريد الشخصي',
+      'retry': 'إعادة المحاولة',
+'no_grades': 'لا توجد درجات متاحة.',
+'instructor':"المدرس",
+      'sunday':'الأحد',
+      'monday':'الأثنين',
+      'tuesday':'الثلاثاء',
+      'wednesday':'الاربعاء',
+      'thursday':'الخميس',
     },
   };
 }

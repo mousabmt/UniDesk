@@ -5,20 +5,10 @@ import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import 'package:unidesk/shared/widgets/custom_tealIcon.dart';
 import '../providers_std/course_provider.dart'; 
-class GradesPage extends StatefulWidget {
+class GradesPage extends StatelessWidget {
   const GradesPage({super.key});
 
-  @override
-  State<GradesPage> createState() => _GradesPageState();
-}
 
-class _GradesPageState extends State<GradesPage> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() =>
-        context.read<CoursesProvider>().loadIfNeeded());
-  }
 
   // helper — grade number to letter
 
@@ -48,7 +38,6 @@ class _GradesPageState extends State<GradesPage> {
                   ElevatedButton(
                     onPressed: () async {
                       await context.read<CoursesProvider>().refresh();
-                      if (!mounted) return;
                     },
                     child: Text(lang.translate('retry')),
                   ),

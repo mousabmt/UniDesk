@@ -7,14 +7,17 @@ import 'package:unidesk/features/home/student/pages/gradesPage.dart';
 import 'package:unidesk/features/home/student/pages/home.dart';
 import 'package:unidesk/features/home/student/pages/profile_page.dart';
 import 'package:unidesk/features/home/student/providers_std/profile_provider.dart';
-import 'package:unidesk/features/schedule/pages/schedule_page.dart';
+import 'package:unidesk/features/home/student/pages/currentSemesterPage.dart';
 import 'features/home/student/pages/courses.dart';
 import './features/language/langProvider.dart';
 import './features/auth/authProvider.dart';
 import './features/home/student/providers_std/course_provider.dart';
 import './features/home/student/providers_std/annouc_provider.dart';
 import 'features/home/student/providers_std/prevSemesters_provider.dart';
+import 'features/home/student/providers_std/currentSem_provider.dart';
 import 'features/home/student/pages/prevSemesters.dart';
+import 'features/home/student/pages/calenderEvents.dart';
+import 'features/home/student/providers_std/CalenderProvider.dart';
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +28,22 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => LangProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => CoursesProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider()..loadIfNeeded(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CoursesProvider()..loadIfNeeded(),
+        ),
         ChangeNotifierProvider(create: (_) => AnnoucProvider()),
-        ChangeNotifierProvider(create: (_) => PrevsemestersProvider()),
+        ChangeNotifierProvider(
+          create: (_) => PrevsemestersProvider()..loadIfNeeded(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CurrentSemesterProvider()..loadIfNeeded(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CalenderProvider()..loadIfNeeded(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -58,7 +73,7 @@ class _MyAppState extends State<MyApp> {
         final isOnLogin = state.matchedLocation == '/login';
 
         if (!isLoggedIn && !isOnLogin) return '/login';
-        if (isLoggedIn && isOnLogin) return '/home';
+        if (isLoggedIn && isOnLogin) return '/';
         return null;
       },
       routes: [
@@ -68,7 +83,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const LoginPage(),
         ),
         GoRoute(
-          path: '/home',
+          path: '/',
           name: 'home',
           builder: (context, state) => const HomePage(),
         ),
@@ -78,9 +93,9 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const CoursePage(),
         ),
         GoRoute(
-          path: '/schedule',
-          name: 'schedule',
-          builder: (context, state) => const SchedulePage(),
+          path: '/current-semester',
+          name: 'current-semester',
+          builder: (context, state) => const CurrentSemesterPage(),
         ),
         GoRoute(
           path: '/profile',
@@ -96,6 +111,11 @@ class _MyAppState extends State<MyApp> {
           path: '/courses-grades',
           name: 'courses-grades',
           builder: (context, state) => const GradesPage(),
+        ),
+        GoRoute(
+          path: '/schedule',
+          name: 'schedule',
+          builder: (context, state) => const CalenderEvents(),
         ),
       ],
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../language/langProvider.dart';
+import 'package:go_router/go_router.dart';
 
 class QuickActionItem {
   final IconData icon;
@@ -16,8 +17,7 @@ class QuickActionItem {
 }
 
 class QuickActionsRow extends StatelessWidget {
-    final List<Map<String, dynamic>> courses;  // passing the courses from home to quickactions to use it in the current semester action
-  const QuickActionsRow({required this.courses, super.key});
+  const QuickActionsRow({ super.key});
  
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,10 @@ class QuickActionsRow extends StatelessWidget {
         icon: Icons.book_outlined,
         label: lang.translate('current_semester'),
 
-        onTap: () {}, 
+        onTap: () {
+context.push('/current-semester');
+
+        }, 
       ),
     ];
 

@@ -13,7 +13,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LangProvider>();
-    Future.microtask(() => context.read<ProfileProvider>().loadIfNeeded());
+     context.read<ProfileProvider>().loadIfNeeded();
     final profileProvider = context.watch<ProfileProvider>();
     final profile = profileProvider.profile;
  

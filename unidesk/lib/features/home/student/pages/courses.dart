@@ -9,27 +9,14 @@ import 'package:unidesk/features/language/langProvider.dart';
 import '../../../../shared/widgets/custom_tealBottom.dart';
 import '../../widgets_std/courseWidgets/custom_progessCard.dart';
 
-class CoursePage extends StatefulWidget {
-  const CoursePage({super.key}); // ✅ no more courses prop
-
-  @override
-  State<CoursePage> createState() => _CoursePageState();
-}
-
-class _CoursePageState extends State<CoursePage> {
-  @override
-  void initState() {
-    super.initState();
-    // Trigger load after first frame — safe to call every time,
-    // provider ignores it if data is already cached.
-
-    Future.microtask(() => context.read<CoursesProvider>().loadIfNeeded());
-  }
+class CoursePage extends StatelessWidget {
+  const CoursePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final courseProvider = context.watch<CoursesProvider>();
     final lang = context.watch<LangProvider>();
+
     return AppLayout(
       currentIndex: NavIndexes.courses,
       child: Directionality(
@@ -78,17 +65,14 @@ class _CoursePageState extends State<CoursePage> {
                   if (courseProvider.isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (courseProvider.error != null)
-                    const Center(
-                        child: Text('Failed to load academic progress'))
+                    const Center(child: Text('Failed to load academic progress'))
                   else if (courseProvider.academicProgress != null)
                     AcademicProgressCard(
                       progress: courseProvider.academicProgress!,
                       completedCourses: courseProvider.courses ?? [],
                     )
                   else
-                    const Center(
-                      child: Text('No academic progress data available'),
-                    ),
+                    const Center(child: Text('No academic progress data available')),
                 ],
               ),
             ),

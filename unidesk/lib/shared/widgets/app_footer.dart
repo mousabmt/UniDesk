@@ -13,7 +13,7 @@ class AppFooter extends StatelessWidget {
     if (index == currentIndex) return;
 
     final routes = {
-      NavIndexes.home: '/home',
+      NavIndexes.home: '/',
       NavIndexes.courses: '/courses',
       NavIndexes.schedule: '/schedule',
       NavIndexes.profile: '/profile',
