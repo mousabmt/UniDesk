@@ -18,7 +18,7 @@ import 'features/home/student/providers_std/currentSem_provider.dart';
 import 'features/home/student/pages/prevSemesters.dart';
 import 'features/home/student/pages/calenderEvents.dart';
 import 'features/home/student/providers_std/CalenderProvider.dart';
-
+import 'features/home/student/pages/techinalSupportPage.dart';
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
@@ -117,6 +117,7 @@ class _MyAppState extends State<MyApp> {
           name: 'schedule',
           builder: (context, state) => const CalenderEvents(),
         ),
+        GoRoute(path: '/technical-support', name: 'techincal-support',builder: (context,state)=>const TechnicalSupportPage()),
       ],
     );
   }

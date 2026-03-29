@@ -1,5 +1,6 @@
 class MockApi {
   // Auth
+  // POST https://api.unidesk.local/auth/login  body: { "userId": "...", "password": "..." }
   static Future<Map<String, dynamic>> login(
     String userId,
     String password,
@@ -38,6 +39,7 @@ class MockApi {
   }
 
   // Courses
+  // GET https://api.unidesk.local/courses/{userId}
   static Future<List<Map<String, dynamic>>> getCourses() async {
     return [
       {
@@ -68,6 +70,7 @@ class MockApi {
   }
 
   // Schedule
+  // GET https://api.unidesk.local/schedule/{day}  (e.g., /schedule/monday)
   static Future<List<Map<String, dynamic>>> getSchedule() async {
     return [
       {
@@ -105,6 +108,7 @@ class MockApi {
   }
 
   // Student Profile
+  // GET https://api.unidesk.local/profile/{userId}
   static Future<Map<String, dynamic>> getProfile() async {
     return {
       'id': '2021001',
@@ -122,6 +126,7 @@ class MockApi {
   }
 
   // ads
+  // GET https://api.unidesk.local/ads
   static Future<List<Map<String, dynamic>>> getAds() async {
     await Future.delayed(const Duration(milliseconds: 800));
     return [
@@ -146,6 +151,7 @@ class MockApi {
     ];
   }
 
+  // GET https://api.unidesk.local/profile/{userId}/progress
   static Future<Map<String, dynamic>> getAcademicProgress() async {
     return {
       "completed_courses": [
@@ -195,6 +201,7 @@ class MockApi {
     };
   }
 
+  // Calendar (month view): GET https://api.unidesk.local/calendar?month=YYYY-MM   (e.g., 2026-03)
   static Future<Map<String, dynamic>> getCalenderEvents() async {
     return {
       "lectures": [
@@ -245,8 +252,9 @@ class MockApi {
     };
   }
 
-  /// Simulates fetching events for a specific calendar day (local date).
+  ///  fetching events for a specific calendar day (local date).
   /// It filters the base calendar payload by the provided [date]'s year/month/day.
+  /// Real API: GET https://api.unidesk.local/calendar/day?date=YYYY-MM-DD   (e.g., 2026-03-05)
   static Future<Map<String, dynamic>> getCalenderEventsForDate(DateTime date) async {
     final base = await getCalenderEvents();
     bool isSameDay(DateTime a, DateTime b) =>

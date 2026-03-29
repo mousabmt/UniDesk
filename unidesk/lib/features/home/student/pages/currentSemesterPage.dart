@@ -15,7 +15,7 @@ class CurrentSemesterPage extends StatelessWidget {
     final lang = context.watch<LangProvider>();
 
     return AppLayout(
-      currentIndex: NavIndexes.schedule,
+      currentIndex: NavIndexes.home,
       child: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
         child:Builder(builder: (_) {

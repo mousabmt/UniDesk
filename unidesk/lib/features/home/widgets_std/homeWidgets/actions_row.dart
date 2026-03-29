@@ -17,8 +17,8 @@ class QuickActionItem {
 }
 
 class QuickActionsRow extends StatelessWidget {
-  const QuickActionsRow({ super.key});
- 
+  const QuickActionsRow({super.key});
+
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
@@ -32,16 +32,17 @@ class QuickActionsRow extends StatelessWidget {
       QuickActionItem(
         icon: Icons.headset_mic_outlined,
         label: lang.translate('technical_support'),
-        onTap: () {},
+        onTap: () {
+          context.push('/technical-support');
+        },
       ),
       QuickActionItem(
         icon: Icons.book_outlined,
         label: lang.translate('current_semester'),
 
         onTap: () {
-context.push('/current-semester');
-
-        }, 
+          context.push('/current-semester');
+        },
       ),
     ];
 
