@@ -37,9 +37,19 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    await context.read<AuthProvider>().login(enteredUser, enteredPass);
-    if (mounted) {
+    final success =
+        await context.read<AuthProvider>().login(enteredUser, enteredPass);
+
+    if (!mounted) return;
+
+    if (success) {
       context.go('/');
+    } else {
+      final error =
+          context.read<AuthProvider>().errorMessage ?? lang.translate('invalid_token');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     }
   }
 

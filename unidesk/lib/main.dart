@@ -69,7 +69,7 @@ class _MyAppState extends State<MyApp> {
       initialLocation: '/login',
       refreshListenable: auth,
       redirect: (context, state) {
-        final isLoggedIn = auth.userId != null && auth.isValidToken;
+        final isLoggedIn = auth.isLoggedIn;
         final isOnLogin = state.matchedLocation == '/login';
 
         if (!isLoggedIn && !isOnLogin) return '/login';

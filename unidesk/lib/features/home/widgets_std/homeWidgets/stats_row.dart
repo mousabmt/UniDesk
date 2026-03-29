@@ -23,15 +23,17 @@ class StatsRow extends StatelessWidget {
 
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
-    final credits = (profile['credits'] ?? 0).toString();
+    final credits = (profile['credits'] ?? profile['creditsEarned'] ?? 0).toString();
 
-    final percentage = profile['credits'] / profile['totalHours'] * 100;
+    final totalHours = profile['totalHours'] ?? profile['totalCredits'] ?? 0;
+    final completionPercent = profile['completionPercentage'] ??
+        (totalHours != 0 ? (profile['credits'] ?? 0) / totalHours * 100 : 0);
 
-    final gpa = (profile['gpa'] ?? 0).toString();
+    final gpa = (profile['gpa'] ?? profile['cumulativeGpa'] ?? 0).toString();
 
     final stats = [
       StatItem(
-        value: '${percentage.toStringAsFixed(1)}%',
+        value: '${(completionPercent as num).toStringAsFixed(1)}%',
         label: lang.translate('completion_percentage'),
       ),
       StatItem(value: credits, label: lang.translate('credits')),

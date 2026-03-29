@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unidesk/core/services/mockApi.dart';
 
 class ProfileProvider extends ChangeNotifier {
@@ -18,7 +21,15 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _profile = await MockApi.getProfile();
+      // Prefer the user object saved at login time.
+      final prefs = await SharedPreferences.getInstance();
+      final storedUser = prefs.getString('user');
+
+      if (storedUser != null) {
+        _profile = jsonDecode(storedUser) as Map<String, dynamic>;
+      } else {
+        _profile = await MockApi.getProfile();
+      }
     } catch (e) {
       _error = e.toString();
     } finally {

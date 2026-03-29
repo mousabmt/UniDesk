@@ -143,7 +143,7 @@ class ProfilePage extends StatelessWidget {
                                 InfoTile(
                                   icon: Icons.badge_outlined,
                                   label: lang.translate('student_id'),
-                                  value: profile['id'] ?? '-',
+                                  value: profile['id']?.toString() ?? '-',
                                 ),
                                 InfoTile(
                                   icon: Icons.email_outlined,
@@ -153,21 +153,27 @@ class ProfilePage extends StatelessWidget {
                                 InfoTile(
                                   icon: Icons.bar_chart_outlined,
                                   label: lang.translate('gpa'),
-                                  value:
-                                      profile['gpa']?.toStringAsFixed(2) ?? '-',
+                                  value: () {
+                                    final g = profile['gpa'] ?? profile['cumulativeGpa'];
+                                    if (g is num) return g.toStringAsFixed(2);
+                                    return g?.toString() ?? '-';
+                                  }(),
                                 ),
                                 InfoTile(
-                                  icon: Icons.menu_book_outlined,
-                                  label: lang.translate('credits_completed'),
-                                  value:
-                                      profile['credits']?.toString() ?? '-',
-                                ),
-                                InfoTile(
-                                  icon: Icons.access_time_outlined,
-                                  label: lang.translate('total_hours'),
-                                  value:
-                                      profile['totalHours']?.toString() ?? '-',
-                                ),
+                                    icon: Icons.menu_book_outlined,
+                                   label: lang.translate('credits_completed'),
+                                   value:
+                                       profile['credits']?.toString() ?? '-',
+                                 ),
+                                 InfoTile(
+                                    icon: Icons.access_time_outlined,
+                                   label: lang.translate('total_hours'),
+                                   value:
+                                        (profile['totalHours'] ??
+                                                profile['totalCredits'])
+                                            ?.toString() ??
+                                        '-',
+                                 ),
  
                                 const SizedBox(height: 18),
  
