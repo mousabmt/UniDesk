@@ -56,7 +56,7 @@ class _AdvertisementsSectionState extends State<AdvertisementsSection> {
                           Image.network(
                             ad['imageUrl'] ?? '',
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorBuilder: (_, _, _) =>
                                 Container(color: Colors.grey.shade300),
                           ),
                           Container(

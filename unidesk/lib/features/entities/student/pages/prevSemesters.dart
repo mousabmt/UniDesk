@@ -135,7 +135,7 @@ class _SemesterSection extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: courses.length,
-            separatorBuilder: (_, __) => Divider(
+            separatorBuilder: (_, _) => Divider(
               height: 1,
               thickness: 0.5,
               color: Colors.black.withValues(alpha: 0.1),

@@ -4,7 +4,7 @@ import '../../core/constants/colors.dart';
 class TealButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const TealButton({required this.label, required this.onTap});
+  const TealButton({super.key, required this.label, required this.onTap});
  
   @override
   Widget build(BuildContext context) {

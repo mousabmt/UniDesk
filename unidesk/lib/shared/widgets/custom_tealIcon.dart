@@ -3,7 +3,7 @@ import '../../core/constants/colors.dart';
 // custom_tealIcon.dart
 class TealIconBox extends StatelessWidget {
   final Widget child;
-  const TealIconBox({required this.child});
+  const TealIconBox({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
