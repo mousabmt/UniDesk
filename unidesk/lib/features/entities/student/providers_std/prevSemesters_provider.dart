@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/student_api.dart';
-
-class CurrentSemesterProvider extends ChangeNotifier {
-  List<Map<String, dynamic>>? _schedule;
+import 'package:unidesk/core/services/mockApi.dart';
+class PrevsemestersProvider extends ChangeNotifier{
+  Map<String,dynamic>? _completedCourses;
   bool _isLoading = false;
   String? _error;
-
-  List<Map<String, dynamic>>? get schdule => _schedule;
+  Map<String, dynamic>? get completedCourses => _completedCourses;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
   Future<void> loadIfNeeded() async {
-    if (_schedule != null) return;
+    if (_completedCourses != null) return;
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _schedule = await StudentApi.getSchedule();
+      _completedCourses = await MockApi.getAcademicProgress();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -26,8 +23,8 @@ class CurrentSemesterProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-    Future<void> refresh() async {
-  _schedule = null; // clear cache
+  Future<void> refresh() async {
+  _completedCourses = null; // clear cache
   await loadIfNeeded();
 }
 }

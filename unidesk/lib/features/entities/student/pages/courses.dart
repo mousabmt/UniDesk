@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:unidesk/core/constants/constants.dart';
-import 'package:unidesk/features/home/widgets_std/courseWidgets/custom_card.dart';
-import 'package:unidesk/features/home/student/providers_std/course_provider.dart';
+import 'package:unidesk/features/entities/widgets_std/courseWidgets/custom_card.dart';
+import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import '../../../../shared/widgets/custom_tealBottom.dart';

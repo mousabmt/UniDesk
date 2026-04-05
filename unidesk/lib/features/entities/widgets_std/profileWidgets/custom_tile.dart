@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:unidesk/core/constants/colors.dart';
 import 'package:unidesk/features/language/langProvider.dart';
- import './custom_field.dart';
+ import 'custom_field.dart';
 class InfoTile extends StatelessWidget {
   final IconData icon;
   final String label;

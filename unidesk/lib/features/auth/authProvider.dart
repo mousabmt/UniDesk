@@ -2,12 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:unidesk/core/services/mockApi.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const String _loginUrl =
-      'http://127.0.0.1:8002/api/auth/login/student';
-
   String? _token;
   String? _userId;
   Map<String, dynamic>? _user;
@@ -48,30 +45,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await http.post(
-        Uri.parse(_loginUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          // API expects email; UI asks for student email/ID.
-          'email': userId,
-          'password': password,
-        }),
-      );
+      final result = await MockApi.login(userId, password);
+      final success = result['success'] == true;
 
-      final Map<String, dynamic> data =
-          jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        final accessToken = data['access_token'] as String?;
-        if (accessToken == null || accessToken.isEmpty) {
-          _errorMessage = 'Login succeeded but no access token returned.';
+      if (success) {
+        final token = (result['token'] ?? '') as String;
+        if (token.isEmpty) {
+          _errorMessage = 'Login succeeded but no token returned.';
         } else {
-          _token = accessToken;
-          _userId = data['user']?['id']?.toString();
-          _user = Map<String, dynamic>.from(data['user'] ?? {});
+          _token = token;
+          _userId = result['user']?['id']?.toString() ?? userId;
+          _user = Map<String, dynamic>.from(result['user'] ?? {});
 
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', _token!);
@@ -83,7 +67,7 @@ class AuthProvider extends ChangeNotifier {
           return true;
         }
       } else {
-        _errorMessage = (data['message'] ?? 'Login failed').toString();
+        _errorMessage = (result['message'] ?? 'Login failed').toString();
       }
     } catch (e) {
       _errorMessage = 'Unable to login. Please try again.';
