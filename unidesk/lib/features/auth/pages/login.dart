@@ -24,35 +24,31 @@ class _LoginPageState extends State<LoginPage> {
     password.dispose();
     super.dispose();
   }
+void _handleLogin() async {
+  final lang = context.read<LangProvider>();
+  final enteredUser = userID.text.trim();
+  final enteredPass = password.text.trim();
 
-  void _handleLogin() async {
-    final lang = context.read<LangProvider>();
-    final enteredUser = userID.text.trim();
-    final enteredPass = password.text.trim();
-
-    if (enteredUser.isEmpty || enteredPass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(lang.translate('please_enter_id_password'))),
-      );
-      return;
-    }
-
-    final success =
-        await context.read<AuthProvider>().login(enteredUser, enteredPass);
-
-    if (!mounted) return;
-
-    if (success) {
-      context.go('/');
-    } else {
-      final error =
-          context.read<AuthProvider>().errorMessage ?? lang.translate('invalid_token');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
-    }
+  if (enteredUser.isEmpty || enteredPass.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(lang.translate('please_enter_id_password'))),
+    );
+    return;
   }
 
+  final success =
+      await context.read<AuthProvider>().login(enteredUser, enteredPass);
+
+  if (!mounted) return;
+
+  if (!success) {
+    final error = context.read<AuthProvider>().errorMessage 
+        ?? lang.translate('invalid_token');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error)),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
