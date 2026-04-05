@@ -19,6 +19,7 @@ import 'features/entities/student/pages/prevSemesters.dart';
 import 'features/entities/student/pages/calenderEvents.dart';
 import 'features/entities/student/providers_std/CalenderProvider.dart';
 import 'features/entities/student/pages/techinalSupportPage.dart';
+
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
@@ -73,7 +74,11 @@ class _MyAppState extends State<MyApp> {
         final isOnLogin = state.matchedLocation == '/login';
 
         if (!isLoggedIn && !isOnLogin) return '/login';
-        if (isLoggedIn && isOnLogin) return '/';
+        if (isLoggedIn && isOnLogin) {
+          if (auth.isAdmin) return '/admin';
+          if (auth.isInstructor) return '/instructor';
+          return '/'; // else go to student
+        }
         return null;
       },
       routes: [
@@ -117,7 +122,11 @@ class _MyAppState extends State<MyApp> {
           name: 'schedule',
           builder: (context, state) => const CalenderEvents(),
         ),
-        GoRoute(path: '/technical-support', name: 'techincal-support',builder: (context,state)=>const TechnicalSupportPage()),
+        GoRoute(
+          path: '/technical-support',
+          name: 'techincal-support',
+          builder: (context, state) => const TechnicalSupportPage(),
+        ),
       ],
     );
   }

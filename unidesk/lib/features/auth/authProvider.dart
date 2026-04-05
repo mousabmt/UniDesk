@@ -80,7 +80,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
+  // check is admin 
+  bool get isAdmin => _user?['role']?.toString().toLowerCase() == 'admin';
+  // check is instructor
+  bool get isInstructor => _user?['role']?.toString().toLowerCase() == 'instructor';
 
+  
   Future<void> logout() async {
     _token = null;
     _userId = null;
