@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/mockApi.dart';
+import 'package:unidesk/core/services/student_api.dart';
 
 class CoursesProvider extends ChangeNotifier {
   List<Map<String, dynamic>>? _courses;
@@ -9,21 +9,21 @@ class CoursesProvider extends ChangeNotifier {
   String? _error;
 
   List<Map<String, dynamic>>? get courses => _courses;
-  Map<String,dynamic>? get academicProgress => _academicProgress;
+  Map<String, dynamic>? get academicProgress => _academicProgress;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   /// Fetches only if data isn't already cached.
   Future<void> loadIfNeeded() async {
-    if (_courses != null && _academicProgress != null) return; //  already cached, no need to fetch again
+    if (_courses != null && _academicProgress != null) return;
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _courses = await MockApi.getCourses();
-      _academicProgress = await MockApi.getAcademicProgress();
+      _courses = await StudentApi.getCourses();
+      _academicProgress = await StudentApi.getAcademicProgress();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -31,9 +31,10 @@ class CoursesProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> refresh() async {
-  _courses = null; // clear cache
-  _academicProgress=null;
-  await loadIfNeeded();
-}  
+    _courses = null;
+    _academicProgress = null;
+    await loadIfNeeded();
+  }
 }

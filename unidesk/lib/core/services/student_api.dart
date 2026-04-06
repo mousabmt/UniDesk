@@ -4,13 +4,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentApi {
-  static const String _baseUrl = 'http://127.0.0.1:8002/api';
+  static const String _baseUrl = 'http://127.0.0.1:8001/api';
 
   static Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   static Map<String, String> _headers({String? token}) {
     final headers = <String, String>{
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
     };
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
@@ -21,6 +22,32 @@ class StudentApi {
   static Future<String?> _readToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+
+  static Future<Map<String, dynamic>> login(String userId, String password) async {
+    final res = await http.post(
+      _uri('/auth/login/student'),
+      headers: _headers(),
+      body: jsonEncode({
+        'email': userId,
+        'password': password,
+      }),
+    );
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode == 200) {
+      return {
+        'success': true,
+        'token': body['access_token'],
+        'role': body['role'],
+        'user': body['user'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': body['message'] ?? 'Login failed',
+      };
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getCourses({String? token}) async {
@@ -68,7 +95,6 @@ class StudentApi {
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final completed = (body['completed_courses'] as List?) ?? [];
 
-    // Ensure each semester has a courses array to satisfy the UI.
     final normalized = completed.map<Map<String, dynamic>>((e) {
       final map = Map<String, dynamic>.from(e as Map);
       map.putIfAbsent('courses', () => <Map<String, dynamic>>[]);
@@ -123,6 +149,40 @@ class StudentApi {
         .toList();
   }
 
+  static Future<Map<String, dynamic>> getProfile({String? token}) async {
+    token ??= await _readToken();
+    final res = await http.get(
+      _uri('/student/profile'),
+      headers: _headers(token: token),
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception('Profile request failed (${res.statusCode})');
+    }
+
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  static Future<List<Map<String, dynamic>>> getAds() async {
+    final res = await http.get(_uri('/announcements'), headers: _headers());
+    if (res.statusCode != 200) {
+      throw Exception('Ads request failed (${res.statusCode})');
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final list = (body['announcements'] as List?) ?? [];
+    
+    return list.map<Map<String, dynamic>>((e) {
+      final map = e as Map<String, dynamic>;
+      return {
+        'id': map['id']?.toString() ?? '',
+        'title': map['title']?.toString() ?? '',
+        'imageUrl': map['image_url']?.toString() ?? '',
+        'link': map['link']?.toString() ?? '',
+        'description': map['description']?.toString() ?? '',
+      };
+    }).toList();
+  }
+
   static String _normalizeDay(String? value) {
     if (value == null || value.isEmpty) return 'Unknown';
     final lower = value.toLowerCase();
@@ -133,7 +193,6 @@ class StudentApi {
     if (lower.contains('thu')) return 'Thursday';
     if (lower.contains('fri')) return 'Friday';
     if (lower.contains('sat')) return 'Saturday';
-    // Fallback: capitalize first letter
     return value[0].toUpperCase() + value.substring(1);
   }
 
