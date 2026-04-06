@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
-import 'pages/add_files_page.dart';
-import 'pages/attendance_page.dart';
-
+import 'home_DR.dart';
+import 'addfiles.dart';
+import 'attendance.dart';
+import "package:go_router/go_router.dart";
 class InstructorLayout extends StatefulWidget {
-  const InstructorLayout({super.key});
+  final Widget child;
+  const InstructorLayout({required this.child, super.key});
 
   @override
   State<InstructorLayout> createState() => _InstructorLayoutState();
@@ -13,24 +14,33 @@ class InstructorLayout extends StatefulWidget {
 class _InstructorLayoutState extends State<InstructorLayout> {
   int currentIndex = 0;
 
-  final pages = const [
-    InstructorHomePage(),
-    AddFilesPage(),
-    AttendancePage(),
-    InstructorProfilePage(), // لو بدك نعملها
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: pages[currentIndex],
+      body: widget.child,
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Color(0xff0bb4b1),
         unselectedItemColor: Colors.grey,
-        onTap: (i) => setState(() => currentIndex = i),
+        onTap: (i) {
+          setState(() => currentIndex = i);
+          switch (i) {
+            case 0:
+              context.go('/instructor/home');
+              break;
+            case 1:
+              context.go('/instructor/files');
+              break;
+            case 2:
+              context.go('/instructor/attendance');
+              break;
+            case 3:
+              context.go('/instructor/profile');
+              break;
+          }
+        },
 
         items: const [
           BottomNavigationBarItem(
@@ -42,6 +52,26 @@ class _InstructorLayoutState extends State<InstructorLayout> {
           BottomNavigationBarItem(
               icon: Icon(Icons.person), label: "Profile"),
         ],
+      ),
+    );
+  }
+}
+
+class InstructorProfilePage extends StatelessWidget {
+  const InstructorProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xff0bb4b1),
+        title: const Text('Profile'),
+      ),
+      body: const Center(
+        child: Text(
+          'Profile coming soon',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
       ),
     );
   }

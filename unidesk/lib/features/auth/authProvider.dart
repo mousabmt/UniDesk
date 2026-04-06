@@ -8,12 +8,14 @@ class AuthProvider extends ChangeNotifier {
   String? _token;
   String? _userId;
   Map<String, dynamic>? _user;
+  String? _role;
   bool _isLoading = false;
   String? _errorMessage;
 
   String? get token => _token;
   String? get userId => _userId;
   Map<String, dynamic>? get user => _user;
+  String? get role => _role;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -29,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString('token');
       _userId = prefs.getString('userId');
+      _role = prefs.getString('role');
       final storedUser = prefs.getString('user');
       if (storedUser != null) {
         _user = jsonDecode(storedUser) as Map<String, dynamic>;
@@ -50,17 +53,22 @@ class AuthProvider extends ChangeNotifier {
 
       if (success) {
         final token = (result['token'] ?? '') as String;
+        _role = result['role']?.toString();
         if (token.isEmpty) {
           _errorMessage = 'Login succeeded but no token returned.';
         } else {
           _token = token;
           _userId = result['user']?['id']?.toString() ?? userId;
           _user = Map<String, dynamic>.from(result['user'] ?? {});
+          if (_role != null) {
+            _user!['role'] = _role;
+          }
 
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', _token!);
           if (_userId != null) await prefs.setString('userId', _userId!);
           await prefs.setString('user', jsonEncode(_user ?? {}));
+          if (_role != null) await prefs.setString('role', _role!);
 
           _isLoading = false;
           notifyListeners();
@@ -81,20 +89,28 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
   // check is admin 
-  bool get isAdmin => _user?['role']?.toString().toLowerCase() == 'admin';
+  bool get isAdmin =>
+      (_role ?? _user?['role'])?.toString().toLowerCase() == 'admin';
   // check is instructor
-  bool get isInstructor => _user?['role']?.toString().toLowerCase() == 'instructor';
+  bool get isInstructor =>
+      (_role ?? _user?['role'])?.toString().toLowerCase() == 'instructor';
+  // default fallback: student role when not admin/instructor
+  bool get isStudent =>
+      (_role ?? _user?['role'])?.toString().toLowerCase() == 'student' ||
+      (!isAdmin && !isInstructor);
 
   
   Future<void> logout() async {
     _token = null;
     _userId = null;
     _user = null;
+    _role = null;
     _errorMessage = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('userId');
     await prefs.remove('user');
+    await prefs.remove('role');
     notifyListeners();
   }
 }

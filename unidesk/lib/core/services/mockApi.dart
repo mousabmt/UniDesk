@@ -1,54 +1,55 @@
 class MockApi {
   // Auth
   // POST https://api.unidesk.local/auth/login  body: { "userId": "...", "password": "..." }
-  static Future<Map<String, dynamic>> login(
-    String userId,
-    String password,
-  ) async {
-    if (userId == 'std' && password == '123') {
-      return {
-        'success': true,
-        'token': 'mock_token_xyz_123',
-        'role': 'student',
-        'user': {
-          'id': '2021001',
-          'name': 'Mousa Al-Ahmad',
-          'email': 'student@aabu.edu.jo',
-          'gpa': 3.7,
-          'credits': 90,
-          'totalCredits': 133,
-          'completionPrecentage': 133 / 96 * 100,
-        },
-      };
-    }
-
-    if (userId == 'admin@aabu.edu.jo' && password == '1234') {
-      return {
-        'success': true,
-        'token': 'mock_token_admin_456',
-        'role': 'admin',
-        'user': {
-          'id': 'ADM001',
-          'name': 'Admin User',
-          'email': 'admin@aabu.edu.jo',
-        },
-      };
-    }
-
-    return {'success': false, 'message': 'Invalid ID or password'};
+static Future<Map<String, dynamic>> login(
+  String userId,
+  String password,
+) async {
+  if (userId == 'std' && password == '123') {
+    return {
+      'success': true,
+      'token': 'mock_token_xyz_123',
+      'role': 'student',
+      'user': {
+        'id': '2021001',
+        'name': 'Mousa Al-Ahmad',
+        'email': 'student@aabu.edu.jo',
+        'gpa': 3.7,
+        'credits': 90,
+        'totalCredits': 133,
+        'completionPrecentage': 133 / 96 * 100,
+      },
+    };
   }
-    
-    if (userId == 'dr' && password == '1234') {
-  return {
-    'success': true,
-    'token': 'mock_token_instructor_789',
-    'role': 'instructor',
-    'user': {
-      'id': 'D001',
-      'name': 'Dr. Ahmad',
-      'email': 'dr.ahmad@aabu.edu.jo',
-    },
-  };
+
+  if (userId == 'admin@aabu.edu.jo' && password == '1234') {
+    return {
+      'success': true,
+      'token': 'mock_token_admin_456',
+      'role': 'admin',
+      'user': {
+        'id': 'ADM001',
+        'name': 'Admin User',
+        'email': 'admin@aabu.edu.jo',
+      },
+    };
+  }
+
+  // ✅ Moved above the final return
+  if (userId == 'dr' && password == '1234') {
+    return {
+      'success': true,
+      'token': 'mock_token_instructor_789',
+      'role': 'instructor',
+      'user': {
+        'id': 'D001',
+        'name': 'Dr. Ahmad',
+        'email': 'dr.ahmad@aabu.edu.jo',
+      },
+    };
+  }
+
+  return {'success': false, 'message': 'Invalid ID or password'}; 
 }
   // Courses
   // GET https://api.unidesk.local/courses/{userId}
