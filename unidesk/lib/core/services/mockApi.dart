@@ -37,7 +37,19 @@ class MockApi {
 
     return {'success': false, 'message': 'Invalid ID or password'};
   }
-
+    
+    if (userId == 'dr' && password == '1234') {
+  return {
+    'success': true,
+    'token': 'mock_token_instructor_789',
+    'role': 'instructor',
+    'user': {
+      'id': 'D001',
+      'name': 'Dr. Ahmad',
+      'email': 'dr.ahmad@aabu.edu.jo',
+    },
+  };
+}
   // Courses
   // GET https://api.unidesk.local/courses/{userId}
   static Future<List<Map<String, dynamic>>> getCourses() async {
