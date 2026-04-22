@@ -15,21 +15,7 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff6f3f7),
-
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0bb4b1),
-        elevation: 0,
-        title: const Text(
-          "Attendance",
-          style: TextStyle(color: Colors.white, fontSize: 20),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-
+ 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

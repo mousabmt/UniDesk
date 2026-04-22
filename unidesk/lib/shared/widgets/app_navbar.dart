@@ -15,6 +15,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
     final canGoBack = context.canPop(); //checks if there's a page behind
 
     return AppBar(
@@ -59,16 +60,32 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           onSelected: (value) {
             switch (value) {
               case 'home':
-                context.go('/');
+                if(auth.isStudent){
+                  context.go('/');
+                } else {
+                  context.go('/instructor/home');
+                }
                 break;
               case 'courses':
-                context.go('/courses');
+                if(auth.isStudent){
+                  context.go('/courses');
+                } else {
+                  context.go('/instructor/files');
+                }
                 break;
               case 'schedule':
-                context.go('/schedule');
+                if(auth.isStudent){
+                  context.go('/schedule');
+                } else {
+                  context.go('/instructor/attendance');
+                }
                 break;
               case 'profile':
-                context.go('/profile');
+                if(auth.isStudent){
+                  context.go('/profile');
+                } else {
+                  context.go('/instructor/profile');
+                }
                 break;
               case 'logout':
                 context.read<AuthProvider>().logout();
@@ -82,15 +99,15 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
              child: Text(lang.translate("home"))
              ),
             PopupMenuItem(
-              value: 'courses',
-              child: Text(lang.translate('current_courses')),
+              value: auth.isStudent ? 'courses' : 'instructor_courses',
+              child: auth.isStudent ? Text(lang.translate('current_courses')) : Text(lang.translate('files')),
             ),
             PopupMenuItem(
-              value: 'schedule',
-              child: Text(lang.translate('schedule')),
+              value: auth.isStudent ? 'schedule' : 'instructor_schedule',
+              child: auth.isStudent ? Text(lang.translate('schedule')) : Text(lang.translate('attendance')),
             ),
             PopupMenuItem(
-              value: "profile",
+              value: auth.isStudent ? "profile" : "instructor_profile",
               child: Text(lang.translate("profile")),
             ),
             PopupMenuItem(

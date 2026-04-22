@@ -6,21 +6,6 @@ class AddFilesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff6f3f7),
-
-      appBar: AppBar(
-        backgroundColor: const Color(0xff0bb4b1),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Add Files",
-          style: TextStyle(color: Colors.white, fontSize: 20),
-        ),
-      ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

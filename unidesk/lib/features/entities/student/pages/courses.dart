@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:unidesk/core/constants/constants.dart';
@@ -46,7 +47,9 @@ class CoursePage extends StatelessWidget {
                   const SizedBox(height: 12),
                   TealButton(
                     label: lang.translate('attendance_policy'),
-                    onTap: () {},
+                    onTap: () {
+                      context.push('/register-attendance');
+                    },
                   ),
                   const SizedBox(height: 10),
                   TealButton(

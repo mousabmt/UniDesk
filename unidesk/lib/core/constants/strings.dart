@@ -69,6 +69,9 @@ class AppStrings {
       'tuesday':'Tuesday',
       'wednesday':'Wednesday',
       'thursday':'Thursday',
+      'files':'Files',
+      'attendance':'Attendance',
+
     },
     'ar': {
       'login': 'تسجيل الدخول',
@@ -139,6 +142,9 @@ class AppStrings {
       'tuesday':'الثلاثاء',
       'wednesday':'الاربعاء',
       'thursday':'الخميس',
+      'files':'الملفات',
+      'attendance':'الحضور',
+      
     },
   };
 }

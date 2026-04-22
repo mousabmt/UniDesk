@@ -23,6 +23,14 @@ import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart
 import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
 import 'package:unidesk/features/entities/instructor/pages/attendance.dart';
+import 'package:unidesk/core/constants/constants.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'features/entities/student/pages/QRScannerRegister.dart';
+Future<void> requestNotificationPermission() async {
+  if (await Permission.notification.isDenied) {
+    await Permission.notification.request();
+  }
+}
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -74,10 +82,19 @@ class _MyAppState extends State<MyApp> {
     return null;
   }
 
+  int _instructorIndex(String location) {
+    if (location.startsWith('/instructor/files')) return NavIndexes.courses;
+    if (location.startsWith('/instructor/attendance')) return NavIndexes.schedule;
+    if (location.startsWith('/instructor/profile')) return NavIndexes.profile;
+    return NavIndexes.home;
+  }
+
   @override
   void initState() {
     super.initState();
     final auth = context.read<AuthProvider>();
+    FlutterNativeSplash.remove();
+    requestNotificationPermission();
 
     _router = GoRouter(
       initialLocation: '/login',
@@ -100,10 +117,8 @@ class _MyAppState extends State<MyApp> {
           name: 'login',
           builder: (context, state) => const LoginPage(),
         ),
-        GoRoute(
-          path: '/instructor',
-          redirect: (_, __) => '/instructor/home',
-        ),
+        // Student Routes
+        GoRoute(path: '/instructor', redirect: (_, _) => '/instructor/home'),
         ShellRoute(
           redirect: (context, state) => guardRoute(auth, 'student'),
           builder: (context, state, child) => child,
@@ -148,11 +163,20 @@ class _MyAppState extends State<MyApp> {
               name: 'techincal-support',
               builder: (context, state) => const TechnicalSupportPage(),
             ),
+            GoRoute(
+              path: '/register-attendance',
+              name: 'register-attendance',
+              builder: (context, state) => const QRScannerPage()
+              ),
           ],
         ),
+        // instructor routes
         ShellRoute(
           redirect: (context, state) => guardRoute(auth, 'instructor'),
-          builder: (context, state, child) => InstructorLayout(child: child),
+          builder: (context, state, child) => InstructorLayout(
+            currentIndex: _instructorIndex(state.matchedLocation),
+            child: child,
+          ),
           routes: [
             GoRoute(
               path: '/instructor/home',
@@ -194,8 +218,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    FlutterNativeSplash.remove();
-
     return MaterialApp.router(
       title: 'UniDesk',
       debugShowCheckedModeBanner: false,
