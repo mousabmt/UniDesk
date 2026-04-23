@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/core/services/mockApi.dart';
 
 class AnnoucProvider extends ChangeNotifier {
   List<Map<String, dynamic>>? _annouc;
@@ -18,7 +18,7 @@ class AnnoucProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _annouc = await StudentApi.getAds();
+      _annouc = await MockApi.getAds();
     } catch (e) {
       _error = e.toString();
     } finally {

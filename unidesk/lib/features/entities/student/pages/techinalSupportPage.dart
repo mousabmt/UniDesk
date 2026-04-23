@@ -13,7 +13,7 @@ class TechnicalSupportPage extends StatefulWidget {
 
 class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final String _searchQuery = '';
   int? _expandedFaqIndex;
 
   // ── Data ────────────────────────────────────────────────────────────────────
@@ -101,48 +101,48 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
   // ── Search bar ───────────────────────────────────────────────────────────────
 
-  Widget _buildSearchBar() => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (v) => setState(() => _searchQuery = v),
-          decoration: InputDecoration(
-            hintText: 'Search your issue ...',
-            hintStyle: const TextStyle(
-              color: Color(0xFF9CA3AF),
-              fontSize: 14,
-            ),
-            prefixIcon: const Icon(Icons.search_rounded,
-                color: Color(0xFF6B7280), size: 22),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: Color(0xFF6B7280), size: 20),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : const Icon(Icons.search_rounded,
-                    color: Color(0xFF6B7280), size: 22),
-            border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-        ),
-      );
+  // Widget _buildSearchBar() => Container(
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         borderRadius: BorderRadius.circular(14),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withValues(alpha: 0.07),
+  //             blurRadius: 10,
+  //             offset: const Offset(0, 2),
+  //           ),
+  //         ],
+  //       ),
+  //       child: TextField(
+  //         controller: _searchController,
+  //         onChanged: (v) => setState(() => _searchQuery = v),
+  //         decoration: InputDecoration(
+  //           hintText: 'Search your issue ...',
+  //           hintStyle: const TextStyle(
+  //             color: Color(0xFF9CA3AF),
+  //             fontSize: 14,
+  //           ),
+  //           prefixIcon: const Icon(Icons.search_rounded,
+  //               color: Color(0xFF6B7280), size: 22),
+  //           suffixIcon: _searchQuery.isNotEmpty
+  //               ? IconButton(
+  //                   icon: const Icon(Icons.close_rounded,
+  //                       color: Color(0xFF6B7280), size: 20),
+  //                   onPressed: () {
+  //                     _searchController.clear();
+  //                     setState(() => _searchQuery = '');
+  //                   },
+  //                 )
+  //               : const Icon(Icons.search_rounded,
+  //                   color: Color(0xFF6B7280), size: 22),
+  //           border: InputBorder.none,
+  //           contentPadding:
+  //               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  //         ),
+  //       ),
+  //     );
 
-  // ── Category grid ────────────────────────────────────────────────────────────
+  // // ── Category grid ────────────────────────────────────────────────────────────
 
   Widget _buildCategoryGrid() => GridView.count(
         crossAxisCount: 2,

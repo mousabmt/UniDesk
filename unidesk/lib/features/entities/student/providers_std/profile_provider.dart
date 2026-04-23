@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/core/services/mockApi.dart';
 
 class ProfileProvider extends ChangeNotifier {
   Map<String, dynamic>? _profile;
@@ -26,7 +26,7 @@ class ProfileProvider extends ChangeNotifier {
       if (storedUser != null) {
         _profile = jsonDecode(storedUser) as Map<String, dynamic>;
       } else {
-        _profile = await StudentApi.getProfile();
+        _profile = await MockApi.getProfile();
       }
     } catch (e) {
       _error = e.toString();

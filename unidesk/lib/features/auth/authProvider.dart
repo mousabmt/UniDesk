@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/core/services/mockApi.dart';
 
 class AuthProvider extends ChangeNotifier {
   String? _token;
@@ -48,7 +48,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await StudentApi.login(userId, password);
+      final result = await MockApi.login(userId, password);
       final success = result['success'] == true;
 
       if (success) {

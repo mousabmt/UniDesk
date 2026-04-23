@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/core/services/mockApi.dart';
 
 class CurrentSemesterProvider extends ChangeNotifier {
   List<Map<String, dynamic>>? _schedule;
@@ -18,7 +18,7 @@ class CurrentSemesterProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _schedule = await StudentApi.getSchedule();
+      _schedule = await MockApi.getSchedule();
     } catch (e) {
       _error = e.toString();
     } finally {

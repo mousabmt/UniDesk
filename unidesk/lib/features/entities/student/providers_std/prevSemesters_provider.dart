@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/core/services/mockApi.dart';
 
 class PrevsemestersProvider extends ChangeNotifier {
   Map<String, dynamic>? _completedCourses;
@@ -18,7 +18,7 @@ class PrevsemestersProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _completedCourses = await StudentApi.getAcademicProgress();
+      _completedCourses = await MockApi.getAcademicProgress();
     } catch (e) {
       _error = e.toString();
     } finally {
