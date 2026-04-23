@@ -98,8 +98,6 @@ class AuthProvider extends ChangeNotifier {
   bool get isStudent =>
       (_role ?? _user?['role'])?.toString().toLowerCase() == 'student' ||
       (!isAdmin && !isInstructor);
-
-  
   Future<void> logout() async {
     _token = null;
     _userId = null;

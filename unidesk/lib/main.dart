@@ -22,10 +22,15 @@ import 'features/entities/student/pages/techinalSupportPage.dart';
 import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
 import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
-import 'package:unidesk/features/entities/instructor/pages/attendance.dart';
+import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
+import 'package:unidesk/features/entities/instructor/pages/attendance_page.dart';
 import 'package:unidesk/core/constants/constants.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'features/entities/student/pages/QRScannerRegister.dart';
+
 Future<void> requestNotificationPermission() async {
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
@@ -57,8 +62,21 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => CalenderProvider()..loadIfNeeded(),
         ),
+        Provider(create: (_) => AttendanceRepository()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AttendanceCoursesProvider(context.read<AttendanceRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AttendanceStudentsProvider(context.read<AttendanceRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AttendanceSessionProvider(context.read<AttendanceRepository>()),
+        ),
       ],
-      child: const MyApp(),
+      builder: (context, child) => const MyApp(),
     ),
   );
 }
@@ -75,17 +93,31 @@ class _MyAppState extends State<MyApp> {
 
   // helper function
   String? guardRoute(AuthProvider auth, String allowedRole) {
-    if (!auth.isLoggedIn) return '/login';
-    if (allowedRole == 'student' && !auth.isStudent) return '/unauthorized';
-    if (allowedRole == 'instructor' && !auth.isInstructor) return '/unauthorized';
-    if (allowedRole == 'admin' && !auth.isAdmin) return '/unauthorized';
+    if (!auth.isLoggedIn) {
+      return '/login';
+    }
+    if (allowedRole == 'student' && !auth.isStudent) {
+      return '/unauthorized';
+    }
+    if (allowedRole == 'instructor' && !auth.isInstructor) {
+      return '/unauthorized';
+    }
+    if (allowedRole == 'admin' && !auth.isAdmin) {
+      return '/unauthorized';
+    }
     return null;
   }
 
   int _instructorIndex(String location) {
-    if (location.startsWith('/instructor/files')) return NavIndexes.courses;
-    if (location.startsWith('/instructor/attendance')) return NavIndexes.schedule;
-    if (location.startsWith('/instructor/profile')) return NavIndexes.profile;
+    if (location.startsWith('/instructor/files')) {
+      return NavIndexes.courses;
+    }
+    if (location.startsWith('/instructor/attendance')) {
+      return NavIndexes.schedule;
+    }
+    if (location.startsWith('/instructor/profile')) {
+      return NavIndexes.profile;
+    }
     return NavIndexes.home;
   }
 
@@ -166,8 +198,8 @@ class _MyAppState extends State<MyApp> {
             GoRoute(
               path: '/register-attendance',
               name: 'register-attendance',
-              builder: (context, state) => const QRScannerPage()
-              ),
+              builder: (context, state) => const QRScannerPage(),
+            ),
           ],
         ),
         // instructor routes

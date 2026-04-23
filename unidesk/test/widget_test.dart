@@ -1,30 +1,45 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:unidesk/main.dart';
+import 'package:provider/provider.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
+import 'package:unidesk/features/entities/instructor/pages/attendance_page.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('attendance page shows course selector', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          Provider(create: (_) => AttendanceRepository()),
+          ChangeNotifierProvider(
+            create: (context) => AttendanceCoursesProvider(
+              context.read<AttendanceRepository>(),
+            ),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => AttendanceStudentsProvider(
+              context.read<AttendanceRepository>(),
+            ),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => AttendanceSessionProvider(
+              context.read<AttendanceRepository>(),
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: AttendancePage(),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Attendance Session'), findsOneWidget);
+    expect(find.text('Students List'), findsOneWidget);
   });
 }

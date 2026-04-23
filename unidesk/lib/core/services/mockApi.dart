@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class MockApi {
   // Auth
   // POST https://api.unidesk.local/auth/login  body: { "userId": "...", "password": "..." }
@@ -291,4 +293,170 @@ static Future<Map<String, dynamic>> login(
       "lectures": lectures,
     };
   }
+
+// ───────────────────INTSTRUCTOR SECTION───────────────────────────────────────────
+// GET https://api.unidesk.local/courses/{instructorId}
+
+static Future<Map<String, dynamic>> getInstructorCourses(String instructorId) async {
+  return {
+    'success': true,
+    'data': [
+      {
+        'id': '120414',
+        'name': 'Introduction to Programming',
+        'credits': 3,
+        'studentsEnrolled': 120,
+        'lectureId':'1'
+      },
+      {
+        'id': '132120',
+        'name': 'Calculus I',
+        'credits': 3,
+        'studentsEnrolled': 80,
+        'lectureId':'3'
+      },
+    ],
+  };
+}
+// GET https://api.unidesk.local/courses/{courseId}/{lectureId}/students
+static Future<Map<String, dynamic>> getCourseStudents(String courseId, String lectureId) async {
+  return {
+    'success': true,
+    'data': [
+      {
+        'id': '2021001',
+        'name': 'Mousab Al-Ahmad',
+        'email': 'mousab.ahmad@aabu.edu.jo',
+        'absences': 2,
+        'status': 'enrolled',
+      },
+      {
+        'id': '2021002',
+        'name': 'Sara Al-Khalidi',
+        'email': 'sara.khalidi@aabu.edu.jo',
+        'absences': 0,
+        'status': 'enrolled',
+      },
+      {
+        'id': '2021003',
+        'name': 'Ahmad Al-Zoubi',
+        'email': 'ahmad.zoubi@aabu.edu.jo',
+        'absences': 4,
+        'status': 'enrolled',
+      },
+      {
+        'id': '2021004',
+        'name': 'Lina Haddad',
+        'email': 'lina.haddad@aabu.edu.jo',
+        'absences': 1,
+        'status': 'enrolled',
+      },
+      {
+        'id': '2021005',
+        'name': 'Omar Nasser',
+        'email': 'omar.nasser@aabu.edu.jo',
+        'absences': 0,
+        'status': 'enrolled',
+      },
+    ],
+  };
+}
+ 
+// ─── ATTENDANCE ────────────────────────────────────────────────
+
+// fake in-memory storage
+static final Map<String, Map<String, dynamic>> _sessions = {};
+static final Set<String> _attendedStudents = {};
+
+// INSTRUCTOR: POST https://api.unidesk.local/attendance/start
+// body: { "courseId": "...", "lectureId": "..." }
+static Future<Map<String, dynamic>> startAttendanceSession({
+  required String courseId,
+  required String lectureId,
+}) async {
+  final token = _generateToken();
+  final expiresAt = DateTime.now().add(const Duration(minutes: 10));
+
+  _sessions[token] = {
+    'token': token,
+    'courseId': courseId,
+    'lectureId': lectureId,
+    'expiresAt': expiresAt.toIso8601String(),
+    'isActive': true,
+  };
+
+  return {
+    'success': true,
+    'data': {
+      'token': token,
+      'courseId': courseId,
+      'lectureId': lectureId,
+      'expiresAt': expiresAt.toIso8601String(),
+    },
+  };
+}
+
+// INSTRUCTOR: POST https://api.unidesk.local/attendance/close
+// body: { "token": "..." }
+static Future<Map<String, dynamic>> closeAttendanceSession(String token) async {
+  if (!_sessions.containsKey(token)) {
+    return {'success': false, 'message': 'Session not found'};
+  }
+  _sessions[token]!['isActive'] = false;
+  return {'success': true, 'message': 'Session closed'};
+}
+
+// STUDENT: POST https://api.unidesk.local/attendance/register
+// body: { "token": "...", "courseId": "..." }
+// headers: { "Authorization": "Bearer <student_token>" }
+static Future<Map<String, dynamic>> registerAttendance({
+  required String token,
+  required String courseId,
+  required String studentId, // taken from AuthProvider
+}) async {
+  if (!_sessions.containsKey(token)) {
+    return {'success': false, 'message': 'Invalid QR code'};
+  }
+
+  final session = _sessions[token]!;
+
+  final expiresAt = DateTime.parse(session['expiresAt']);
+  if (DateTime.now().isAfter(expiresAt)) {
+    return {'success': false, 'message': 'QR code has expired'};
+  }
+
+  if (!session['isActive']) {
+    return {'success': false, 'message': 'Session is closed'};
+  }
+
+  if (session['courseId'] != courseId) {
+    return {'success': false, 'message': 'Invalid course'};
+  }
+
+  final attendanceKey = '$studentId-$token';
+  if (_attendedStudents.contains(attendanceKey)) {
+    return {'success': false, 'message': 'Already registered'};
+  }
+
+  _attendedStudents.add(attendanceKey);
+
+  return {
+    'success': true,
+    'message': 'Attendance registered successfully',
+    'data': {
+      'studentId': studentId,
+      'courseId': courseId,
+      'lectureId': session['lectureId'],
+      'scannedAt': DateTime.now().toIso8601String(),
+    },
+  };
+}
+
+// HELPER
+static String _generateToken() {
+  const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  final rand = Random.secure();
+  return List.generate(32, (_) => chars[rand.nextInt(chars.length)]).join();
+}
 }
