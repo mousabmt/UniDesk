@@ -1,3 +1,4 @@
+import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,14 @@ import 'features/entities/student/pages/techinalSupportPage.dart';
 import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
 import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
+import 'package:unidesk/features/entities/instructor/pages/Announcements.dart';
+import 'package:unidesk/features/entities/instructor/pages/Assignments.dart';
+import 'package:unidesk/features/entities/instructor/pages/add_assignment.dart';
+import 'package:unidesk/features/entities/instructor/pages/Attendance_Report.dart';
+import 'package:unidesk/features/entities/instructor/pages/Messages.dart';
+import 'package:unidesk/features/entities/instructor/pages/Profile.dart';
+import 'package:unidesk/features/entities/instructor/pages/Reports_Analytics.dart';
+import 'package:unidesk/features/entities/instructor/pages/Schodule.dart';
 import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
@@ -91,32 +100,33 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
 
-  // helper function
   String? guardRoute(AuthProvider auth, String allowedRole) {
-    if (!auth.isLoggedIn) {
-      return '/login';
-    }
-    if (allowedRole == 'student' && !auth.isStudent) {
-      return '/unauthorized';
-    }
-    if (allowedRole == 'instructor' && !auth.isInstructor) {
-      return '/unauthorized';
-    }
-    if (allowedRole == 'admin' && !auth.isAdmin) {
-      return '/unauthorized';
-    }
+    if (!auth.isLoggedIn) return '/login';
+    if (allowedRole == 'student' && !auth.isStudent) return '/unauthorized';
+    if (allowedRole == 'instructor' && !auth.isInstructor) return '/unauthorized';
+    if (allowedRole == 'admin' && !auth.isAdmin) return '/unauthorized';
     return null;
   }
 
   int _instructorIndex(String location) {
-    if (location.startsWith('/instructor/files')) {
+    if (location.startsWith('/instructor/files') ||
+        location.startsWith('/instructor/course-details')) {
       return NavIndexes.courses;
     }
-    if (location.startsWith('/instructor/attendance')) {
+    if (location.startsWith('/instructor/attendance') ||
+        location.startsWith('/instructor/attendance-report') ||
+        location.startsWith('/instructor/schedule')) {
       return NavIndexes.schedule;
     }
-    if (location.startsWith('/instructor/profile')) {
-      return NavIndexes.profile;
+    if (location.startsWith('/instructor/assignments') ||
+        location.startsWith('/instructor/add-assignment') ||
+        location.startsWith('/instructor/announcements')) {
+      return NavIndexes.assignments;
+    }
+    if (location.startsWith('/instructor/profile') ||
+        location.startsWith('/instructor/messages') ||
+        location.startsWith('/instructor/reports')) {
+      return NavIndexes.more;
     }
     return NavIndexes.home;
   }
@@ -139,7 +149,7 @@ class _MyAppState extends State<MyApp> {
         if (isLoggedIn && isOnLogin) {
           if (auth.isAdmin) return '/admin';
           if (auth.isInstructor) return '/instructor/home';
-          return '/'; // else go to student
+          return '/';
         }
         return null;
       },
@@ -149,8 +159,9 @@ class _MyAppState extends State<MyApp> {
           name: 'login',
           builder: (context, state) => const LoginPage(),
         ),
-        // Student Routes
-        GoRoute(path: '/instructor', redirect: (_, _) => '/instructor/home'),
+
+        // ── Student Routes ──────────────────────────────────
+        GoRoute(path: '/instructor', redirect: (_, __) => '/instructor/home'),
         ShellRoute(
           redirect: (context, state) => guardRoute(auth, 'student'),
           builder: (context, state, child) => child,
@@ -202,7 +213,8 @@ class _MyAppState extends State<MyApp> {
             ),
           ],
         ),
-        // instructor routes
+
+        // ── Instructor Routes ───────────────────────────────
         ShellRoute(
           redirect: (context, state) => guardRoute(auth, 'instructor'),
           builder: (context, state, child) => InstructorLayout(
@@ -221,9 +233,49 @@ class _MyAppState extends State<MyApp> {
               builder: (context, state) => const AddFilesPage(),
             ),
             GoRoute(
+              path: '/instructor/course-details',
+              name: 'instructor-course-details',
+              builder: (context, state) => const CourseDetailsPage(),
+            ),
+            GoRoute(
               path: '/instructor/attendance',
               name: 'instructor-attendance',
               builder: (context, state) => const AttendancePage(),
+            ),
+            GoRoute(
+              path: '/instructor/attendance-report',
+              name: 'instructor-attendance-report',
+              builder: (context, state) => const AttendanceReportPage(),
+            ),
+            GoRoute(
+              path: '/instructor/assignments-list',
+              name: 'instructor-assignments-list',
+              builder: (context, state) => const AssignmentsPage(),
+            ),
+            GoRoute(
+              path: '/instructor/add-assignment',
+              name: 'instructor-add-assignment',
+              builder: (context, state) => const AddAssignmentPage(),
+            ),
+            GoRoute(
+              path: '/instructor/announcements',
+              name: 'instructor-announcements',
+              builder: (context, state) => const AnnouncementsPage(),
+            ),
+            GoRoute(
+              path: '/instructor/messages',
+              name: 'instructor-messages',
+              builder: (context, state) => const MessagesPage(),
+            ),
+            GoRoute(
+              path: '/instructor/reports',
+              name: 'instructor-reports',
+              builder: (context, state) => const ReportsAnalyticsPage(),
+            ),
+            GoRoute(
+              path: '/instructor/schedule',
+              name: 'instructor-schedule',
+              builder: (context, state) => const SchedulePage(),
             ),
             GoRoute(
               path: '/instructor/profile',
@@ -232,6 +284,7 @@ class _MyAppState extends State<MyApp> {
             ),
           ],
         ),
+
         GoRoute(
           path: '/unauthorized',
           name: 'unauthorized',

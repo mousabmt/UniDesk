@@ -16,27 +16,25 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
-    final canGoBack = context.canPop(); //checks if there's a page behind
+    final canGoBack = context.canPop();
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
       elevation: 0,
 
-      // Back button
       leading: canGoBack
           ? IconButton(
               icon: Icon(
                 lang.isArabic ? Icons.arrow_forward : Icons.arrow_back,
                 color: AppColors.black,
               ),
-              onPressed: () => context.pop(), //go back
+              onPressed: () => context.pop(),
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
               child: const LangToggle(),
             ),
 
-      // App name
       title: Text(
         'UniDesk',
         style: TextStyle(
@@ -54,37 +52,36 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () {},
         ),
 
-        // hamburger menu for 3 features (Current courses, techincal support, electronic payment)
         PopupMenuButton<String>(
           icon: const Icon(Icons.menu, color: AppColors.black),
           onSelected: (value) {
             switch (value) {
               case 'home':
-                if(auth.isStudent){
+                if (auth.isStudent) {
                   context.go('/');
                 } else {
                   context.go('/instructor/home');
                 }
                 break;
               case 'courses':
-                if(auth.isStudent){
+                if (auth.isStudent) {
                   context.go('/courses');
                 } else {
-                  context.go('/instructor/files');
+                  context.go('/instructor/files'); // ✅
                 }
                 break;
               case 'schedule':
-                if(auth.isStudent){
+                if (auth.isStudent) {
                   context.go('/schedule');
                 } else {
-                  context.go('/instructor/attendance');
+                  context.go('/instructor/attendance'); // ✅
                 }
                 break;
               case 'profile':
-                if(auth.isStudent){
+                if (auth.isStudent) {
                   context.go('/profile');
                 } else {
-                  context.go('/instructor/profile');
+                  context.go('/instructor/profile'); // ✅
                 }
                 break;
               case 'logout':
@@ -95,20 +92,24 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           },
           itemBuilder: (context) => [
             PopupMenuItem(
-             value: "home",
-             child: Text(lang.translate("home"))
-             ),
-            PopupMenuItem(
-              value: auth.isStudent ? 'courses' : 'instructor_courses',
-              child: auth.isStudent ? Text(lang.translate('current_courses')) : Text(lang.translate('files')),
+              value: 'home', // ✅ ثابت
+              child: Text(lang.translate('home')),
             ),
             PopupMenuItem(
-              value: auth.isStudent ? 'schedule' : 'instructor_schedule',
-              child: auth.isStudent ? Text(lang.translate('schedule')) : Text(lang.translate('attendance')),
+              value: 'courses', // ✅ ثابت - الـ onSelected يفرق بين student/instructor
+              child: auth.isStudent
+                  ? Text(lang.translate('current_courses'))
+                  : Text(lang.translate('files')),
             ),
             PopupMenuItem(
-              value: auth.isStudent ? "profile" : "instructor_profile",
-              child: Text(lang.translate("profile")),
+              value: 'schedule', // ✅ ثابت
+              child: auth.isStudent
+                  ? Text(lang.translate('schedule'))
+                  : Text(lang.translate('attendance')),
+            ),
+            PopupMenuItem(
+              value: 'profile', // ✅ ثابت
+              child: Text(lang.translate('profile')),
             ),
             PopupMenuItem(
               value: 'logout',
