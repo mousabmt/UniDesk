@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/constants.dart';
-import '../../features/language/langProvider.dart';
 import '../../features/auth/authProvider.dart';
+import '../../features/language/langProvider.dart';
 import 'langToggle.dart';
 
 class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
-  const AppNavbar({super.key});
+  final GlobalKey<NavigatorState>? navigatorKey;
+
+  const AppNavbar({
+    super.key,
+    this.navigatorKey,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -16,7 +22,8 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
-    final canGoBack = context.canPop();
+    final navigator = navigatorKey?.currentState;
+    final canGoBack = navigator?.canPop() ?? context.canPop();
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
@@ -28,7 +35,15 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
                 lang.isArabic ? Icons.arrow_forward : Icons.arrow_back,
                 color: AppColors.black,
               ),
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (navigator?.canPop() ?? false) {
+                  navigator!.pop();
+                  return;
+                }
+                if (context.canPop()) {
+                  context.pop();
+                }
+              },
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),

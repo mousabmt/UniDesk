@@ -190,11 +190,15 @@ class _CourseCard extends StatelessWidget {
                       const Icon(Icons.calendar_today_rounded,
                           size: 13, color: Color(0xFF0D6E6E)),
                       const SizedBox(width: 5),
-                      Text(
-                        course['time'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF4B5563),
+                      Expanded(
+                        child: Text(
+                          course['time'] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4B5563),
+                          ),
                         ),
                       ),
                     ],
@@ -207,11 +211,15 @@ class _CourseCard extends StatelessWidget {
                       const Icon(Icons.location_on_rounded,
                           size: 13, color: Color(0xFF0D6E6E)),
                       const SizedBox(width: 5),
-                      Text(
-                        course['room'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF4B5563),
+                      Expanded(
+                        child: Text(
+                          course['room'] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4B5563),
+                          ),
                         ),
                       ),
                     ],
@@ -222,11 +230,15 @@ Row(
     const Icon(Icons.person_rounded,
         size: 13, color: Color(0xFF0D6E6E)),
     const SizedBox(width: 5),
-    Text(
-      course['instructor'] ,
-      style: const TextStyle(
-        fontSize: 12,
-        color: Color(0xFF4B5563),
+    Expanded(
+      child: Text(
+        course['instructor'],
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF4B5563),
+        ),
       ),
     ),
   ],

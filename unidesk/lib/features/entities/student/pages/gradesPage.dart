@@ -73,57 +73,18 @@ class GradesPage extends StatelessWidget {
                       width: 0.5,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      // Grade badge
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-child: Center(
-  child: TealIconBox(
-    child: const Icon(
-      Icons.menu_book_rounded,
-      color: Colors.white,
-      size: 20,
-    ),
-  ),
-),
-                      ),
-                      const SizedBox(width: 12),
-                      // Course info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              course['name'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              course['instructor'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Numeric grade
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 360;
+
+                      final gradeInfo = Column(
+                        crossAxisAlignment: compact
+                            ? CrossAxisAlignment.start
+                            : CrossAxisAlignment.end,
                         children: [
                           Text(
                             '${course['grade']}%',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
@@ -138,8 +99,110 @@ child: Center(
                             ),
                           ),
                         ],
-                      ),
-                    ],
+                      );
+
+                      return compact
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 48,
+                                      height: 48,
+                                      child: Center(
+                                        child: TealIconBox(
+                                          child: const Icon(
+                                            Icons.menu_book_rounded,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            course['name'] ?? '',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1A1A1A),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            course['instructor'] ?? '',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF6B7280),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                gradeInfo,
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: Center(
+                                    child: TealIconBox(
+                                      child: const Icon(
+                                        Icons.menu_book_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        course['name'] ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF1A1A1A),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        course['instructor'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                gradeInfo,
+                              ],
+                            );
+                    },
                   ),
                 );
               },

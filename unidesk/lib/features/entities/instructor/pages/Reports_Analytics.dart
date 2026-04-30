@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
 
 class ReportsAnalyticsPage extends StatefulWidget {
   const ReportsAnalyticsPage({super.key});
@@ -13,7 +14,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   int _selectedTab = 0;
   final List<String> _tabs = ['Overview', 'Attendance', 'Performance'];
 
-  // Chart data
   final List<Map<String, dynamic>> _chartData = [
     {'month': 'Mar', 'value': 75.0},
     {'month': 'Apr', 'value': 78.0},
@@ -22,85 +22,63 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     {'month': 'Jul', 'value': 85.0},
   ];
 
-  // Top performers
   final List<Map<String, dynamic>> _performers = [
-    {'rank': 1, 'name': 'Sara Ali',      'gpa': '3.90', 'img': '68'},
+    {'rank': 1, 'name': 'Sara Ali', 'gpa': '3.90', 'img': '68'},
     {'rank': 2, 'name': 'Lina Mohamed', 'gpa': '3.75', 'img': '47'},
-    {'rank': 3, 'name': 'Omar Khaled',  'gpa': '3.60', 'img': '12'},
+    {'rank': 3, 'name': 'Omar Khaled', 'gpa': '3.60', 'img': '12'},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
-      body: Column(
-        children: [
-          _buildHeader(context),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTabBar(),
-                  const SizedBox(height: 20),
-                  _buildOverviewCards(),
-                  const SizedBox(height: 20),
-                  _buildAttendanceTrend(),
-                  const SizedBox(height: 20),
-                  _buildTopPerformers(),
-                  const SizedBox(height: 16),
-                  _buildViewFullReport(),
-                  const SizedBox(height: 12),
-                  _buildExportButton(),
-                  const SizedBox(height: 8),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-          _buildBottomNav(),
-        ],
-      ),
-    );
-  }
-
-  // ── Header ────────────────────────────────────────────────────
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: kTeal,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Reports & Analytics',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildTabBar(),
+              const SizedBox(height: 20),
+              _buildOverviewCards(),
+              const SizedBox(height: 20),
+              _buildAttendanceTrend(),
+              const SizedBox(height: 20),
+              _buildTopPerformers(),
+              const SizedBox(height: 16),
+              _buildViewFullReport(),
+              const SizedBox(height: 12),
+              _buildExportButton(),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        bottom: 24,
-        left: 20,
-        right: 20,
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Reports & Analytics',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
-  // ── Tab Bar ───────────────────────────────────────────────────
+  // Shared app chrome owns the back arrow and bottom navigation for pushed pages.
   Widget _buildTabBar() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -145,7 +123,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  // ── Overview Cards ────────────────────────────────────────────
   Widget _buildOverviewCards() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +189,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  // ── Attendance Trend Chart ────────────────────────────────────
   Widget _buildAttendanceTrend() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -251,7 +227,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  // ── Top Performers ────────────────────────────────────────────
   Widget _buildTopPerformers() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +329,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  // ── View Full Report ──────────────────────────────────────────
   Widget _buildViewFullReport() {
     return GestureDetector(
       onTap: () {},
@@ -385,7 +359,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  // ── Export Button ─────────────────────────────────────────────
   Widget _buildExportButton() {
     return SizedBox(
       width: double.infinity,
@@ -411,59 +384,8 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
       ),
     );
   }
-
-  // ── Bottom Nav ────────────────────────────────────────────────
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(Icons.home_outlined, 'Home', false),
-              _navItem(Icons.grid_view_outlined, 'Courses', false),
-              _navItem(Icons.calendar_today_outlined, 'Attendance', false),
-              _navItem(Icons.assignment_outlined, 'Assignments', false),
-              _navItem(Icons.menu, 'More', false),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(IconData icon, String label, bool isActive) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              size: 24,
-              color: isActive ? kTeal : const Color(0xFF888888)),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: isActive ? kTeal : const Color(0xFF888888),
-              fontWeight:
-                  isActive ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      );
 }
 
-// ── Line Chart Painter ────────────────────────────────────────────
 class _LineChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
   const _LineChartPainter(this.data);
@@ -474,10 +396,9 @@ class _LineChartPainter extends CustomPainter {
 
     final minVal = 70.0;
     final maxVal = 90.0;
-    final chartH = size.height - 30; // leave room for labels
+    final chartH = size.height - 30;
     final stepX = size.width / (data.length - 1);
 
-    // Helper: value → Y
     double toY(double v) =>
         chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
 
@@ -486,14 +407,19 @@ class _LineChartPainter extends CustomPainter {
       (i) => Offset(i * stepX, toY((data[i]['value'] as double))),
     );
 
-    // ── Filled area ──────────────────────────────────────────────
     final fillPath = Path()..moveTo(points.first.dx, points.first.dy);
     for (int i = 0; i < points.length - 1; i++) {
       final cp1 = Offset((points[i].dx + points[i + 1].dx) / 2, points[i].dy);
       final cp2 =
           Offset((points[i].dx + points[i + 1].dx) / 2, points[i + 1].dy);
       fillPath.cubicTo(
-          cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i + 1].dx, points[i + 1].dy);
+        cp1.dx,
+        cp1.dy,
+        cp2.dx,
+        cp2.dy,
+        points[i + 1].dx,
+        points[i + 1].dy,
+      );
     }
     fillPath
       ..lineTo(points.last.dx, chartH)
@@ -513,7 +439,6 @@ class _LineChartPainter extends CustomPainter {
         ).createShader(Rect.fromLTWH(0, 0, size.width, chartH)),
     );
 
-    // ── Line ─────────────────────────────────────────────────────
     final linePaint = Paint()
       ..color = kTeal
       ..strokeWidth = 2.5
@@ -526,45 +451,49 @@ class _LineChartPainter extends CustomPainter {
       final cp2 =
           Offset((points[i].dx + points[i + 1].dx) / 2, points[i + 1].dy);
       linePath.cubicTo(
-          cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i + 1].dx, points[i + 1].dy);
+        cp1.dx,
+        cp1.dy,
+        cp2.dx,
+        cp2.dy,
+        points[i + 1].dx,
+        points[i + 1].dy,
+      );
     }
     canvas.drawPath(linePath, linePaint);
 
-    // ── Dots + Labels ─────────────────────────────────────────────
     for (int i = 0; i < points.length; i++) {
-      // outer ring
       canvas.drawCircle(
-          points[i],
-          6,
-          Paint()
-            ..color = kTeal.withOpacity(0.2)
-            ..style = PaintingStyle.fill);
-      // inner dot
+        points[i],
+        6,
+        Paint()
+          ..color = kTeal.withOpacity(0.2)
+          ..style = PaintingStyle.fill,
+      );
       canvas.drawCircle(
-          points[i],
-          4,
-          Paint()
-            ..color = kTeal
-            ..style = PaintingStyle.fill);
+        points[i],
+        4,
+        Paint()
+          ..color = kTeal
+          ..style = PaintingStyle.fill,
+      );
 
-      // percentage label
       final pct = '${data[i]['value'].toInt()}%';
       final tp = TextPainter(
         text: TextSpan(
           text: pct,
           style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF333333)),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF333333),
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(
-          canvas,
-          Offset(points[i].dx - tp.width / 2,
-              points[i].dy - tp.height - 8));
+        canvas,
+        Offset(points[i].dx - tp.width / 2, points[i].dy - tp.height - 8),
+      );
 
-      // month label
       final ml = TextPainter(
         text: TextSpan(
           text: data[i]['month'] as String,
@@ -573,9 +502,9 @@ class _LineChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       ml.paint(
-          canvas,
-          Offset(
-              points[i].dx - ml.width / 2, chartH + 8));
+        canvas,
+        Offset(points[i].dx - ml.width / 2, chartH + 8),
+      );
     }
   }
 

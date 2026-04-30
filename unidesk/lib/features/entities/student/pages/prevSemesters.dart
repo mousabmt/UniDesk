@@ -171,6 +171,8 @@ class _SemesterSection extends StatelessWidget {
                         children: [
                           Text(
                             course['name'] ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -181,6 +183,8 @@ class _SemesterSection extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${lang.translate('id')}: ${course['id']}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF6B7280),

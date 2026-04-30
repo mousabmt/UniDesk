@@ -148,7 +148,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () => context.go('/instructor/add-assignment'), // ✅ مربوط
+          onPressed: () => context.push('/instructor/add-assignment'),
           icon: const Icon(Icons.add, size: 16, color: Colors.white),
           label: const Text(
             'Add Assignment',

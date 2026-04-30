@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../language/langProvider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../language/langProvider.dart';
 
 class QuickActionItem {
   final IconData icon;
@@ -32,31 +34,41 @@ class QuickActionsRow extends StatelessWidget {
       QuickActionItem(
         icon: Icons.headset_mic_outlined,
         label: lang.translate('technical_support'),
-        onTap: () {
-          context.push('/technical-support');
-        },
+        onTap: () => context.push('/technical-support'),
       ),
       QuickActionItem(
         icon: Icons.book_outlined,
         label: lang.translate('current_semester'),
-
-        onTap: () {
-          context.push('/current-semester');
-        },
+        onTap: () => context.push('/current-semester'),
       ),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingHorizontal,
-        vertical: AppSizes.spacingSmall,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: actions
-            .map((action) => _QuickActionCard(item: action))
-            .toList(),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = ResponsiveLayout.isCompact(context);
+        final spacing = compact ? 10.0 : 12.0;
+        final columns = ResponsiveLayout.columnsForWidth(
+          constraints.maxWidth,
+          compact: 2,
+          medium: 3,
+          wide: 3,
+        );
+        final itemWidth =
+            (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: actions
+              .map(
+                (action) => SizedBox(
+                  width: itemWidth,
+                  child: _QuickActionCard(item: action),
+                ),
+              )
+              .toList(),
+        );
+      },
     );
   }
 }
@@ -68,12 +80,13 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = ResponsiveLayout.isCompact(context);
+
     return GestureDetector(
       onTap: item.onTap,
       child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSizes.spacingSmall,
+        padding: EdgeInsets.symmetric(
+          vertical: compact ? 12 : AppSizes.spacingSmall,
           horizontal: AppSizes.spacingSmall,
         ),
         decoration: BoxDecoration(
@@ -83,14 +96,16 @@ class _QuickActionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, color: Colors.white, size: 25),
+            Icon(item.icon, color: Colors.white, size: compact ? 22 : 25),
             const SizedBox(height: 6),
             Text(
               item.label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: compact ? 12 : 13,
                 fontWeight: FontWeight.w900,
               ),
             ),

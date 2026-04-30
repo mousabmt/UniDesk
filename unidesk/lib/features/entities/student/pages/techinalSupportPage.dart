@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
+import 'package:unidesk/shared/widgets/responsive_layout.dart';
 
 class TechnicalSupportPage extends StatefulWidget {
   const TechnicalSupportPage({super.key});
@@ -144,14 +145,21 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
 
   // // ── Category grid ────────────────────────────────────────────────────────────
 
-  Widget _buildCategoryGrid() => GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.50,
-        children: _categories.map(_buildCategoryCard).toList(),
+  Widget _buildCategoryGrid() => LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = ResponsiveLayout.isCompact(context);
+          final crossAxisCount = constraints.maxWidth < 420 ? 1 : 2;
+
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: compact ? 1.9 : 1.5,
+            children: _categories.map(_buildCategoryCard).toList(),
+          );
+        },
       );
 
   Widget _buildCategoryCard(_SupportCategory cat) => GestureDetector(
@@ -212,25 +220,55 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
               ),
             ),
             const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildContactButton(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: 'Start Chat',
-                  onTap: () {},
-                ),
-                _buildContactButton(
-                  icon: Icons.email_outlined,
-                  label: 'Send Email',
-                  onTap: () {},
-                ),
-                _buildContactButton(
-                  icon: Icons.call_rounded,
-                  label: 'Call Us',
-                  onTap: () {},
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 420;
+                if (compact) {
+                  return Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 20,
+                    runSpacing: 16,
+                    children: [
+                      _buildContactButton(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: 'Start Chat',
+                        onTap: () {},
+                      ),
+                      _buildContactButton(
+                        icon: Icons.email_outlined,
+                        label: 'Send Email',
+                        onTap: () {},
+                      ),
+                      _buildContactButton(
+                        icon: Icons.call_rounded,
+                        label: 'Call Us',
+                        onTap: () {},
+                      ),
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildContactButton(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: 'Start Chat',
+                      onTap: () {},
+                    ),
+                    _buildContactButton(
+                      icon: Icons.email_outlined,
+                      label: 'Send Email',
+                      onTap: () {},
+                    ),
+                    _buildContactButton(
+                      icon: Icons.call_rounded,
+                      label: 'Call Us',
+                      onTap: () {},
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

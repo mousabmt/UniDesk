@@ -1,44 +1,47 @@
-import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:unidesk/core/constants/constants.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
-import 'package:unidesk/features/entities/student/pages/gradesPage.dart';
-import 'package:unidesk/features/entities/student/pages/home.dart';
-import 'package:unidesk/features/entities/student/pages/profile_page.dart';
-import 'package:unidesk/features/entities/student/providers_std/profile_provider.dart';
-import 'package:unidesk/features/entities/student/pages/currentSemesterPage.dart';
-import 'features/entities/student/pages/courses.dart';
-import 'features/language/langProvider.dart';
-import 'features/auth/authProvider.dart';
-import 'features/entities/student/providers_std/course_provider.dart';
-import 'features/entities/student/providers_std/annouc_provider.dart';
-import 'features/entities/student/providers_std/prevSemesters_provider.dart';
-import 'features/entities/student/providers_std/currentSem_provider.dart';
-import 'features/entities/student/pages/prevSemesters.dart';
-import 'features/entities/student/pages/calenderEvents.dart';
-import 'features/entities/student/providers_std/CalenderProvider.dart';
-import 'features/entities/student/pages/techinalSupportPage.dart';
-import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
-import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
-import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
+import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
 import 'package:unidesk/features/entities/instructor/pages/Announcements.dart';
 import 'package:unidesk/features/entities/instructor/pages/Assignments.dart';
-import 'package:unidesk/features/entities/instructor/pages/add_assignment.dart';
 import 'package:unidesk/features/entities/instructor/pages/Attendance_Report.dart';
 import 'package:unidesk/features/entities/instructor/pages/Messages.dart';
 import 'package:unidesk/features/entities/instructor/pages/Profile.dart';
 import 'package:unidesk/features/entities/instructor/pages/Reports_Analytics.dart';
 import 'package:unidesk/features/entities/instructor/pages/Schodule.dart';
-import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
-import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
-import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
-import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
+import 'package:unidesk/features/entities/instructor/pages/add_assignment.dart';
+import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
 import 'package:unidesk/features/entities/instructor/pages/attendance_page.dart';
-import 'package:unidesk/core/constants/constants.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'features/entities/student/pages/QRScannerRegister.dart';
+import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
+import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
+import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
+import 'package:unidesk/features/entities/student/pages/QRScannerRegister.dart';
+import 'package:unidesk/features/entities/student/pages/calenderEvents.dart';
+import 'package:unidesk/features/entities/student/pages/courses.dart';
+import 'package:unidesk/features/entities/student/pages/currentSemesterPage.dart';
+import 'package:unidesk/features/entities/student/pages/gradesPage.dart';
+import 'package:unidesk/features/entities/student/pages/home.dart';
+import 'package:unidesk/features/entities/student/pages/prevSemesters.dart';
+import 'package:unidesk/features/entities/student/pages/profile_page.dart'
+    as student_profile;
+import 'package:unidesk/features/entities/student/pages/techinalSupportPage.dart';
+import 'package:unidesk/features/entities/student/providers_std/CalenderProvider.dart';
+import 'package:unidesk/features/entities/student/providers_std/annouc_provider.dart';
+import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
+import 'package:unidesk/features/entities/student/providers_std/currentSem_provider.dart';
+import 'package:unidesk/features/entities/student/providers_std/prevSemesters_provider.dart';
+import 'package:unidesk/features/entities/student/providers_std/profile_provider.dart';
+import 'package:unidesk/features/language/langProvider.dart';
 
 Future<void> requestNotificationPermission() async {
   if (await Permission.notification.isDenied) {
@@ -85,7 +88,7 @@ void main() {
               AttendanceSessionProvider(context.read<AttendanceRepository>()),
         ),
       ],
-      builder: (context, child) => const MyApp(),
+      builder: (_, __) => const MyApp(),
     ),
   );
 }
@@ -99,12 +102,21 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
+  final _instructorShellNavigatorKey = GlobalKey<NavigatorState>();
 
-  String? guardRoute(AuthProvider auth, String allowedRole) {
-    if (!auth.isLoggedIn) return '/login';
-    if (allowedRole == 'student' && !auth.isStudent) return '/unauthorized';
-    if (allowedRole == 'instructor' && !auth.isInstructor) return '/unauthorized';
-    if (allowedRole == 'admin' && !auth.isAdmin) return '/unauthorized';
+  String? _guardRoute(AuthProvider auth, String allowedRole) {
+    if (!auth.isLoggedIn) {
+      return '/login';
+    }
+    if (allowedRole == 'student' && !auth.isStudent) {
+      return '/unauthorized';
+    }
+    if (allowedRole == 'instructor' && !auth.isInstructor) {
+      return '/unauthorized';
+    }
+    if (allowedRole == 'admin' && !auth.isAdmin) {
+      return '/unauthorized';
+    }
     return null;
   }
 
@@ -121,12 +133,12 @@ class _MyAppState extends State<MyApp> {
     if (location.startsWith('/instructor/assignments') ||
         location.startsWith('/instructor/add-assignment') ||
         location.startsWith('/instructor/announcements')) {
-      return NavIndexes.assignments;
+      return NavIndexes.assignment;
     }
     if (location.startsWith('/instructor/profile') ||
         location.startsWith('/instructor/messages') ||
         location.startsWith('/instructor/reports')) {
-      return NavIndexes.more;
+      return NavIndexes.profileInstructor;
     }
     return NavIndexes.home;
   }
@@ -136,7 +148,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     final auth = context.read<AuthProvider>();
     FlutterNativeSplash.remove();
-    requestNotificationPermission();
+    unawaited(requestNotificationPermission());
 
     _router = GoRouter(
       initialLocation: '/login',
@@ -145,11 +157,17 @@ class _MyAppState extends State<MyApp> {
         final isLoggedIn = auth.isLoggedIn;
         final isOnLogin = state.matchedLocation == '/login';
 
-        if (!isLoggedIn && !isOnLogin) return '/login';
+        if (!isLoggedIn && !isOnLogin) {
+          return '/login';
+        }
         if (isLoggedIn && isOnLogin) {
-          if (auth.isAdmin) return '/admin';
-          if (auth.isInstructor) return '/instructor/home';
-          return '/';
+          if (auth.isInstructor) {
+            return '/instructor/home';
+          }
+          if (auth.isStudent) {
+            return '/';
+          }
+          return '/unauthorized';
         }
         return null;
       },
@@ -159,11 +177,9 @@ class _MyAppState extends State<MyApp> {
           name: 'login',
           builder: (context, state) => const LoginPage(),
         ),
-
-        // ── Student Routes ──────────────────────────────────
         GoRoute(path: '/instructor', redirect: (_, __) => '/instructor/home'),
         ShellRoute(
-          redirect: (context, state) => guardRoute(auth, 'student'),
+          redirect: (context, state) => _guardRoute(auth, 'student'),
           builder: (context, state, child) => child,
           routes: [
             GoRoute(
@@ -184,7 +200,8 @@ class _MyAppState extends State<MyApp> {
             GoRoute(
               path: '/profile',
               name: 'profile',
-              builder: (context, state) => const ProfilePage(),
+              builder: (context, state) =>
+                  const student_profile.ProfilePage(),
             ),
             GoRoute(
               path: '/completed-courses',
@@ -203,7 +220,7 @@ class _MyAppState extends State<MyApp> {
             ),
             GoRoute(
               path: '/technical-support',
-              name: 'techincal-support',
+              name: 'technical-support',
               builder: (context, state) => const TechnicalSupportPage(),
             ),
             GoRoute(
@@ -213,12 +230,12 @@ class _MyAppState extends State<MyApp> {
             ),
           ],
         ),
-
-        // ── Instructor Routes ───────────────────────────────
         ShellRoute(
-          redirect: (context, state) => guardRoute(auth, 'instructor'),
+          navigatorKey: _instructorShellNavigatorKey,
+          redirect: (context, state) => _guardRoute(auth, 'instructor'),
           builder: (context, state, child) => InstructorLayout(
             currentIndex: _instructorIndex(state.matchedLocation),
+            navigatorKey: _instructorShellNavigatorKey,
             child: child,
           ),
           routes: [
@@ -280,11 +297,10 @@ class _MyAppState extends State<MyApp> {
             GoRoute(
               path: '/instructor/profile',
               name: 'instructor-profile',
-              builder: (context, state) => const InstructorProfilePage(),
+              builder: (context, state) => const ProfilePage(),
             ),
           ],
         ),
-
         GoRoute(
           path: '/unauthorized',
           name: 'unauthorized',
