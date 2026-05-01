@@ -58,6 +58,23 @@ class AttendanceRepository {
       );
     }
   }
+
+  Future<void> registerAttendance({
+    required String token,
+    required String courseId,
+    required String studentId,
+  }) async {
+    final response = await MockApi.registerAttendance(
+      token: token,
+      courseId: courseId,
+      studentId: studentId,
+    );
+    if (response['success'] != true) {
+      throw AttendanceRepositoryException(
+        response['message']?.toString() ?? 'Failed to register attendance',
+      );
+    }
+  }
 }
 
 class AttendanceRepositoryException implements Exception {

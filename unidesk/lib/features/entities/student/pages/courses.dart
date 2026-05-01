@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 import 'package:unidesk/core/constants/constants.dart';
-import 'package:unidesk/features/entities/widgets_std/courseWidgets/custom_card.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
-import 'package:unidesk/shared/widgets/app_layout.dart';
+import 'package:unidesk/features/entities/widgets_std/courseWidgets/custom_card.dart';
 import 'package:unidesk/features/language/langProvider.dart';
+import 'package:unidesk/shared/widgets/app_layout.dart';
+
 import '../../../../shared/widgets/custom_tealBottom.dart';
 import '../../widgets_std/courseWidgets/custom_progessCard.dart';
 
@@ -18,9 +18,8 @@ class CoursePage extends StatelessWidget {
     final courseProvider = context.watch<CoursesProvider>();
     final lang = context.watch<LangProvider>();
 
-    return AppLayout(
-      currentIndex: NavIndexes.courses,
-      child: Directionality(
+    return Scaffold(
+      body: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
         child: Container(
           color: const Color(0xFFEDF0EE),
@@ -43,13 +42,11 @@ class CoursePage extends StatelessWidget {
                   else if (courseProvider.error != null)
                     const Center(child: Text('Failed to load courses'))
                   else
-                    AbsenceCard(courses: courseProvider.courses ?? []),
+                    AbsenceCard(courses: courseProvider.courses ?? const []),
                   const SizedBox(height: 12),
                   TealButton(
                     label: lang.translate('attendance_policy'),
-                    onTap: () {
-                      context.push('/register-attendance');
-                    },
+                    onTap: () => context.push('/register-attendance'),
                   ),
                   const SizedBox(height: 10),
                   TealButton(
@@ -72,10 +69,12 @@ class CoursePage extends StatelessWidget {
                   else if (courseProvider.academicProgress != null)
                     AcademicProgressCard(
                       progress: courseProvider.academicProgress!,
-                      completedCourses: courseProvider.courses ?? [],
+                      completedCourses: courseProvider.courses ?? const [],
                     )
                   else
-                    const Center(child: Text('No academic progress data available')),
+                    const Center(
+                      child: Text('No academic progress data available'),
+                    ),
                 ],
               ),
             ),

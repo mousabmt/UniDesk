@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/language/langProvider.dart';
-import 'package:unidesk/shared/widgets/app_layout.dart';
+
 import '../providers_std/CalenderProvider.dart';
 
 class CalenderEvents extends StatefulWidget {
@@ -76,12 +75,9 @@ class _CalenderEventsState extends State<CalenderEvents> {
     final lang = context.watch<LangProvider>();
     final schedule = context.watch<CalenderProvider>();
 
-    return AppLayout(
-      currentIndex: NavIndexes.schedule,
-      child: Directionality(
-        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child: _buildBody(schedule, lang),
-      ),
+    return Directionality(
+      textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: _buildBody(schedule, lang),
     );
   }
 
@@ -151,7 +147,10 @@ class _CalenderEventsState extends State<CalenderEvents> {
             Text(
               '${_monthName(_focusedDay.month)} ${_focusedDay.year}',
               style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right, size: 22),

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -65,21 +68,21 @@ class _QRScannerPageState extends State<QRScannerPage> {
   Future<void> registerAttendance(String rawValue) async {
     try {
       final data = jsonDecode(rawValue);
+      final studentId =
+          context.read<AuthProvider>().userId ??
+          context.read<AuthProvider>().user?['id']?.toString();
 
-      final response = await http.post(
-        Uri.parse('Dummy/attendance/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'token': data['token'],
-          'courseId': data['courseId'],
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        _showResult(success: true);
-      } else {
+      if (studentId == null || studentId.isEmpty) {
         _showResult(success: false);
+        return;
       }
+
+      await context.read<AttendanceRepository>().registerAttendance(
+        token: data['token']?.toString() ?? '',
+        courseId: data['courseId']?.toString() ?? '',
+        studentId: studentId,
+      );
+      _showResult(success: true);
     } catch (e) {
       _showResult(success: false);
     }
@@ -89,7 +92,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(success ? '✅ Attendance Registered' : '❌ Failed'),
+        title: Text(success ? 'Attendance Registered' : 'Failed'),
         content: Text(
           success
               ? 'Your attendance has been recorded.'

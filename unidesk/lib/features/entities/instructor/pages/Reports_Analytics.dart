@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../widgets/instructor_surface_card.dart';
+
 class ReportsAnalyticsPage extends StatefulWidget {
   const ReportsAnalyticsPage({super.key});
 
@@ -11,6 +13,7 @@ class ReportsAnalyticsPage extends StatefulWidget {
 
 class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   static const Color kTeal = Color(0xFF2E9C9C);
+
   int _selectedTab = 0;
   final List<String> _tabs = ['Overview', 'Attendance', 'Performance'];
 
@@ -23,84 +26,94 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   ];
 
   final List<Map<String, dynamic>> _performers = [
-    {'rank': 1, 'name': 'Sara Ali', 'gpa': '3.90', 'img': '68'},
-    {'rank': 2, 'name': 'Lina Mohamed', 'gpa': '3.75', 'img': '47'},
-    {'rank': 3, 'name': 'Omar Khaled', 'gpa': '3.60', 'img': '12'},
+    {'rank': 1, 'name': 'Sara Ali', 'gpa': '3.90'},
+    {'rank': 2, 'name': 'Lina Mohamed', 'gpa': '3.75'},
+    {'rank': 3, 'name': 'Omar Khaled', 'gpa': '3.60'},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Reports & Analytics',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF222222),
+        children: [
+          InstructorSurfaceCard(
+            radius: 20,
+            blurRadius: 4,
+            shadowOffset: const Offset(0, 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Reports & Analytics',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF222222),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              _buildTabBar(),
-              const SizedBox(height: 20),
-              _buildOverviewCards(),
-              const SizedBox(height: 20),
-              _buildAttendanceTrend(),
-              const SizedBox(height: 20),
-              _buildTopPerformers(),
-              const SizedBox(height: 16),
-              _buildViewFullReport(),
-              const SizedBox(height: 12),
-              _buildExportButton(),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 20),
+                _buildTabBar(),
+                const SizedBox(height: 20),
+                ..._buildSectionsForTab(),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  // Shared app chrome owns the back arrow and bottom navigation for pushed pages.
+  List<Widget> _buildSectionsForTab() {
+    switch (_selectedTab) {
+      case 1:
+        return [
+          _buildAttendanceTrend(),
+          const SizedBox(height: 20),
+          _buildOverviewCards(),
+          const SizedBox(height: 16),
+          _buildExportButton(),
+        ];
+      case 2:
+        return [
+          _buildTopPerformers(),
+          const SizedBox(height: 20),
+          _buildOverviewCards(),
+          const SizedBox(height: 16),
+          _buildViewFullReport(),
+        ];
+      case 0:
+      default:
+        return [
+          _buildOverviewCards(),
+          const SizedBox(height: 20),
+          _buildAttendanceTrend(),
+          const SizedBox(height: 20),
+          _buildTopPerformers(),
+          const SizedBox(height: 16),
+          _buildViewFullReport(),
+          const SizedBox(height: 12),
+          _buildExportButton(),
+        ];
+    }
+  }
+
   Widget _buildTabBar() {
-    return Container(
+    return InstructorSurfaceCard(
+      radius: 30,
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      blurRadius: 3,
+      shadowOffset: const Offset(0, 1),
+      borderColor: const Color(0xFFE7EFEF),
       child: Row(
-        children: List.generate(_tabs.length, (i) {
-          final active = i == _selectedTab;
+        children: List.generate(_tabs.length, (index) {
+          final active = index == _selectedTab;
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedTab = i),
+              onTap: () => setState(() => _selectedTab = index),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: active ? kTeal : Colors.transparent,
@@ -108,7 +121,7 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  _tabs[i],
+                  _tabs[index],
                   style: TextStyle(
                     color: active ? Colors.white : const Color(0xFF666666),
                     fontWeight: active ? FontWeight.w600 : FontWeight.normal,
@@ -151,19 +164,11 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
 
   Widget _statCard(String value, String label) {
     return Expanded(
-      child: Container(
+      child: InstructorSurfaceCard(
+        radius: 14,
+        blurRadius: 3,
+        shadowOffset: const Offset(0, 1),
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
         child: Column(
           children: [
             Text(
@@ -190,19 +195,10 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   }
 
   Widget _buildAttendanceTrend() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return InstructorSurfaceCard(
+      radius: 16,
+      blurRadius: 3,
+      shadowOffset: const Offset(0, 1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,11 +211,13 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: CustomPaint(
-              painter: _LineChartPainter(_chartData),
-              size: Size.infinite,
+          RepaintBoundary(
+            child: SizedBox(
+              height: 180,
+              child: CustomPaint(
+                painter: _LineChartPainter(_chartData),
+                size: Size.infinite,
+              ),
             ),
           ),
         ],
@@ -240,26 +238,18 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        InstructorSurfaceCard(
+          radius: 16,
+          blurRadius: 3,
+          shadowOffset: const Offset(0, 1),
           child: Column(
-            children: _performers.asMap().entries.map((e) {
-              final i = e.key;
-              final p = e.value;
+            children: _performers.asMap().entries.map((entry) {
+              final index = entry.key;
+              final performer = entry.value;
               return Column(
                 children: [
-                  _performerRow(p),
-                  if (i < _performers.length - 1)
+                  _performerRow(performer),
+                  if (index < _performers.length - 1)
                     Divider(height: 1, color: Colors.grey.shade100),
                 ],
               );
@@ -270,12 +260,13 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     );
   }
 
-  Widget _performerRow(Map<String, dynamic> p) {
+  Widget _performerRow(Map<String, dynamic> performer) {
     final rankColors = [
       const Color(0xFFE6A817),
       const Color(0xFF888888),
       const Color(0xFFCD7F32),
     ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -283,25 +274,31 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
           SizedBox(
             width: 28,
             child: Text(
-              '${p['rank']}',
+              '${performer['rank']}',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: rankColors[p['rank'] - 1],
-              ),
+                color: rankColors[performer['rank'] - 1],
+                
+                ),
             ),
           ),
           const SizedBox(width: 10),
           CircleAvatar(
             radius: 22,
-            backgroundImage: NetworkImage(
-              'https://i.pravatar.cc/150?img=${p['img']}',
+            backgroundColor: const Color(0xFFE6F5F5),
+            child: Text(
+              _initialsFor(performer['name'] as String),
+              style: const TextStyle(
+                color: kTeal,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              p['name'],
+              performer['name'] as String,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -316,7 +313,7 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'GPA ${p['gpa']}',
+              'GPA ${performer['gpa']}',
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -332,27 +329,19 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   Widget _buildViewFullReport() {
     return GestureDetector(
       onTap: () {},
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: const InstructorSurfaceCard(
+        radius: 14,
+        blurRadius: 3,
+        shadowOffset: Offset(0, 1),
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: Text(
+            'View Full Report',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF333333),
             ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: const Text(
-          'View Full Report',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF333333),
           ),
         ),
       ),
@@ -384,11 +373,22 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
       ),
     );
   }
+
+  static String _initialsFor(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1 || parts.last.isEmpty) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+        .toUpperCase();
+  }
 }
 
 class _LineChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> data;
   const _LineChartPainter(this.data);
+
+  final List<Map<String, dynamic>> data;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -399,12 +399,12 @@ class _LineChartPainter extends CustomPainter {
     final chartH = size.height - 30;
     final stepX = size.width / (data.length - 1);
 
-    double toY(double v) =>
-        chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
+    double toY(double value) =>
+        chartH - ((value - minVal) / (maxVal - minVal)) * chartH;
 
     final points = List.generate(
       data.length,
-      (i) => Offset(i * stepX, toY((data[i]['value'] as double))),
+      (index) => Offset(index * stepX, toY((data[index]['value'] as double))),
     );
 
     final fillPath = Path()..moveTo(points.first.dx, points.first.dy);
@@ -478,7 +478,7 @@ class _LineChartPainter extends CustomPainter {
       );
 
       final pct = '${data[i]['value'].toInt()}%';
-      final tp = TextPainter(
+      final valuePainter = TextPainter(
         text: TextSpan(
           text: pct,
           style: const TextStyle(
@@ -489,25 +489,25 @@ class _LineChartPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(
+      valuePainter.paint(
         canvas,
-        Offset(points[i].dx - tp.width / 2, points[i].dy - tp.height - 8),
+        Offset(points[i].dx - valuePainter.width / 2, points[i].dy - valuePainter.height - 8),
       );
 
-      final ml = TextPainter(
+      final monthPainter = TextPainter(
         text: TextSpan(
           text: data[i]['month'] as String,
           style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      ml.paint(
+      monthPainter.paint(
         canvas,
-        Offset(points[i].dx - ml.width / 2, chartH + 8),
+        Offset(points[i].dx - monthPainter.width / 2, chartH + 8),
       );
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

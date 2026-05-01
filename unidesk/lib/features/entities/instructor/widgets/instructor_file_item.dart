@@ -7,6 +7,8 @@ class InstructorFileItem extends StatelessWidget {
   final String date;
   final String size;
   final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+  final bool isInteractive;
 
   const InstructorFileItem({
     super.key,
@@ -16,77 +18,88 @@ class InstructorFileItem extends StatelessWidget {
     required this.date,
     required this.size,
     this.padding = const EdgeInsets.symmetric(vertical: 12),
+    this.onTap,
+    this.isInteractive = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 380;
-          final metaText = Text(
-            '$date - $size',
-            maxLines: compact ? 2 : 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          );
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: padding,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 380;
+            final metaText = Text(
+              '$date - $size',
+              maxLines: compact ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            );
 
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            final trailingIcon = Icon(
+              isInteractive ? Icons.open_in_new : Icons.more_vert,
+              color: Colors.grey,
+            );
+
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      InstructorFileBadge(color: color, label: label),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      trailingIcon,
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  metaText,
+                ],
+              );
+            }
+
+            return Row(
               children: [
-                Row(
-                  children: [
-                    InstructorFileBadge(color: color, label: label),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
+                InstructorFileBadge(color: color, label: label),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.more_vert, color: Colors.grey),
-                  ],
+                      const SizedBox(height: 4),
+                      metaText,
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                metaText,
+                trailingIcon,
               ],
             );
-          }
-
-          return Row(
-            children: [
-              InstructorFileBadge(color: color, label: label),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    metaText,
-                  ],
-                ),
-              ),
-              const Icon(Icons.more_vert, color: Colors.grey),
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }

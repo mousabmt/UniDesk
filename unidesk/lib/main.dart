@@ -12,18 +12,21 @@ import 'package:unidesk/features/entities/instructor/attendance/data/attendance_
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
+import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_repository.dart';
+import 'package:unidesk/features/entities/instructor/course_management/data/mock_instructor_courses_data_source.dart';
+import 'package:unidesk/features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/pages/Announcements.dart';
 import 'package:unidesk/features/entities/instructor/pages/Assignments.dart';
 import 'package:unidesk/features/entities/instructor/pages/Attendance_Report.dart';
 import 'package:unidesk/features/entities/instructor/pages/Messages.dart';
 import 'package:unidesk/features/entities/instructor/pages/Profile.dart';
 import 'package:unidesk/features/entities/instructor/pages/Reports_Analytics.dart';
-import 'package:unidesk/features/entities/instructor/pages/Schodule.dart';
+import 'package:unidesk/features/entities/instructor/pages/Schedule.dart';
 import 'package:unidesk/features/entities/instructor/pages/add_assignment.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
 import 'package:unidesk/features/entities/instructor/pages/attendance_page.dart';
 import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
-import 'package:unidesk/features/entities/instructor/pages/home_DR.dart';
+import 'package:unidesk/features/entities/instructor/pages/home.dart';
 import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
 import 'package:unidesk/features/entities/student/pages/QRScannerRegister.dart';
 import 'package:unidesk/features/entities/student/pages/calenderEvents.dart';
@@ -42,6 +45,7 @@ import 'package:unidesk/features/entities/student/providers_std/currentSem_provi
 import 'package:unidesk/features/entities/student/providers_std/prevSemesters_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/profile_provider.dart';
 import 'package:unidesk/features/language/langProvider.dart';
+import 'package:unidesk/shared/widgets/app_layout.dart';
 
 Future<void> requestNotificationPermission() async {
   if (await Permission.notification.isDenied) {
@@ -75,6 +79,11 @@ void main() {
           create: (_) => CalenderProvider()..loadIfNeeded(),
         ),
         Provider(create: (_) => AttendanceRepository()),
+        Provider<InstructorCoursesRepository>(
+          create: (_) => const InstructorCoursesRepositoryImpl(
+            MockInstructorCoursesDataSource(),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (context) =>
               AttendanceCoursesProvider(context.read<AttendanceRepository>()),
@@ -86,6 +95,11 @@ void main() {
         ChangeNotifierProvider(
           create: (context) =>
               AttendanceSessionProvider(context.read<AttendanceRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => InstructorCoursesProvider(
+            context.read<InstructorCoursesRepository>(),
+          ),
         ),
       ],
       builder: (_, __) => const MyApp(),
@@ -102,7 +116,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
-  final _instructorShellNavigatorKey = GlobalKey<NavigatorState>();
 
   String? _guardRoute(AuthProvider auth, String allowedRole) {
     if (!auth.isLoggedIn) {
@@ -118,29 +131,6 @@ class _MyAppState extends State<MyApp> {
       return '/unauthorized';
     }
     return null;
-  }
-
-  int _instructorIndex(String location) {
-    if (location.startsWith('/instructor/files') ||
-        location.startsWith('/instructor/course-details')) {
-      return NavIndexes.courses;
-    }
-    if (location.startsWith('/instructor/attendance') ||
-        location.startsWith('/instructor/attendance-report') ||
-        location.startsWith('/instructor/schedule')) {
-      return NavIndexes.schedule;
-    }
-    if (location.startsWith('/instructor/assignments') ||
-        location.startsWith('/instructor/add-assignment') ||
-        location.startsWith('/instructor/announcements')) {
-      return NavIndexes.assignment;
-    }
-    if (location.startsWith('/instructor/profile') ||
-        location.startsWith('/instructor/messages') ||
-        location.startsWith('/instructor/reports')) {
-      return NavIndexes.profileInstructor;
-    }
-    return NavIndexes.home;
   }
 
   @override
@@ -178,128 +168,174 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const LoginPage(),
         ),
         GoRoute(path: '/instructor', redirect: (_, __) => '/instructor/home'),
-        ShellRoute(
+        StatefulShellRoute.indexedStack(
           redirect: (context, state) => _guardRoute(auth, 'student'),
-          builder: (context, state, child) => child,
-          routes: [
-            GoRoute(
-              path: '/',
-              name: 'home',
-              builder: (context, state) => const HomePage(),
+          builder: (context, state, navigationShell) => _StudentShellLayout(
+            navigationShell: navigationShell,
+          ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  name: 'home',
+                  builder: (context, state) => const HomePage(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/courses',
-              name: 'courses',
-              builder: (context, state) => const CoursePage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/courses',
+                  name: 'courses',
+                  builder: (context, state) => const CoursePage(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/current-semester',
-              name: 'current-semester',
-              builder: (context, state) => const CurrentSemesterPage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/schedule',
+                  name: 'schedule',
+                  builder: (context, state) => const CalenderEvents(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/profile',
-              name: 'profile',
-              builder: (context, state) =>
-                  const student_profile.ProfilePage(),
-            ),
-            GoRoute(
-              path: '/completed-courses',
-              name: 'completed-courses',
-              builder: (context, state) => const Prevsemesters(),
-            ),
-            GoRoute(
-              path: '/courses-grades',
-              name: 'courses-grades',
-              builder: (context, state) => const GradesPage(),
-            ),
-            GoRoute(
-              path: '/schedule',
-              name: 'schedule',
-              builder: (context, state) => const CalenderEvents(),
-            ),
-            GoRoute(
-              path: '/technical-support',
-              name: 'technical-support',
-              builder: (context, state) => const TechnicalSupportPage(),
-            ),
-            GoRoute(
-              path: '/register-attendance',
-              name: 'register-attendance',
-              builder: (context, state) => const QRScannerPage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  name: 'profile',
+                  builder: (context, state) =>
+                      const student_profile.ProfilePage(),
+                ),
+              ],
             ),
           ],
         ),
-        ShellRoute(
-          navigatorKey: _instructorShellNavigatorKey,
+        StatefulShellRoute.indexedStack(
           redirect: (context, state) => _guardRoute(auth, 'instructor'),
-          builder: (context, state, child) => InstructorLayout(
-            currentIndex: _instructorIndex(state.matchedLocation),
-            navigatorKey: _instructorShellNavigatorKey,
-            child: child,
+          builder: (context, state, navigationShell) => InstructorLayout(
+            currentIndex: navigationShell.currentIndex,
+            onNavTap: (index) => navigationShell.goBranch(index),
+            child: navigationShell,
           ),
-          routes: [
-            GoRoute(
-              path: '/instructor/home',
-              name: 'instructor-home',
-              builder: (context, state) => const InstructorHomePage(),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/instructor/home',
+                  name: 'instructor-home',
+                  builder: (context, state) => const InstructorHomePage(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/instructor/files',
-              name: 'instructor-files',
-              builder: (context, state) => const AddFilesPage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/instructor/files',
+                  name: 'instructor-files',
+                  builder: (context, state) => AddFilesPage(
+                    initialCourseId: state.uri.queryParameters['courseId'],
+                  ),
+                ),
+                GoRoute(
+                  path: '/instructor/course-details',
+                  name: 'instructor-course-details',
+                  builder: (context, state) => CourseDetailsPage(
+                    initialCourseId: state.uri.queryParameters['courseId'],
+                  ),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/instructor/course-details',
-              name: 'instructor-course-details',
-              builder: (context, state) => const CourseDetailsPage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/instructor/attendance',
+                  name: 'instructor-attendance',
+                  builder: (context, state) => const AttendancePage(),
+                ),
+                GoRoute(
+                  path: '/instructor/attendance-report',
+                  name: 'instructor-attendance-report',
+                  builder: (context, state) => const AttendanceReportPage(),
+                ),
+                GoRoute(
+                  path: '/instructor/schedule',
+                  name: 'instructor-schedule',
+                  builder: (context, state) => const SchedulePage(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/instructor/attendance',
-              name: 'instructor-attendance',
-              builder: (context, state) => const AttendancePage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/instructor/assignments-list',
+                  name: 'instructor-assignments-list',
+                  builder: (context, state) => const AssignmentsPage(),
+                ),
+                GoRoute(
+                  path: '/instructor/add-assignment',
+                  name: 'instructor-add-assignment',
+                  builder: (context, state) => const AddAssignmentPage(),
+                ),
+                GoRoute(
+                  path: '/instructor/announcements',
+                  name: 'instructor-announcements',
+                  builder: (context, state) => const AnnouncementsPage(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/instructor/attendance-report',
-              name: 'instructor-attendance-report',
-              builder: (context, state) => const AttendanceReportPage(),
-            ),
-            GoRoute(
-              path: '/instructor/assignments-list',
-              name: 'instructor-assignments-list',
-              builder: (context, state) => const AssignmentsPage(),
-            ),
-            GoRoute(
-              path: '/instructor/add-assignment',
-              name: 'instructor-add-assignment',
-              builder: (context, state) => const AddAssignmentPage(),
-            ),
-            GoRoute(
-              path: '/instructor/announcements',
-              name: 'instructor-announcements',
-              builder: (context, state) => const AnnouncementsPage(),
-            ),
-            GoRoute(
-              path: '/instructor/messages',
-              name: 'instructor-messages',
-              builder: (context, state) => const MessagesPage(),
-            ),
-            GoRoute(
-              path: '/instructor/reports',
-              name: 'instructor-reports',
-              builder: (context, state) => const ReportsAnalyticsPage(),
-            ),
-            GoRoute(
-              path: '/instructor/schedule',
-              name: 'instructor-schedule',
-              builder: (context, state) => const SchedulePage(),
-            ),
-            GoRoute(
-              path: '/instructor/profile',
-              name: 'instructor-profile',
-              builder: (context, state) => const ProfilePage(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/instructor/profile',
+                  name: 'instructor-profile',
+                  builder: (context, state) => const ProfilePage(),
+                ),
+                GoRoute(
+                  path: '/instructor/messages',
+                  name: 'instructor-messages',
+                  builder: (context, state) => const MessagesPage(),
+                ),
+                GoRoute(
+                  path: '/instructor/reports',
+                  name: 'instructor-reports',
+                  builder: (context, state) => const ReportsAnalyticsPage(),
+                ),
+              ],
             ),
           ],
+        ),
+        GoRoute(
+          path: '/current-semester',
+          name: 'current-semester',
+          redirect: (context, state) => _guardRoute(auth, 'student'),
+          builder: (context, state) => const CurrentSemesterPage(),
+        ),
+        GoRoute(
+          path: '/completed-courses',
+          name: 'completed-courses',
+          redirect: (context, state) => _guardRoute(auth, 'student'),
+          builder: (context, state) => const Prevsemesters(),
+        ),
+        GoRoute(
+          path: '/courses-grades',
+          name: 'courses-grades',
+          redirect: (context, state) => _guardRoute(auth, 'student'),
+          builder: (context, state) => const GradesPage(),
+        ),
+        GoRoute(
+          path: '/technical-support',
+          name: 'technical-support',
+          redirect: (context, state) => _guardRoute(auth, 'student'),
+          builder: (context, state) => const TechnicalSupportPage(),
+        ),
+        GoRoute(
+          path: '/register-attendance',
+          name: 'register-attendance',
+          redirect: (context, state) => _guardRoute(auth, 'student'),
+          builder: (context, state) => const QRScannerPage(),
         ),
         GoRoute(
           path: '/unauthorized',
@@ -323,6 +359,21 @@ class _MyAppState extends State<MyApp> {
       title: 'UniDesk',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
+    );
+  }
+}
+
+class _StudentShellLayout extends StatelessWidget {
+  const _StudentShellLayout({required this.navigationShell});
+
+  final StatefulNavigationShell navigationShell;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppLayout(
+      currentIndex: navigationShell.currentIndex,
+      onNavTap: (index) => navigationShell.goBranch(index),
+      child: navigationShell,
     );
   }
 }

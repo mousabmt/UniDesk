@@ -25,10 +25,15 @@ class _AttendancePageState extends State<AttendancePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
-      context.read<AttendanceCoursesProvider>().loadIfNeeded(
+          context.read<AttendanceCoursesProvider>().loadIfNeeded(
             instructorId: auth.userId ?? '',
           );
     });
+  }
+
+  Future<void> _refreshStudentsForSelectedCourse() async {
+    final selectedCourse = context.read<AttendanceCoursesProvider>().selectedCourse;
+    await context.read<AttendanceStudentsProvider>().refreshForCourse(selectedCourse);
   }
 
   Future<void> _onCourseSelected(String? courseId) async {
@@ -50,10 +55,12 @@ class _AttendancePageState extends State<AttendancePage> {
 
     if (sessionProvider.hasActiveSession) {
       await sessionProvider.closeCurrentSession();
+      await _refreshStudentsForSelectedCourse();
       return;
     }
 
     await sessionProvider.startForCourse(selectedCourse);
+    await _refreshStudentsForSelectedCourse();
   }
 
   @override
@@ -63,24 +70,21 @@ class _AttendancePageState extends State<AttendancePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xfff6f3f7),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _AttendanceHeader(
-              instructorName: instructorName,
-              currentTab: _selectedTab,
-              onTabChanged: (tab) => setState(() => _selectedTab = tab),
-              onCourseChanged: _onCourseSelected,
-            ),
-            const SizedBox(height: 24),
-            if (_selectedTab == _AttendanceTab.attendance)
-              _AttendanceContent(onToggleSession: _toggleSession)
-            else
-              const _ReportsContent(),
-          ],
-        ),
+        children: [
+          _AttendanceHeader(
+            instructorName: instructorName,
+            currentTab: _selectedTab,
+            onTabChanged: (tab) => setState(() => _selectedTab = tab),
+            onCourseChanged: _onCourseSelected,
+          ),
+          const SizedBox(height: 24),
+          if (_selectedTab == _AttendanceTab.attendance)
+            _AttendanceContent(onToggleSession: _toggleSession)
+          else
+            const _ReportsContent(),
+        ],
       ),
     );
   }
@@ -339,16 +343,16 @@ class _ReportsContent extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _MetricCard(
-                    label: 'Regular',
-                    value: studentsProvider.regularStudents.toString(),
+                    label: 'Present',
+                    value: studentsProvider.presentStudents.toString(),
                     tone: const Color(0xff4b8bff),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _MetricCard(
-                    label: 'Warning',
-                    value: studentsProvider.atRiskStudents.toString(),
+                    label: 'Absent',
+                    value: studentsProvider.absentStudents.toString(),
                     tone: const Color(0xffd36b6b),
                   ),
                 ),
@@ -405,8 +409,8 @@ class _StudentsSection extends StatelessWidget {
                 child: StudentAttendanceCard(
                   student: student,
                   subtitle: showAbsenceSummary
-                      ? '${student.absences} absences'
-                      : student.email,
+                      ? '${student.absences} absences - ${student.isPresent ? 'Present' : 'Absent'}'
+                      : '${student.email} - ${student.isPresent ? 'Present' : 'Absent'}',
                 ),
               );
             }).toList(),
@@ -517,9 +521,9 @@ class _PanelCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 3),
+            color: Color(0x12000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -634,9 +638,9 @@ class StudentAttendanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
+            color: Color(0x12000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -676,16 +680,24 @@ class StudentAttendanceCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: student.isAtRisk
-                  ? const Color(0xffffe6e6)
-                  : const Color(0xffd2f4f2),
+              color: student.isPresent
+                  ? const Color(0xffd2f4f2)
+                  : student.isAtRisk
+                      ? const Color(0xffffe6e6)
+                      : const Color(0xffeef2f5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              student.isAtRisk ? Icons.warning_amber_rounded : Icons.check,
-              color: student.isAtRisk
-                  ? const Color(0xffd36b6b)
-                  : const Color(0xff0bb4b1),
+              student.isPresent
+                  ? Icons.check
+                  : student.isAtRisk
+                      ? Icons.warning_amber_rounded
+                      : Icons.close_rounded,
+              color: student.isPresent
+                  ? const Color(0xff0bb4b1)
+                  : student.isAtRisk
+                      ? const Color(0xffd36b6b)
+                      : const Color(0xff7c8a96),
             ),
           ),
         ],

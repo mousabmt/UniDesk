@@ -20,19 +20,27 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = Provider.of<LangProvider>(context);
-    final auth = Provider.of<AuthProvider>(context);
+    final isArabic = context.select<LangProvider, bool>((lang) => lang.isArabic);
+    final homeLabel = context.select<LangProvider, String>((lang) => lang.translate('home'));
+    final currentCoursesLabel =
+        context.select<LangProvider, String>((lang) => lang.translate('current_courses'));
+    final filesLabel = context.select<LangProvider, String>((lang) => lang.translate('files'));
+    final scheduleLabel = context.select<LangProvider, String>((lang) => lang.translate('schedule'));
+    final attendanceLabel =
+        context.select<LangProvider, String>((lang) => lang.translate('attendance'));
+    final profileLabel = context.select<LangProvider, String>((lang) => lang.translate('profile'));
+    final logoutLabel = context.select<LangProvider, String>((lang) => lang.translate('logout'));
+    final isStudent = context.select<AuthProvider, bool>((auth) => auth.isStudent);
     final navigator = navigatorKey?.currentState;
     final canGoBack = navigator?.canPop() ?? context.canPop();
 
     return AppBar(
       backgroundColor: AppColors.primaryBlue,
       elevation: 0,
-
       leading: canGoBack
           ? IconButton(
               icon: Icon(
-                lang.isArabic ? Icons.arrow_forward : Icons.arrow_back,
+                isArabic ? Icons.arrow_forward : Icons.arrow_back,
                 color: AppColors.black,
               ),
               onPressed: () {
@@ -46,10 +54,9 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               },
             )
           : Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8),
               child: const LangToggle(),
             ),
-
       title: Text(
         'UniDesk',
         style: TextStyle(
@@ -59,45 +66,27 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       centerTitle: true,
-
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           color: AppColors.black,
           onPressed: () {},
         ),
-
         PopupMenuButton<String>(
           icon: const Icon(Icons.menu, color: AppColors.black),
           onSelected: (value) {
             switch (value) {
               case 'home':
-                if (auth.isStudent) {
-                  context.go('/');
-                } else {
-                  context.go('/instructor/home');
-                }
+                context.go(isStudent ? '/' : '/instructor/home');
                 break;
               case 'courses':
-                if (auth.isStudent) {
-                  context.go('/courses');
-                } else {
-                  context.go('/instructor/files'); // ✅
-                }
+                context.go(isStudent ? '/courses' : '/instructor/files');
                 break;
               case 'schedule':
-                if (auth.isStudent) {
-                  context.go('/schedule');
-                } else {
-                  context.go('/instructor/attendance'); // ✅
-                }
+                context.go(isStudent ? '/schedule' : '/instructor/attendance');
                 break;
               case 'profile':
-                if (auth.isStudent) {
-                  context.go('/profile');
-                } else {
-                  context.go('/instructor/profile'); // ✅
-                }
+                context.go(isStudent ? '/profile' : '/instructor/profile');
                 break;
               case 'logout':
                 context.read<AuthProvider>().logout();
@@ -107,28 +96,24 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
           },
           itemBuilder: (context) => [
             PopupMenuItem(
-              value: 'home', // ✅ ثابت
-              child: Text(lang.translate('home')),
+              value: 'home',
+              child: Text(homeLabel),
             ),
             PopupMenuItem(
-              value: 'courses', // ✅ ثابت - الـ onSelected يفرق بين student/instructor
-              child: auth.isStudent
-                  ? Text(lang.translate('current_courses'))
-                  : Text(lang.translate('files')),
+              value: 'courses',
+              child: Text(isStudent ? currentCoursesLabel : filesLabel),
             ),
             PopupMenuItem(
-              value: 'schedule', // ✅ ثابت
-              child: auth.isStudent
-                  ? Text(lang.translate('schedule'))
-                  : Text(lang.translate('attendance')),
+              value: 'schedule',
+              child: Text(isStudent ? scheduleLabel : attendanceLabel),
             ),
             PopupMenuItem(
-              value: 'profile', // ✅ ثابت
-              child: Text(lang.translate('profile')),
+              value: 'profile',
+              child: Text(profileLabel),
             ),
             PopupMenuItem(
               value: 'logout',
-              child: Text(lang.translate('logout')),
+              child: Text(logoutLabel),
             ),
           ],
         ),

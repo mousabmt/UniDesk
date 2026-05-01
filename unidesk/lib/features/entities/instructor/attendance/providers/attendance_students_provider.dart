@@ -20,6 +20,8 @@ class AttendanceStudentsProvider extends ChangeNotifier {
   int get totalStudents => _students.length;
   int get atRiskStudents => _students.where((student) => student.isAtRisk).length;
   int get regularStudents => totalStudents - atRiskStudents;
+  int get presentStudents => _students.where((student) => student.isPresent).length;
+  int get absentStudents => totalStudents - presentStudents;
 
   Future<void> loadForCourse(AttendanceCourse? course) async {
     if (course == null) {
@@ -44,6 +46,10 @@ class AttendanceStudentsProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> refreshForCourse(AttendanceCourse? course) async {
+    await loadForCourse(course);
   }
 
   void clear() {

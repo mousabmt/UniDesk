@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+
 import '../../../../shared/widgets/custom_tealIcon.dart';
 
 class AbsenceCard extends StatelessWidget {
+  const AbsenceCard({
+    super.key,
+    required this.courses,
+  });
+
   final List<Map<String, dynamic>> courses;
-  const AbsenceCard({super.key ,required this.courses});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +16,10 @@ class AbsenceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 0.5),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.08),
+          width: 0.5,
+        ),
       ),
       child: Column(
         children: List.generate(courses.length, (i) {
@@ -28,11 +36,6 @@ class AbsenceCard extends StatelessWidget {
 }
 
 class AbsenceRow extends StatelessWidget {
-  final String code;
-  final String name;
-  final int absences;
-  final bool showDivider;
-
   const AbsenceRow({
     super.key,
     required this.code,
@@ -40,6 +43,11 @@ class AbsenceRow extends StatelessWidget {
     required this.absences,
     required this.showDivider,
   });
+
+  final String code;
+  final String name;
+  final int absences;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {

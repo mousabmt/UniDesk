@@ -5,6 +5,7 @@ class AttendanceStudent {
     required this.email,
     required this.absences,
     required this.status,
+    required this.isPresent,
   });
 
   final String id;
@@ -12,6 +13,7 @@ class AttendanceStudent {
   final String email;
   final int absences;
   final String status;
+  final bool isPresent;
 
   factory AttendanceStudent.fromMap(Map<String, dynamic> map) {
     return AttendanceStudent(
@@ -20,6 +22,7 @@ class AttendanceStudent {
       email: map['email']?.toString() ?? 'No email available',
       absences: (map['absences'] as num?)?.toInt() ?? 0,
       status: map['status']?.toString() ?? 'unknown',
+      isPresent: map['isPresent'] as bool? ?? false,
     );
   }
 

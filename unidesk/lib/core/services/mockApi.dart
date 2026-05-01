@@ -1,6 +1,171 @@
 import 'dart:math';
 
 class MockApi {
+  static const String _defaultInstructorId = 'D001';
+// route call is : GET https://api.unidesk.local/courses/{instructorId}  
+  static final Map<String, List<Map<String, dynamic>>> _instructorCourses = {
+    _defaultInstructorId: [
+      {
+        'id': '120414',
+        'name': 'Introduction to Programming',
+        'credits': 3,
+        'studentsEnrolled': 4,
+        'lectureId': '1',
+        'term': 'Spring 2024',
+        'sectionLabel': 'Section A',
+      },
+      {
+        'id': '132120',
+        'name': 'Calculus I',
+        'credits': 3,
+        'studentsEnrolled': 3,
+        'lectureId': '3',
+        'term': 'Spring 2024',
+        'sectionLabel': 'Section B',
+      },
+    ],
+  };
+  static final Map<String, Map<String, dynamic>> _instructorCourseDetails = {
+    '120414': {
+      'summary': {
+        'averageAttendanceLabel': '85%',
+        'assignmentsCount': 4,
+        'filesCount': 3,
+      },
+      'upcomingLecture': {
+        'title': 'Lecture 6 - Hashing',
+        'dateLabel': 'May 16, 2024',
+        'timeLabel': '10:00 AM - 11:30 AM',
+        'locationLabel': 'Room 2203',
+      },
+      'files': [
+        {
+          'id': 'f-120414-1',
+          'courseId': '120414',
+          'name': 'Lecture 5 - Trees.pdf',
+          'extensionLabel': 'PDF',
+          'sizeLabel': '2.4 MB',
+          'uploadedAtLabel': 'May 14, 2024',
+          'category': 'lecture',
+        },
+        {
+          'id': 'f-120414-2',
+          'courseId': '120414',
+          'name': 'Sorting Algorithms.pptx',
+          'extensionLabel': 'PPTX',
+          'sizeLabel': '5.1 MB',
+          'uploadedAtLabel': 'May 10, 2024',
+          'category': 'lecture',
+        },
+        {
+          'id': 'f-120414-3',
+          'courseId': '120414',
+          'name': 'Midterm Review.pdf',
+          'extensionLabel': 'PDF',
+          'sizeLabel': '1.9 MB',
+          'uploadedAtLabel': 'May 7, 2024',
+          'category': 'exam',
+        },
+      ],
+    },
+    '132120': {
+      'summary': {
+        'averageAttendanceLabel': '91%',
+        'assignmentsCount': 2,
+        'filesCount': 2,
+      },
+      'upcomingLecture': {
+        'title': 'Lecture 8 - Derivatives',
+        'dateLabel': 'May 18, 2024',
+        'timeLabel': '12:00 PM - 1:30 PM',
+        'locationLabel': 'Math Hall / Room 105',
+      },
+      'files': [
+        {
+          'id': 'f-132120-1',
+          'courseId': '132120',
+          'name': 'Worksheet 3.docx',
+          'extensionLabel': 'DOCX',
+          'sizeLabel': '840 KB',
+          'uploadedAtLabel': 'May 13, 2024',
+          'category': 'assignment',
+        },
+        {
+          'id': 'f-132120-2',
+          'courseId': '132120',
+          'name': 'Limits Review.pdf',
+          'extensionLabel': 'PDF',
+          'sizeLabel': '1.3 MB',
+          'uploadedAtLabel': 'May 9, 2024',
+          'category': 'lecture',
+        },
+      ],
+    },
+  };
+// route call is : GET https://api.unidesk.local/courses/{courseId}/{lectureId}/students
+  static final Map<String, List<Map<String, dynamic>>> _courseStudents = {
+    '120414::1': [
+      {
+        'id': '2021001',
+        'name': 'Mousab Al-Ahmad',
+        'email': 'mousab.ahmad@aabu.edu.jo',
+        'absences': 2,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+      {
+        'id': '2021002',
+        'name': 'Sara Al-Khalidi',
+        'email': 'sara.khalidi@aabu.edu.jo',
+        'absences': 0,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+      {
+        'id': '2021003',
+        'name': 'Ahmad Al-Zoubi',
+        'email': 'ahmad.zoubi@aabu.edu.jo',
+        'absences': 4,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+      {
+        'id': '2021004',
+        'name': 'Lina Haddad',
+        'email': 'lina.haddad@aabu.edu.jo',
+        'absences': 1,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+    ],
+    '132120::3': [
+      {
+        'id': '2021010',
+        'name': 'Omar Nasser',
+        'email': 'omar.nasser@aabu.edu.jo',
+        'absences': 0,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+      {
+        'id': '2021011',
+        'name': 'Rana Saleh',
+        'email': 'rana.saleh@aabu.edu.jo',
+        'absences': 3,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+      {
+        'id': '2021012',
+        'name': 'Yousef Haddad',
+        'email': 'yousef.haddad@aabu.edu.jo',
+        'absences': 1,
+        'status': 'enrolled',
+        'isPresent': false,
+      },
+    ],
+  };
+
   // Auth
   // POST https://api.unidesk.local/auth/login  body: { "userId": "...", "password": "..." }
 static Future<Map<String, dynamic>> login(
@@ -298,67 +463,163 @@ static Future<Map<String, dynamic>> login(
 // GET https://api.unidesk.local/courses/{instructorId}
 
 static Future<Map<String, dynamic>> getInstructorCourses(String instructorId) async {
+  final courses = _instructorCourses[instructorId];
+  if (courses == null) {
+    return {
+      'success': false,
+      'message': 'No courses found for instructor',
+    };
+  }
+
   return {
     'success': true,
-    'data': [
-      {
-        'id': '120414',
-        'name': 'Introduction to Programming',
-        'credits': 3,
-        'studentsEnrolled': 120,
-        'lectureId':'1'
-      },
-      {
-        'id': '132120',
-        'name': 'Calculus I',
-        'credits': 3,
-        'studentsEnrolled': 80,
-        'lectureId':'3'
-      },
-    ],
+    'data': courses.map((course) => Map<String, dynamic>.from(course)).toList(),
+  };
+}
+
+static Future<Map<String, dynamic>> getInstructorCourseDetails({
+  required String instructorId,
+  required String courseId,
+}) async {
+  final courses = _instructorCourses[instructorId];
+  if (courses == null) {
+    return {
+      'success': false,
+      'message': 'No courses found for instructor',
+    };
+  }
+
+  Map<String, dynamic>? course;
+  for (final item in courses) {
+    if (item['id']?.toString() == courseId) {
+      course = Map<String, dynamic>.from(item);
+      break;
+    }
+  }
+
+  if (course == null) {
+    return {
+      'success': false,
+      'message': 'Course details not found',
+    };
+  }
+
+  final lectureId = course['lectureId']?.toString() ?? '';
+  final rosterKey = _courseRosterKey(courseId, lectureId);
+  final students = _courseStudents[rosterKey] ?? const [];
+  final details = _instructorCourseDetails[courseId];
+  if (details == null) {
+    return {
+      'success': false,
+      'message': 'Course details not found',
+    };
+  }
+
+  return {
+    'success': true,
+    'data': {
+      'course': course,
+      'summary': Map<String, dynamic>.from(details['summary'] ?? const {}),
+      'upcomingLecture': Map<String, dynamic>.from(
+        details['upcomingLecture'] ?? const {},
+      ),
+      'files': List<Map<String, dynamic>>.from(details['files'] ?? const []),
+      'students': students
+          .map((student) => Map<String, dynamic>.from(student))
+          .toList(),
+    },
+  };
+}
+
+static Future<Map<String, dynamic>> uploadInstructorCourseFile({
+  required String instructorId,
+  required String courseId,
+  required String fileName,
+  required String category,
+  required String extensionLabel,
+  String? localPath,
+}) async {
+  final courses = _instructorCourses[instructorId];
+  if (courses == null) {
+    return {
+      'success': false,
+      'message': 'No courses found for instructor',
+    };
+  }
+
+  final belongsToInstructor = courses.any(
+    (course) => course['id']?.toString() == courseId,
+  );
+  if (!belongsToInstructor) {
+    return {
+      'success': false,
+      'message': 'Course details not found',
+    };
+  }
+
+  final details = _instructorCourseDetails[courseId];
+  if (details == null) {
+    return {
+      'success': false,
+      'message': 'Course details not found',
+    };
+  }
+
+  final files = List<Map<String, dynamic>>.from(details['files'] ?? const []);
+  final now = DateTime.now();
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  final normalizedExtension = extensionLabel.toUpperCase();
+  final newFile = <String, dynamic>{
+    'id': 'f-$courseId-${files.length + 1}-${now.millisecondsSinceEpoch}',
+    'courseId': courseId,
+    'name': fileName,
+    'extensionLabel': normalizedExtension,
+    'sizeLabel': normalizedExtension == 'PPTX' ? '4.8 MB' : '1.2 MB',
+    'uploadedAtLabel': '${monthNames[now.month - 1]} ${now.day}, ${now.year}',
+    'category': category,
+    'localPath': localPath,
+  };
+
+  files.insert(0, newFile);
+  details['files'] = files;
+
+  final summary = Map<String, dynamic>.from(details['summary'] ?? const {});
+  summary['filesCount'] = files.length;
+  details['summary'] = summary;
+
+  return {
+    'success': true,
+    'data': newFile,
   };
 }
 // GET https://api.unidesk.local/courses/{courseId}/{lectureId}/students
 static Future<Map<String, dynamic>> getCourseStudents(String courseId, String lectureId) async {
+  final rosterKey = _courseRosterKey(courseId, lectureId);
+  final students = _courseStudents[rosterKey];
+  if (students == null) {
+    return {
+      'success': false,
+      'message': 'No students found for this lecture',
+    };
+  }
+
   return {
     'success': true,
-    'data': [
-      {
-        'id': '2021001',
-        'name': 'Mousab Al-Ahmad',
-        'email': 'mousab.ahmad@aabu.edu.jo',
-        'absences': 2,
-        'status': 'enrolled',
-      },
-      {
-        'id': '2021002',
-        'name': 'Sara Al-Khalidi',
-        'email': 'sara.khalidi@aabu.edu.jo',
-        'absences': 0,
-        'status': 'enrolled',
-      },
-      {
-        'id': '2021003',
-        'name': 'Ahmad Al-Zoubi',
-        'email': 'ahmad.zoubi@aabu.edu.jo',
-        'absences': 4,
-        'status': 'enrolled',
-      },
-      {
-        'id': '2021004',
-        'name': 'Lina Haddad',
-        'email': 'lina.haddad@aabu.edu.jo',
-        'absences': 1,
-        'status': 'enrolled',
-      },
-      {
-        'id': '2021005',
-        'name': 'Omar Nasser',
-        'email': 'omar.nasser@aabu.edu.jo',
-        'absences': 0,
-        'status': 'enrolled',
-      },
-    ],
+    'data': students.map((student) => Map<String, dynamic>.from(student)).toList(),
   };
 }
  
@@ -374,6 +635,16 @@ static Future<Map<String, dynamic>> startAttendanceSession({
   required String courseId,
   required String lectureId,
 }) async {
+final rosterKey = _courseRosterKey(courseId, lectureId);
+  final students = _courseStudents[rosterKey];
+  if (students == null) {
+    return {'success': false, 'message': 'Lecture roster not found'};
+  }
+
+  for (final student in students) {
+    student['isPresent'] = false;
+  }
+
   final token = _generateToken();
   final expiresAt = DateTime.now().add(const Duration(minutes: 10));
 
@@ -383,6 +654,7 @@ static Future<Map<String, dynamic>> startAttendanceSession({
     'lectureId': lectureId,
     'expiresAt': expiresAt.toIso8601String(),
     'isActive': true,
+    'rosterKey': rosterKey,
   };
 
   return {
@@ -433,12 +705,31 @@ static Future<Map<String, dynamic>> registerAttendance({
     return {'success': false, 'message': 'Invalid course'};
   }
 
+  final rosterKey = session['rosterKey']?.toString() ?? '';
+  final students = _courseStudents[rosterKey];
+  if (students == null) {
+    return {'success': false, 'message': 'Lecture roster not found'};
+  }
+
+  Map<String, dynamic>? matchedStudent;
+  for (final student in students) {
+    if (student['id']?.toString() == studentId) {
+      matchedStudent = student;
+      break;
+    }
+  }
+
+  if (matchedStudent == null) {
+    return {'success': false, 'message': 'Student is not enrolled in this lecture'};
+  }
+
   final attendanceKey = '$studentId-$token';
   if (_attendedStudents.contains(attendanceKey)) {
     return {'success': false, 'message': 'Already registered'};
   }
 
   _attendedStudents.add(attendanceKey);
+  matchedStudent['isPresent'] = true;
 
   return {
     'success': true,
@@ -453,6 +744,10 @@ static Future<Map<String, dynamic>> registerAttendance({
 }
 
 // HELPER
+static String _courseRosterKey(String courseId, String lectureId) {
+  return '$courseId::$lectureId';
+}
+
 static String _generateToken() {
   const chars =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

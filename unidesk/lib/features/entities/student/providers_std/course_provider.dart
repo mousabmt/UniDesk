@@ -13,7 +13,6 @@ class CoursesProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// Fetches only if data isn't already cached.
   Future<void> loadIfNeeded() async {
     if (_courses != null && _academicProgress != null) return;
 

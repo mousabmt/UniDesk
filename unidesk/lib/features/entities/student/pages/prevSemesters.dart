@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
+
 import '../providers_std/prevSemesters_provider.dart';
 
 class Prevsemesters extends StatelessWidget {
@@ -28,8 +29,10 @@ class Prevsemesters extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(provider.error!,
-                        style: const TextStyle(color: Colors.red)),
+                    Text(
+                      provider.error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () =>
@@ -41,9 +44,9 @@ class Prevsemesters extends StatelessWidget {
               );
             }
 
-            final semesters = provider.completedCourses?['completed_courses']
-                    as List<dynamic>? ??
-                [];
+            final semesters =
+                provider.completedCourses?['completed_courses'] as List<dynamic>? ??
+                    const [];
 
             if (semesters.isEmpty) {
               return Center(child: Text(lang.translate('no_courses')));
@@ -57,10 +60,11 @@ class Prevsemesters extends StatelessWidget {
                 itemCount: semesters.length,
                 itemBuilder: (context, i) {
                   final semester = semesters[i] as Map<String, dynamic>;
-                  final courses =
-                      semester['courses'] as List<dynamic>? ?? [];
+                  final courses = semester['courses'] as List<dynamic>? ?? const [];
                   return _SemesterSection(
-                      semester: semester, courses: courses);
+                    semester: semester,
+                    courses: courses,
+                  );
                 },
               ),
             );
@@ -72,10 +76,13 @@ class Prevsemesters extends StatelessWidget {
 }
 
 class _SemesterSection extends StatelessWidget {
+  const _SemesterSection({
+    required this.semester,
+    required this.courses,
+  });
+
   final Map<String, dynamic> semester;
   final List<dynamic> courses;
-
-  const _SemesterSection({required this.semester, required this.courses});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +90,6 @@ class _SemesterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Semester header
         Padding(
           padding: const EdgeInsets.only(bottom: 10, top: 6),
           child: Row(
@@ -120,8 +126,6 @@ class _SemesterSection extends StatelessWidget {
             ],
           ),
         ),
-
-        // Courses card
         Container(
           decoration: BoxDecoration(
             color: Colors.white,

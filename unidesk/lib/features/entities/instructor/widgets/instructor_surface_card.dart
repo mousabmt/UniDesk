@@ -5,6 +5,10 @@ class InstructorSurfaceCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double radius;
   final Color color;
+  final Color? borderColor;
+  final double blurRadius;
+  final Offset shadowOffset;
+  final Color shadowColor;
 
   const InstructorSurfaceCard({
     super.key,
@@ -12,6 +16,10 @@ class InstructorSurfaceCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.radius = 16,
     this.color = Colors.white,
+    this.borderColor,
+    this.blurRadius = 4,
+    this.shadowOffset = const Offset(0, 2),
+    this.shadowColor = const Color(0x12000000),
   });
 
   @override
@@ -21,11 +29,12 @@ class InstructorSurfaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: const [
+        border: borderColor == null ? null : Border.all(color: borderColor!),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
+            color: shadowColor,
+            blurRadius: blurRadius,
+            offset: shadowOffset,
           ),
         ],
       ),

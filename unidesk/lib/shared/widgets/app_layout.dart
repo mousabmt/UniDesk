@@ -7,6 +7,7 @@ class AppLayout extends StatelessWidget {
   final int currentIndex;
   final bool showAppBar;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final ValueChanged<int>? onNavTap;
 
   const AppLayout({
     super.key,
@@ -14,6 +15,7 @@ class AppLayout extends StatelessWidget {
     required this.currentIndex,
     this.showAppBar = true,
     this.navigatorKey,
+    this.onNavTap,
   });
 
   @override
@@ -25,7 +27,10 @@ class AppLayout extends StatelessWidget {
             )
           : null,
       body: child,
-      bottomNavigationBar: AppFooter(currentIndex: currentIndex),
+      bottomNavigationBar: AppFooter(
+        currentIndex: currentIndex,
+        onTap: onNavTap,
+      ),
     );
   }
 }

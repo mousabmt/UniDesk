@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
+
 import '../../core/constants/constants.dart';
 import '../../features/language/langProvider.dart';
 
 class AppFooter extends StatelessWidget {
   final int currentIndex;
+  final ValueChanged<int>? onTap;
 
-  const AppFooter({super.key, required this.currentIndex});
+  const AppFooter({
+    super.key,
+    required this.currentIndex,
+    this.onTap,
+  });
 
   void _onTabTapped(BuildContext context, int index, bool isStudent) {
     if (index == currentIndex) return;
@@ -22,80 +28,94 @@ class AppFooter extends StatelessWidget {
 
     final instructorRoutes = {
       0: '/instructor/home',
-      1: '/instructor/files',         // ✅ كان instructor/courses - غلط
+      1: '/instructor/files',
       2: '/instructor/attendance',
-      3: '/instructor/assignments-list', // ✅ كان instructor/assignments - غلط
-      4: '/instructor/profile',       // ✅ كان instructor/more - غلط
+      3: '/instructor/assignments-list',
+      4: '/instructor/profile',
     };
 
     final routes = isStudent ? studentRoutes : instructorRoutes;
     final route = routes[index];
     if (route == null) return;
 
-    // ✅ شيلنا الـ context.pop() - context.go() يكفي
     context.go(route);
   }
 
   @override
   Widget build(BuildContext context) {
-    final lang = Provider.of<LangProvider>(context);
-    final auth = Provider.of<AuthProvider>(context);
+    final isStudent = context.select<AuthProvider, bool>((auth) => auth.isStudent);
+    final homeLabel = context.select<LangProvider, String>((lang) => lang.translate('home'));
+    final coursesLabel = context.select<LangProvider, String>((lang) => lang.translate('courses'));
+    final scheduleLabel = context.select<LangProvider, String>((lang) => lang.translate('schedule'));
+    final attendanceLabel =
+        context.select<LangProvider, String>((lang) => lang.translate('attendance'));
+    final assignmentsLabel =
+        context.select<LangProvider, String>((lang) => lang.translate('assignments'));
+    final profileLabel = context.select<LangProvider, String>((lang) => lang.translate('profile'));
+    final moreLabel = context.select<LangProvider, String>((lang) => lang.translate('more'));
 
     return BottomNavigationBar(
       currentIndex: currentIndex,
-      onTap: (index) => _onTabTapped(context, index, auth.isStudent),
+      onTap: (index) {
+        if (index == currentIndex) return;
+        if (onTap != null) {
+          onTap!(index);
+          return;
+        }
+        _onTabTapped(context, index, isStudent);
+      },
       backgroundColor: AppColors.primaryBlue,
       selectedItemColor: AppColors.primaryGold,
       unselectedItemColor: AppColors.black,
       type: BottomNavigationBarType.fixed,
-      items: auth.isStudent
+      items: isStudent
           ? [
               BottomNavigationBarItem(
                 icon: const Icon(Icons.home_outlined),
                 activeIcon: const Icon(Icons.home),
-                label: lang.translate('home'),
+                label: homeLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.book_outlined),
                 activeIcon: const Icon(Icons.book),
-                label: lang.translate('courses'),
+                label: coursesLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.calendar_today_outlined),
                 activeIcon: const Icon(Icons.calendar_today),
-                label: lang.translate('schedule'),
+                label: scheduleLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.person_outline),
                 activeIcon: const Icon(Icons.person),
-                label: lang.translate('profile'),
+                label: profileLabel,
               ),
             ]
           : [
               BottomNavigationBarItem(
                 icon: const Icon(Icons.home_outlined),
                 activeIcon: const Icon(Icons.home),
-                label: lang.translate('home'),
+                label: homeLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.grid_view_outlined),
                 activeIcon: const Icon(Icons.grid_view),
-                label: lang.translate('courses'),
+                label: coursesLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.calendar_today_outlined),
                 activeIcon: const Icon(Icons.calendar_today),
-                label: lang.translate('attendance'),
+                label: attendanceLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.assignment_outlined),
                 activeIcon: const Icon(Icons.assignment),
-                label: lang.translate('assignments'),
+                label: assignmentsLabel,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.menu),
                 activeIcon: const Icon(Icons.menu_open),
-                label: lang.translate('more'),
+                label: moreLabel,
               ),
             ],
     );
