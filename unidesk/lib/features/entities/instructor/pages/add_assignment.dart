@@ -1,58 +1,61 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/instructor/assignments/models/assignment_attachment.dart';
+import 'package:unidesk/features/entities/instructor/assignments/models/create_assignment_request.dart';
+import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
+import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_card.dart';
+import 'package:unidesk/features/entities/instructor/widgets/instructor_wave_header_card.dart';
 
 class AddAssignmentPage extends StatefulWidget {
-  const AddAssignmentPage({super.key});
+  const AddAssignmentPage({
+    super.key,
+    this.initialCourseId,
+    this.lockCourseSelection = false,
+  });
+
+  final String? initialCourseId;
+  final bool lockCourseSelection;
 
   @override
   State<AddAssignmentPage> createState() => _AddAssignmentPageState();
 }
 
 class _AddAssignmentPageState extends State<AddAssignmentPage> {
-  static const Color kTeal = Color(0xFF2E9C9C);
+  static const Color kTeal = Color(0xff0bb4b1);
 
-  final _titleController = TextEditingController(text: 'Assignment 4');
-  final _descController = TextEditingController(
-      text: 'Please solve all the questions in the attached file.');
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _pointsController = TextEditingController(text: '100');
   final _instructionsController = TextEditingController();
 
-  String _selectedCourse = 'CS301 - Data Structures';
-  DateTime _dueDate = DateTime(2024, 5, 25);
+  DateTime? _dueDate;
+  AssignmentAttachment? _attachment;
+  bool _showValidationErrors = false;
 
-  Map<String, String>? _uploadedFile = {
-    'name': 'assignment_4.pdf',
-    'size': '2.4 MB',
-  };
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncRouteState());
+  }
 
-  final List<String> _courses = [
-    'CS301 - Data Structures',
-    'CS302 - Algorithms',
-    'CS401 - Operating Systems',
-    'CS402 - Networks',
-  ];
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dueDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: kTeal),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null) setState(() => _dueDate = picked);
+  @override
+  void didUpdateWidget(covariant AddAssignmentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialCourseId != widget.initialCourseId ||
+        oldWidget.lockCourseSelection != widget.lockCourseSelection) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncRouteState());
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _descController.dispose();
+    _descriptionController.dispose();
     _pointsController.dispose();
     _instructionsController.dispose();
     super.dispose();
@@ -60,269 +63,530 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF0F0),
-      // ✅ شيلنا _buildHeader و_buildBottomNav
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _label('Select Course'),
-              const SizedBox(height: 8),
-              _buildDropdown(),
-              const SizedBox(height: 20),
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final instructorName = context.select<AuthProvider, String>(
+      (auth) => auth.user?['name']?.toString() ?? 'Instructor',
+    );
 
-              _label('Title'),
-              const SizedBox(height: 8),
-              _buildTextField(_titleController, 'Assignment title'),
-              const SizedBox(height: 20),
+    return ColoredBox(
+      color: const Color(0xfff0f4f8),
+      child: SafeArea(
+        bottom: false,
+        child: Consumer<InstructorAssignmentsProvider>(
+          builder: (context, provider, _) {
+            final selectedCourse = provider.selectedCourse;
 
-              _label('Description'),
-              const SizedBox(height: 8),
-              _buildTextField(_descController, 'Enter description...', maxLines: 4),
-              const SizedBox(height: 20),
-
-              _label('Due Date'),
-              const SizedBox(height: 8),
-              _buildDateField(),
-              const SizedBox(height: 20),
-
-              _label('Attach File (Optional)'),
-              const SizedBox(height: 8),
-              _buildUploadButton(),
-              if (_uploadedFile != null) ...[
-                const SizedBox(height: 10),
-                _buildFileChip(),
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                InstructorWaveHeaderCard(
+                  compact: compact,
+                  minHeightCompact: 160,
+                  minHeightRegular: 130,
+                  leadingCompact: _InitialsAvatar(
+                    name: instructorName,
+                    radius: 36,
+                  ),
+                  leadingRegular: _InitialsAvatar(
+                    name: instructorName,
+                    radius: 40,
+                  ),
+                  content: _HeaderContent(
+                    title: 'Create Assignment',
+                    subtitle: selectedCourse == null
+                        ? 'Select a course, add instructions, and publish when ready.'
+                        : 'Publishing to ${selectedCourse.displayLabel}.',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (provider.coursesError != null && provider.courses.isEmpty)
+                  _InlineMessage(
+                    message: provider.coursesError!,
+                    color: Colors.red,
+                  )
+                else if (provider.isCoursesLoading && provider.courses.isEmpty)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  InstructorSurfaceCard(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionLabel('Select Course'),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            key: ValueKey(selectedCourse?.id),
+                            initialValue: selectedCourse?.id,
+                            decoration: _inputDecoration('Choose a course'),
+                            items: provider.courses
+                                .map(
+                                  (course) => DropdownMenuItem<String>(
+                                    value: course.id,
+                                    child: Text(course.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: provider.isCourseLocked
+                                ? null
+                                : (value) async {
+                                    if (value == null) {
+                                      return;
+                                    }
+                                    final instructorId =
+                                        context.read<AuthProvider>().userId ??
+                                        'D001';
+                                    await provider.selectCourse(
+                                      instructorId: instructorId,
+                                      courseId: value,
+                                    );
+                                  },
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return 'Please choose a course.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Title'),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: _inputDecoration('Assignment title'),
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return 'Please enter a title.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Description'),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _descriptionController,
+                            maxLines: 4,
+                            decoration: _inputDecoration(
+                              'Describe what students need to do',
+                            ),
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return 'Please enter a description.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Due Date'),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: _pickDate,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InputDecorator(
+                              decoration: _inputDecoration('Select a due date'),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _dueDate == null
+                                          ? 'Choose a due date'
+                                          : DateFormat(
+                                              'MMMM dd, yyyy',
+                                            ).format(_dueDate!),
+                                      style: TextStyle(
+                                        color: _dueDate == null
+                                            ? Colors.grey.shade600
+                                            : const Color(0xff222222),
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_showValidationErrors && _dueDate == null)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Text(
+                                'Please choose a due date.',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Total Points'),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _pointsController,
+                            keyboardType: TextInputType.number,
+                            decoration: _inputDecoration('100'),
+                            validator: (value) {
+                              final points = int.tryParse((value ?? '').trim());
+                              if (points == null || points <= 0) {
+                                return 'Enter a valid points value.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Instructions'),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _instructionsController,
+                            maxLines: 4,
+                            decoration: _inputDecoration(
+                              'Optional notes for students',
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionLabel('Attachment'),
+                          const SizedBox(height: 8),
+                          _AttachmentPicker(
+                            attachment: _attachment,
+                            onPick: _pickAttachment,
+                            onRemove: () => setState(() => _attachment = null),
+                          ),
+                          if (provider.createError != null) ...[
+                            const SizedBox(height: 16),
+                            _InlineMessage(
+                              message: provider.createError!,
+                              color: Colors.red,
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kTeal,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: provider.isCreating
+                                  ? null
+                                  : () => _submitForm(provider),
+                              child: Text(
+                                provider.isCreating
+                                    ? 'Publishing...'
+                                    : 'Publish Assignment',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 30),
               ],
-              const SizedBox(height: 20),
-
-              _label('Total Points'),
-              const SizedBox(height: 8),
-              _buildTextField(_pointsController, '100',
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 20),
-
-              _label('Instructions (Optional)'),
-              const SizedBox(height: 8),
-              _buildTextField(
-                _instructionsController,
-                'Add any additional instructions for students...',
-                maxLines: 4,
-              ),
-              const SizedBox(height: 28),
-
-              _buildPublishButton(context), // ✅ أضفنا context
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _label(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF333333),
-        ),
-      );
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 5),
+      builder: (context, child) => Theme(
+        data: Theme.of(
+          context,
+        ).copyWith(colorScheme: const ColorScheme.light(primary: kTeal)),
+        child: child!,
+      ),
+    );
 
-  InputDecoration _inputDec(String hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kTeal, width: 1.5),
-        ),
-      );
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+    }
+  }
 
-  Widget _buildTextField(
-    TextEditingController controller,
-    String hint, {
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-  }) =>
-      TextField(
-        controller: controller,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        style: const TextStyle(fontSize: 14, color: Color(0xFF222222)),
-        decoration: _inputDec(hint),
-      );
+  Future<void> _pickAttachment() async {
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: false,
+      type: FileType.any,
+    );
 
-  Widget _buildDropdown() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: _selectedCourse,
-            isExpanded: true,
-            icon: const Icon(Icons.keyboard_arrow_down,
-                color: Color(0xFF444444)),
-            style:
-                const TextStyle(fontSize: 14, color: Color(0xFF222222)),
-            items: _courses
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: (v) => setState(() => _selectedCourse = v!),
-          ),
-        ),
-      );
+    if (!mounted || picked == null || picked.files.isEmpty) {
+      return;
+    }
 
-  Widget _buildDateField() => GestureDetector(
-        onTap: _pickDate,
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+    final file = picked.files.single;
+    final extension = (file.extension ?? file.name.split('.').last)
+        .toUpperCase();
+    setState(() {
+      _attachment = AssignmentAttachment(
+        id: '',
+        name: file.name,
+        extensionLabel: extension,
+        sizeLabel: _formatBytes(file.size),
+        localPath: file.path,
+      );
+    });
+  }
+
+  Future<void> _submitForm(InstructorAssignmentsProvider provider) async {
+    final formIsValid = _formKey.currentState?.validate() ?? false;
+    if (!formIsValid || _dueDate == null || provider.selectedCourse == null) {
+      setState(() => _showValidationErrors = true);
+      return;
+    }
+
+    setState(() => _showValidationErrors = false);
+
+    final request = CreateAssignmentRequest(
+      courseId: provider.selectedCourse!.id,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      dueDate: _dueDate!,
+      totalPoints: int.parse(_pointsController.text.trim()),
+      instructions: _instructionsController.text.trim().isEmpty
+          ? null
+          : _instructionsController.text.trim(),
+      attachment: _attachment,
+    );
+
+    final selectedCourseId = provider.selectedCourse!.id;
+    final success = await provider.createAssignment(request);
+    if (!mounted || !success) {
+      return;
+    }
+
+    context.goNamed(
+      'instructor-assignments-list',
+      queryParameters: <String, String>{
+        'courseId': selectedCourseId,
+        if (widget.lockCourseSelection) 'lockCourse': '1',
+      },
+      extra: 'Assignment created successfully.',
+    );
+  }
+
+  InputDecoration _inputDecoration(String hintText) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kTeal, width: 1.4),
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) {
+      return '0 B';
+    }
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    final kb = bytes / 1024;
+    if (kb < 1024) {
+      return '${kb.toStringAsFixed(1)} KB';
+    }
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _syncRouteState() async {
+    if (!mounted) {
+      return;
+    }
+    final instructorId = context.read<AuthProvider>().userId ?? 'D001';
+    await context.read<InstructorAssignmentsProvider>().loadIfNeeded(
+      instructorId: instructorId,
+      preferredCourseId: widget.initialCourseId,
+      lockCourseSelection: widget.lockCourseSelection,
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xff333333),
+      ),
+    );
+  }
+}
+
+class _HeaderContent extends StatelessWidget {
+  const _HeaderContent({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      ],
+    );
+  }
+}
+
+class _InitialsAvatar extends StatelessWidget {
+  const _InitialsAvatar({required this.name, required this.radius});
+
+  final String name;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final initials = parts.length > 1
+        ? '${parts.first[0]}${parts.last[0]}'
+        : (parts.isEmpty ? 'I' : parts.first[0]);
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xffe0f7f6),
+      child: Text(
+        initials.toUpperCase(),
+        style: TextStyle(
+          color: _AddAssignmentPageState.kTeal,
+          fontSize: radius * 0.45,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class _AttachmentPicker extends StatelessWidget {
+  const _AttachmentPicker({
+    required this.attachment,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final AssignmentAttachment? attachment;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    if (attachment == null) {
+      return OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: _AddAssignmentPageState.kTeal),
+          foregroundColor: _AddAssignmentPageState.kTeal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  DateFormat('MMMM dd, yyyy').format(_dueDate),
-                  style: const TextStyle(
-                      fontSize: 14, color: Color(0xFF222222)),
+        ),
+        onPressed: onPick,
+        icon: const Icon(Icons.attach_file),
+        label: const Text('Select File'),
+      );
+    }
+
+    return InstructorSurfaceCard(
+      radius: 12,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xffe8f8f7),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              attachment!.extensionLabel,
+              style: const TextStyle(
+                color: _AddAssignmentPageState.kTeal,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  attachment!.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-              ),
-              const Icon(Icons.calendar_today_outlined,
-                  size: 20, color: Color(0xFF555555)),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildUploadButton() => GestureDetector(
-        onTap: () {
-          setState(() {
-            _uploadedFile = {'name': 'assignment_4.pdf', 'size': '2.4 MB'};
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400, width: 1.2),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.attach_file, color: kTeal, size: 20),
-              SizedBox(width: 8),
-              Text('Upload File',
-                  style: TextStyle(
-                      color: kTeal,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15)),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildFileChip() => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE53935),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              alignment: Alignment.center,
-              child: const Text('PDF',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(
+                  attachment!.sizeLabel,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_uploadedFile!['name']!,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
-                  Text(_uploadedFile!['size']!,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade500)),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => _uploadedFile = null),
-              child: const Icon(Icons.close,
-                  size: 20, color: Color(0xFF555555)),
-            ),
-          ],
-        ),
-      );
+          ),
+          IconButton(onPressed: onRemove, icon: const Icon(Icons.close)),
+        ],
+      ),
+    );
+  }
+}
 
-  Widget _buildPublishButton(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: () {
-            // ✅ بعد النشر ارجع للـ assignments
-            context.go('/instructor/assignments-list');
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kTeal,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-          ),
-          child: const Text(
-            'Publish Assignment',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3),
-          ),
-        ),
-      );
+class _InlineMessage extends StatelessWidget {
+  const _InlineMessage({required this.message, required this.color});
+
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return InstructorSurfaceCard(
+      child: Text(message, style: TextStyle(color: color)),
+    );
+  }
 }

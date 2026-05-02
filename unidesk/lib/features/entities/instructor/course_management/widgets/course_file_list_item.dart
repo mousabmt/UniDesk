@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter/material.dart';
 import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_file.dart';
@@ -39,7 +41,38 @@ class CourseFileListItem extends StatelessWidget {
       return;
     }
 
-    final result = await OpenFilex.open(file.localPath!);
+    final localPath = file.localPath!;
+    final exists = await File(localPath).exists();
+    if (!context.mounted) {
+      return;
+    }
+
+    if (!exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'The selected file is no longer available on this device.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    OpenResult result;
+    try {
+      result = await OpenFilex.open(localPath);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open the selected file on this device.'),
+        ),
+      );
+      return;
+    }
+
     if (!context.mounted) {
       return;
     }

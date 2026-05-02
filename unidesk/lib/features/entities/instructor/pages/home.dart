@@ -27,7 +27,7 @@ class InstructorHomePage extends StatelessWidget {
               child: InstructorWaveHeaderCard(
                 compact: compact,
                 content: const InstructorHomeWelcomeText(
-                  name: 'Dr. Ahmad',
+                  name: 'Dr. Mousab',
                   subtitle: 'Welcome back,',
                   dateLabel: 'Tuesday, May 14, 2024',
                 ),

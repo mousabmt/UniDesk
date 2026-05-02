@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/widgets_std/courseWidgets/custom_card.dart';
 import 'package:unidesk/features/language/langProvider.dart';
-import 'package:unidesk/shared/widgets/app_layout.dart';
 
 import '../../../../shared/widgets/custom_tealBottom.dart';
 import '../../widgets_std/courseWidgets/custom_progessCard.dart';

@@ -5,9 +5,11 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
+import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_repository.dart';
+import 'package:unidesk/features/entities/instructor/assignments/data/mock_instructor_assignments_data_source.dart';
+import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
@@ -16,7 +18,6 @@ import 'package:unidesk/features/entities/instructor/course_management/data/inst
 import 'package:unidesk/features/entities/instructor/course_management/data/mock_instructor_courses_data_source.dart';
 import 'package:unidesk/features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/pages/Announcements.dart';
-import 'package:unidesk/features/entities/instructor/pages/Assignments.dart';
 import 'package:unidesk/features/entities/instructor/pages/Attendance_Report.dart';
 import 'package:unidesk/features/entities/instructor/pages/Messages.dart';
 import 'package:unidesk/features/entities/instructor/pages/Profile.dart';
@@ -24,6 +25,7 @@ import 'package:unidesk/features/entities/instructor/pages/Reports_Analytics.dar
 import 'package:unidesk/features/entities/instructor/pages/Schedule.dart';
 import 'package:unidesk/features/entities/instructor/pages/add_assignment.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
+import 'package:unidesk/features/entities/instructor/pages/assignments_page.dart';
 import 'package:unidesk/features/entities/instructor/pages/attendance_page.dart';
 import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
 import 'package:unidesk/features/entities/instructor/pages/home.dart';
@@ -84,6 +86,11 @@ void main() {
             MockInstructorCoursesDataSource(),
           ),
         ),
+        Provider<InstructorAssignmentsRepository>(
+          create: (_) => const InstructorAssignmentsRepositoryImpl(
+            MockInstructorAssignmentsDataSource(),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (context) =>
               AttendanceCoursesProvider(context.read<AttendanceRepository>()),
@@ -101,8 +108,14 @@ void main() {
             context.read<InstructorCoursesRepository>(),
           ),
         ),
+        ChangeNotifierProvider(
+          create: (context) => InstructorAssignmentsProvider(
+            context.read<InstructorAssignmentsRepository>(),
+            context.read<InstructorCoursesRepository>(),
+          ),
+        ),
       ],
-      builder: (_, __) => const MyApp(),
+      builder: (_, _) => const MyApp(),
     ),
   );
 }
@@ -167,12 +180,11 @@ class _MyAppState extends State<MyApp> {
           name: 'login',
           builder: (context, state) => const LoginPage(),
         ),
-        GoRoute(path: '/instructor', redirect: (_, __) => '/instructor/home'),
+        GoRoute(path: '/instructor', redirect: (_, _) => '/instructor/home'),
         StatefulShellRoute.indexedStack(
           redirect: (context, state) => _guardRoute(auth, 'student'),
-          builder: (context, state, navigationShell) => _StudentShellLayout(
-            navigationShell: navigationShell,
-          ),
+          builder: (context, state, navigationShell) =>
+              _StudentShellLayout(navigationShell: navigationShell),
           branches: [
             StatefulShellBranch(
               routes: [
@@ -217,7 +229,8 @@ class _MyAppState extends State<MyApp> {
           redirect: (context, state) => _guardRoute(auth, 'instructor'),
           builder: (context, state, navigationShell) => InstructorLayout(
             currentIndex: navigationShell.currentIndex,
-            onNavTap: (index) => navigationShell.goBranch(index),
+            onNavTap: (index) =>
+                navigationShell.goBranch(index, initialLocation: index == 3),
             child: navigationShell,
           ),
           branches: [
@@ -272,12 +285,21 @@ class _MyAppState extends State<MyApp> {
                 GoRoute(
                   path: '/instructor/assignments-list',
                   name: 'instructor-assignments-list',
-                  builder: (context, state) => const AssignmentsPage(),
+                  builder: (context, state) => AssignmentsPage(
+                    initialCourseId: state.uri.queryParameters['courseId'],
+                    lockCourseSelection:
+                        state.uri.queryParameters['lockCourse'] == '1',
+                    successMessage: state.extra as String?,
+                  ),
                 ),
                 GoRoute(
                   path: '/instructor/add-assignment',
                   name: 'instructor-add-assignment',
-                  builder: (context, state) => const AddAssignmentPage(),
+                  builder: (context, state) => AddAssignmentPage(
+                    initialCourseId: state.uri.queryParameters['courseId'],
+                    lockCourseSelection:
+                        state.uri.queryParameters['lockCourse'] == '1',
+                  ),
                 ),
                 GoRoute(
                   path: '/instructor/announcements',

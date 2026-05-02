@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_details.dart';
@@ -11,10 +12,7 @@ import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_
 import 'package:unidesk/shared/widgets/responsive_layout.dart';
 
 class CourseDetailsPage extends StatefulWidget {
-  const CourseDetailsPage({
-    super.key,
-    this.initialCourseId,
-  });
+  const CourseDetailsPage({super.key, this.initialCourseId});
 
   final String? initialCourseId;
 
@@ -147,7 +145,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 else if (_selectedTab == _CourseDetailsTab.files)
                   _FilesTab(files: details.files)
                 else if (_selectedTab == _CourseDetailsTab.assignments)
-                  _AssignmentsTab(files: details.files)
+                  _AssignmentsTab(
+                    courseId: details.course.id,
+                    files: details.files,
+                  )
                 else
                   _StudentsTab(students: details.students),
                 const SizedBox(height: 30),
@@ -195,10 +196,7 @@ class _CourseHeader extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 details.course.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 18),
               ),
               const SizedBox(height: 6),
               Text(
@@ -209,8 +207,9 @@ class _CourseHeader extends StatelessWidget {
           );
 
           final meta = Column(
-            crossAxisAlignment:
-                stackHeader ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+            crossAxisAlignment: stackHeader
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.end,
             children: [
               Icon(
                 Icons.folder_copy_outlined,
@@ -219,7 +218,10 @@ class _CourseHeader extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(20),
@@ -235,11 +237,7 @@ class _CourseHeader extends StatelessWidget {
           if (stackHeader) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                headerText,
-                const SizedBox(height: 12),
-                meta,
-              ],
+              children: [headerText, const SizedBox(height: 12), meta],
             );
           }
 
@@ -334,10 +332,7 @@ class _TabChip extends StatelessWidget {
 }
 
 class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({
-    required this.details,
-    required this.compact,
-  });
+  const _OverviewTab({required this.details, required this.compact});
 
   final InstructorCourseDetails details;
   final bool compact;
@@ -448,20 +443,67 @@ class _FilesTab extends StatelessWidget {
 }
 
 class _AssignmentsTab extends StatelessWidget {
-  const _AssignmentsTab({required this.files});
+  const _AssignmentsTab({required this.courseId, required this.files});
 
+  final String courseId;
   final List<InstructorCourseFile> files;
 
   @override
   Widget build(BuildContext context) {
     final assignmentFiles = files
-        .where((file) => file.category == InstructorCourseFileCategory.assignment)
+        .where(
+          (file) => file.category == InstructorCourseFileCategory.assignment,
+        )
         .toList();
 
-    return _FileSectionCard(
-      title: 'Assignment Materials',
-      files: assignmentFiles,
-      emptyMessage: 'No assignment files uploaded yet.',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Assignment Materials',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            TextButton(
+              onPressed: () => context.push(
+                '/instructor/assignments-list?courseId=$courseId&lockCourse=1',
+              ),
+              child: const Text(
+                'View Assignments',
+                style: TextStyle(color: Color(0xff0bb4b1)),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => context.push(
+                '/instructor/add-assignment?courseId=$courseId&lockCourse=1',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff0bb4b1),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('New Assignment'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _FileSectionCard(
+          title: 'Uploaded Assignment Files',
+          files: assignmentFiles,
+          emptyMessage: 'No assignment files uploaded yet.',
+        ),
+      ],
     );
   }
 }
@@ -547,10 +589,7 @@ class _FileSectionCard extends StatelessWidget {
 }
 
 class _LectureMetaRow extends StatelessWidget {
-  const _LectureMetaRow({
-    required this.icon,
-    required this.text,
-  });
+  const _LectureMetaRow({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -594,17 +633,11 @@ class _PageStateMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 15),
             ),
             if (actionLabel != null && onRetry != null) ...[
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: onRetry,
-                child: Text(actionLabel!),
-              ),
+              ElevatedButton(onPressed: onRetry, child: Text(actionLabel!)),
             ],
           ],
         ),

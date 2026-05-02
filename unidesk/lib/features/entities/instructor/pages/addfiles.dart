@@ -10,10 +10,7 @@ import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_
 import 'package:unidesk/features/entities/instructor/widgets/instructor_wave_header_card.dart';
 
 class AddFilesPage extends StatefulWidget {
-  const AddFilesPage({
-    super.key,
-    this.initialCourseId,
-  });
+  const AddFilesPage({super.key, this.initialCourseId});
 
   final String? initialCourseId;
 
@@ -66,17 +63,25 @@ class _AddFilesPageState extends State<AddFilesPage> {
                   minHeightRegular: 120,
                   waveWidthCompact: 110,
                   waveWidthRegular: 120,
-                  leadingCompact: _InstructorInitialsAvatar(name: instructorName, radius: 36),
-                  leadingRegular: _InstructorInitialsAvatar(name: instructorName, radius: 40),
+                  leadingCompact: _InstructorInitialsAvatar(
+                    name: instructorName,
+                    radius: 36,
+                  ),
+                  leadingRegular: _InstructorInitialsAvatar(
+                    name: instructorName,
+                    radius: 40,
+                  ),
                   content: _FilesGreetingText(
                     instructorName: instructorName,
-                    selectedCourseLabel: selectedCourse?.displayLabel ?? 'Choose a course',
+                    selectedCourseLabel:
+                        selectedCourse?.displayLabel ?? 'Choose a course',
                   ),
                 ),
                 const SizedBox(height: 20),
                 if (provider.isCoursesLoading && provider.courses.isEmpty)
                   const Center(child: CircularProgressIndicator())
-                else if (provider.coursesError != null && provider.courses.isEmpty)
+                else if (provider.coursesError != null &&
+                    provider.courses.isEmpty)
                   _InlineError(message: provider.coursesError!)
                 else ...[
                   const Text(
@@ -86,7 +91,10 @@ class _AddFilesPageState extends State<AddFilesPage> {
                   const SizedBox(height: 8),
                   InstructorSurfaceCard(
                     radius: 12,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: selectedCourse?.id,
@@ -127,23 +135,18 @@ class _AddFilesPageState extends State<AddFilesPage> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
-                        _CategoryRow(
-                    selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
-                  ),
+
                   const SizedBox(height: 20),
                   _UploadDropzone(
                     isUploading: provider.isUploading,
                     onUploadPressed: selectedCourse == null
                         ? null
                         : () => _pickAndUploadFile(
-                              context,
-                              instructorId:
-                                  context.read<AuthProvider>().userId ?? 'D001',
-                              provider: provider,
-                            ),
+                            context,
+                            instructorId:
+                                context.read<AuthProvider>().userId ?? 'D001',
+                            provider: provider,
+                          ),
                   ),
                   if (provider.uploadError != null) ...[
                     const SizedBox(height: 12),
@@ -164,8 +167,8 @@ class _AddFilesPageState extends State<AddFilesPage> {
                         onPressed: selectedCourse == null
                             ? null
                             : () => context.push(
-                                  '/instructor/course-details?courseId=${selectedCourse.id}',
-                                ),
+                                '/instructor/course-details?courseId=${selectedCourse.id}',
+                              ),
                         child: const Text(
                           'View Details',
                           style: TextStyle(color: Color(0xff0bb4b1)),
@@ -174,7 +177,16 @@ class _AddFilesPageState extends State<AddFilesPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (provider.isDetailsLoading && provider.currentCourseDetails == null)
+
+                  _CategoryRow(
+                    selectedCategory: _selectedCategory,
+                    onCategorySelected: (category) {
+                      setState(() => _selectedCategory = category);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  if (provider.isDetailsLoading &&
+                      provider.currentCourseDetails == null)
                     const Center(child: CircularProgressIndicator())
                   else if (provider.detailsError != null &&
                       provider.currentCourseDetails == null)
@@ -196,7 +208,11 @@ class _AddFilesPageState extends State<AddFilesPage> {
                             children: [
                               CourseFileListItem(file: file),
                               if (index < files.length - 1)
-                                const Divider(height: 1, indent: 16, endIndent: 16),
+                                const Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
                             ],
                           );
                         }),
@@ -302,10 +318,7 @@ class _FilesGreetingText extends StatelessWidget {
 }
 
 class _InstructorInitialsAvatar extends StatelessWidget {
-  const _InstructorInitialsAvatar({
-    required this.name,
-    required this.radius,
-  });
+  const _InstructorInitialsAvatar({required this.name, required this.radius});
 
   final String name;
   final double radius;
@@ -367,10 +380,7 @@ class _CourseMetaCard extends StatelessWidget {
 }
 
 class _MetaColumn extends StatelessWidget {
-  const _MetaColumn({
-    required this.label,
-    required this.value,
-  });
+  const _MetaColumn({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -380,15 +390,9 @@ class _MetaColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -419,7 +423,9 @@ class _CategoryRow extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onCategorySelected(item.value),
             child: Container(
-              margin: EdgeInsets.only(right: index < categories.length - 1 ? 8 : 0),
+              margin: EdgeInsets.only(
+                right: index < categories.length - 1 ? 8 : 0,
+              ),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected ? const Color(0xff0bb4b1) : Colors.white,
@@ -542,17 +548,9 @@ class _UploadFileDialogState extends State<_UploadFileDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              fileName,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text(fileName, style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text(
-              extensionLabel,
-              style: const TextStyle(color: Colors.grey),
-            ),
+            Text(extensionLabel, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
             DropdownButtonFormField<InstructorCourseFileCategory>(
               value: _category,
@@ -611,10 +609,7 @@ class _InlineError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InstructorSurfaceCard(
-      child: Text(
-        message,
-        style: const TextStyle(color: Colors.red),
-      ),
+      child: Text(message, style: const TextStyle(color: Colors.red)),
     );
   }
 }
