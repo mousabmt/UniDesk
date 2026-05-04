@@ -57,15 +57,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.all(8),
               child: const LangToggle(),
             ),
-      title: Text(
-        'UniDesk',
-        style: TextStyle(
-          color: AppColors.primaryBlue,
-          fontWeight: FontWeight.w700,
-          fontSize: AppSizes.fontMedium,
-        ),
-      ),
-      centerTitle: true,
+      
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),

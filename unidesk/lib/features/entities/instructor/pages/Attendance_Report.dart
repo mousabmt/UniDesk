@@ -247,8 +247,9 @@ class _AttendanceReportPageState extends State<AttendanceReportPage> {
   Widget _buildStudentRow(Map<String, dynamic> s) {
     final pct = s['pct'] as int;
     Color barColor = kTeal;
-    if (pct < 70) barColor = const Color(0xFFFF6B6B);
-    else if (pct < 80) barColor = const Color(0xFFF5A623);
+    if (pct < 70) {
+      barColor = const Color(0xFFFF6B6B);
+    } else if (pct < 80) barColor = const Color(0xFFF5A623);
 
     return Row(
       children: [

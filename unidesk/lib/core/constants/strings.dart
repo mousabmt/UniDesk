@@ -2,7 +2,7 @@ class AppStrings {
   static const Map<String, Map<String, String>> translations = {
     'en': {
       'login': 'Login',
-      'enter_id': 'Enter Your ID @st.aabu.edu.jo',
+      'enter_id': 'Enter your university email',
       'password': 'Password',
       'forgot_password': 'Forgot Password?',
       'welcome': 'Welcome to UniDesk',
@@ -12,7 +12,7 @@ class AppStrings {
       'please_login_again': 'Please login again.',
       'logout': 'Logout',
       'back_to_login': 'Back to login',
-      'please_enter_id_password': 'Please enter your ID and password.',
+      'please_enter_id_password': 'Please enter your email and password.',
       'home': 'Home',
       'courses': 'Courses',
       'schedule': 'Schedule',

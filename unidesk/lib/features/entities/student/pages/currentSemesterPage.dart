@@ -5,9 +5,21 @@ import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import '../providers_std/currentSem_provider.dart';
 
-class CurrentSemesterPage extends StatelessWidget {
+class CurrentSemesterPage extends StatefulWidget {
   const CurrentSemesterPage({super.key});
 
+  @override
+  State<CurrentSemesterPage> createState() => _CurrentSemesterPageState();
+}
+
+class _CurrentSemesterPageState extends State<CurrentSemesterPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CurrentSemesterProvider>().loadIfNeeded();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

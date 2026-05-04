@@ -53,11 +53,63 @@ class AppFooter extends StatelessWidget {
         context.select<LangProvider, String>((lang) => lang.translate('assignments'));
     final profileLabel = context.select<LangProvider, String>((lang) => lang.translate('profile'));
     final moreLabel = context.select<LangProvider, String>((lang) => lang.translate('more'));
+    final items = isStudent
+        ? [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: homeLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.book_outlined),
+              activeIcon: const Icon(Icons.book),
+              label: coursesLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.calendar_today_outlined),
+              activeIcon: const Icon(Icons.calendar_today),
+              label: scheduleLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: profileLabel,
+            ),
+          ]
+        : [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: homeLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.grid_view_outlined),
+              activeIcon: const Icon(Icons.grid_view),
+              label: coursesLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.calendar_today_outlined),
+              activeIcon: const Icon(Icons.calendar_today),
+              label: attendanceLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.assignment_outlined),
+              activeIcon: const Icon(Icons.assignment),
+              label: assignmentsLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.menu),
+              activeIcon: const Icon(Icons.menu_open),
+              label: moreLabel,
+            ),
+          ];
+    final safeIndex =
+        currentIndex >= 0 && currentIndex < items.length ? currentIndex : 0;
 
     return BottomNavigationBar(
-      currentIndex: currentIndex,
+      currentIndex: safeIndex,
       onTap: (index) {
-        if (index == currentIndex) return;
+        if (index == safeIndex) return;
         if (onTap != null) {
           onTap!(index);
           return;
@@ -68,56 +120,7 @@ class AppFooter extends StatelessWidget {
       selectedItemColor: AppColors.primaryGold,
       unselectedItemColor: AppColors.black,
       type: BottomNavigationBarType.fixed,
-      items: isStudent
-          ? [
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.home_outlined),
-                activeIcon: const Icon(Icons.home),
-                label: homeLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.book_outlined),
-                activeIcon: const Icon(Icons.book),
-                label: coursesLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.calendar_today_outlined),
-                activeIcon: const Icon(Icons.calendar_today),
-                label: scheduleLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.person_outline),
-                activeIcon: const Icon(Icons.person),
-                label: profileLabel,
-              ),
-            ]
-          : [
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.home_outlined),
-                activeIcon: const Icon(Icons.home),
-                label: homeLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.grid_view_outlined),
-                activeIcon: const Icon(Icons.grid_view),
-                label: coursesLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.calendar_today_outlined),
-                activeIcon: const Icon(Icons.calendar_today),
-                label: attendanceLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.assignment_outlined),
-                activeIcon: const Icon(Icons.assignment),
-                label: assignmentsLabel,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.menu),
-                activeIcon: const Icon(Icons.menu_open),
-                label: moreLabel,
-              ),
-            ],
+      items: items,
     );
   }
 }

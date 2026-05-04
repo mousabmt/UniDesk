@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unidesk/core/services/mockApi.dart';
+import 'package:unidesk/core/services/student_api.dart';
 
 class AuthProvider extends ChangeNotifier {
   String? _token;
@@ -21,6 +21,8 @@ class AuthProvider extends ChangeNotifier {
 
   bool get isValidToken => _token != null && _token!.isNotEmpty;
   bool get isLoggedIn => isValidToken;
+  String? get _resolvedRole =>
+      (_role ?? _user?['role'])?.toString().toLowerCase();
 
   AuthProvider() {
     loadToken();
@@ -48,18 +50,19 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await MockApi.login(userId, password);
+      final result = await StudentApi.login(userId, password);
       final success = result['success'] == true;
 
       if (success) {
         final token = (result['token'] ?? '') as String;
-        _role = result['role']?.toString();
+        final responseUser = Map<String, dynamic>.from(result['user'] ?? {});
+        _role = result['role']?.toString() ?? responseUser['role']?.toString();
         if (token.isEmpty) {
           _errorMessage = 'Login succeeded but no token returned.';
         } else {
           _token = token;
-          _userId = result['user']?['id']?.toString() ?? userId;
-          _user = Map<String, dynamic>.from(result['user'] ?? {});
+          _userId = responseUser['id']?.toString() ?? userId;
+          _user = responseUser;
           if (_role != null) {
             _user!['role'] = _role;
           }
@@ -84,21 +87,23 @@ class AuthProvider extends ChangeNotifier {
     _token = null;
     _userId = null;
     _user = null;
+    _role = null;
     _isLoading = false;
     notifyListeners();
     return false;
   }
   // check is admin 
-  bool get isAdmin =>
-      (_role ?? _user?['role'])?.toString().toLowerCase() == 'admin';
+  bool get isAdmin => _resolvedRole == 'admin';
   // check is instructor
-  bool get isInstructor =>
-      (_role ?? _user?['role'])?.toString().toLowerCase() == 'instructor';
-  // default fallback: student role when not admin/instructor
-  bool get isStudent =>
-      (_role ?? _user?['role'])?.toString().toLowerCase() == 'student' ||
-      (!isAdmin && !isInstructor);
+  bool get isInstructor => _resolvedRole == 'instructor';
+  bool get isStudent => _resolvedRole == 'student';
   Future<void> logout() async {
+    try {
+      await StudentApi.logout(token: _token);
+    } catch (_) {
+      // Local cleanup still happens even if the backend logout call fails.
+    }
+
     _token = null;
     _userId = null;
     _user = null;

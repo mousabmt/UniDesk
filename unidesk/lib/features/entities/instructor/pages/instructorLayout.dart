@@ -20,9 +20,9 @@ class InstructorLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: currentIndex,
-      child: child,
       navigatorKey: navigatorKey,
       onNavTap: onNavTap,
+      child: child,
     );
   }
 }

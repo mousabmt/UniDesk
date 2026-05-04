@@ -553,7 +553,7 @@ class _UploadFileDialogState extends State<_UploadFileDialog> {
             Text(extensionLabel, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
             DropdownButtonFormField<InstructorCourseFileCategory>(
-              value: _category,
+              initialValue: _category,
               items: const [
                 DropdownMenuItem(
                   value: InstructorCourseFileCategory.lecture,

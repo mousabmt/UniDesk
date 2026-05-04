@@ -64,22 +64,12 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => LangProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(
-          create: (_) => ProfileProvider()..loadIfNeeded(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CoursesProvider()..loadIfNeeded(),
-        ),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => CoursesProvider()),
         ChangeNotifierProvider(create: (_) => AnnoucProvider()),
-        ChangeNotifierProvider(
-          create: (_) => PrevsemestersProvider()..loadIfNeeded(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CurrentSemesterProvider()..loadIfNeeded(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CalenderProvider()..loadIfNeeded(),
-        ),
+        ChangeNotifierProvider(create: (_) => PrevsemestersProvider()),
+        ChangeNotifierProvider(create: (_) => CurrentSemesterProvider()),
+        ChangeNotifierProvider(create: (_) => CalenderProvider()),
         Provider(create: (_) => AttendanceRepository()),
         Provider<InstructorCoursesRepository>(
           create: (_) => const InstructorCoursesRepositoryImpl(

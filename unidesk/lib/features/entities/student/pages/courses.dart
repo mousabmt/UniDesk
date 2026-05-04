@@ -8,8 +8,21 @@ import 'package:unidesk/features/language/langProvider.dart';
 import '../../../../shared/widgets/custom_tealBottom.dart';
 import '../../widgets_std/courseWidgets/custom_progessCard.dart';
 
-class CoursePage extends StatelessWidget {
+class CoursePage extends StatefulWidget {
   const CoursePage({super.key});
+
+  @override
+  State<CoursePage> createState() => _CoursePageState();
+}
+
+class _CoursePageState extends State<CoursePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CoursesProvider>().loadIfNeeded();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

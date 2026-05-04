@@ -7,8 +7,21 @@ import 'package:unidesk/shared/widgets/custom_tealIcon.dart';
 
 import '../providers_std/course_provider.dart';
 
-class GradesPage extends StatelessWidget {
+class GradesPage extends StatefulWidget {
   const GradesPage({super.key});
+
+  @override
+  State<GradesPage> createState() => _GradesPageState();
+}
+
+class _GradesPageState extends State<GradesPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CoursesProvider>().loadIfNeeded();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

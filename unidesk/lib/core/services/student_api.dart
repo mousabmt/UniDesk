@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentApi {
-  static const String _baseUrl = 'http://127.0.0.1:8001/api';
+  static const String _baseUrl = 'http://localhost:8000/api';
 
   static Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
@@ -24,30 +24,79 @@ class StudentApi {
     return prefs.getString('token');
   }
 
-  static Future<Map<String, dynamic>> login(String userId, String password) async {
+  static Future<dynamic> _decode(http.Response response) async {
+    if (response.body.isEmpty) {
+      return null;
+    }
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> login(
+    String userId,
+    String password,
+  ) async {
     final res = await http.post(
-      _uri('/auth/login/student'),
+      _uri('/login'),
       headers: _headers(),
       body: jsonEncode({
         'email': userId,
+        'userId': userId,
         'password': password,
       }),
     );
 
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode == 200) {
+    final body = await _decode(res);
+    if (body is Map<String, dynamic>) {
+      final data = body['data'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
+          : const <String, dynamic>{};
+      final nestedUser = data['user'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(data['user'] as Map<String, dynamic>)
+          : const <String, dynamic>{};
+      final topUser = body['user'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(body['user'] as Map<String, dynamic>)
+          : const <String, dynamic>{};
+      final user = nestedUser.isNotEmpty ? nestedUser : topUser;
+      final token = (body['token'] ??
+              body['access_token'] ??
+              data['token'] ??
+              data['access_token'] ??
+              '')
+          .toString();
+      final role =
+          (body['role'] ?? data['role'] ?? user['role'])?.toString();
+      final message = body['message']?.toString() ?? '';
+      final explicitSuccess = body['success'];
+      final inferredSuccess = res.statusCode >= 200 &&
+          res.statusCode < 300 &&
+          (token.isNotEmpty || message.toLowerCase().contains('success'));
+
       return {
-        'success': true,
-        'token': body['access_token'],
-        'role': body['role'],
-        'user': body['user'],
-      };
-    } else {
-      return {
-        'success': false,
-        'message': body['message'] ?? 'Login failed',
+        'success': explicitSuccess is bool ? explicitSuccess : inferredSuccess,
+        'token': token,
+        'role': role,
+        'user': user,
+        'message': message,
       };
     }
+
+    return {
+      'success': false,
+      'message': 'Unexpected login response (${res.statusCode})',
+    };
+  }
+
+  static Future<void> logout({String? token}) async {
+    token ??= await _readToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    await http.post(
+      _uri('/logout'),
+      headers: _headers(token: token),
+      body: jsonEncode(const <String, dynamic>{}),
+    );
   }
 
   static Future<List<Map<String, dynamic>>> getCourses({String? token}) async {
@@ -57,51 +106,31 @@ class StudentApi {
       headers: _headers(token: token),
     );
 
-    if (res.statusCode != 200) {
-      throw Exception('Courses request failed (${res.statusCode})');
+    final body = await _decode(res);
+    if (body is List) {
+      return body.map<Map<String, dynamic>>((e) {
+        return Map<String, dynamic>.from(e as Map);
+      }).toList();
     }
 
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final list = (body['courses'] as List?) ?? [];
-
-    return list
-        .map<Map<String, dynamic>>((e) {
-          final map = e as Map<String, dynamic>;
-          return {
-            'id': map['id']?.toString() ?? '',
-            'name': map['name']?.toString() ?? '',
-            'instructor': map['instructor']?.toString() ?? '',
-            'credits': map['credits'] ?? 0,
-            'grade': map['grade']?.toString() ?? 'N/A',
-            'absences': (map['absences'] ?? 0) is int
-                ? map['absences']
-                : int.tryParse(map['absences'].toString()) ?? 0,
-          };
-        })
-        .toList();
+    throw Exception('Courses request failed (${res.statusCode})');
   }
 
-  static Future<Map<String, dynamic>> getAcademicProgress({String? token}) async {
+  static Future<Map<String, dynamic>> getAcademicProgress({
+    String? token,
+  }) async {
     token ??= await _readToken();
     final res = await http.get(
       _uri('/student/academic-progress'),
       headers: _headers(token: token),
     );
 
-    if (res.statusCode != 200) {
-      throw Exception('Academic progress request failed (${res.statusCode})');
+    final body = await _decode(res);
+    if (body is Map<String, dynamic>) {
+      return body;
     }
 
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final completed = (body['completed_courses'] as List?) ?? [];
-
-    final normalized = completed.map<Map<String, dynamic>>((e) {
-      final map = Map<String, dynamic>.from(e as Map);
-      map.putIfAbsent('courses', () => <Map<String, dynamic>>[]);
-      return map;
-    }).toList();
-
-    return {'completed_courses': normalized};
+    throw Exception('Academic progress request failed (${res.statusCode})');
   }
 
   static Future<List<Map<String, dynamic>>> getSchedule({String? token}) async {
@@ -111,106 +140,66 @@ class StudentApi {
       headers: _headers(token: token),
     );
 
-    if (res.statusCode != 200) {
-      throw Exception('Schedule request failed (${res.statusCode})');
+    final body = await _decode(res);
+    if (body is List) {
+      return body.map<Map<String, dynamic>>((e) {
+        return Map<String, dynamic>.from(e as Map);
+      }).toList();
     }
 
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final list = (body['schedule'] as List?) ?? [];
-
-    final Map<String, List<Map<String, dynamic>>> grouped = {};
-
-    for (final raw in list) {
-      final item = raw as Map<String, dynamic>;
-      final day = _normalizeDay(item['day_of_week']?.toString());
-      grouped.putIfAbsent(day, () => []);
-
-      final instructorName = _formatInstructor(
-        item['instructor_first_name'],
-        item['instructor_last_name'],
-        item['instructor_email'],
-      );
-
-      grouped[day]!.add({
-        'id': item['course_code']?.toString() ?? '',
-        'name': item['course_name']?.toString() ?? '',
-        'time':
-            '${item['start_time'] ?? ''} - ${item['end_time'] ?? ''}'.trim(),
-        'room': _formatRoom(item['building'], item['room_code']),
-        'instructor': instructorName,
-      });
-    }
-
-    return grouped.entries
-        .map((e) => {
-              'day': e.key,
-              'courses': e.value,
-            })
-        .toList();
+    throw Exception('Schedule request failed (${res.statusCode})');
   }
 
   static Future<Map<String, dynamic>> getProfile({String? token}) async {
     token ??= await _readToken();
     final res = await http.get(
-      _uri('/student/profile'),
+      _uri('/profile'),
       headers: _headers(token: token),
     );
 
-    if (res.statusCode != 200) {
-      throw Exception('Profile request failed (${res.statusCode})');
+    final body = await _decode(res);
+    if (body is Map<String, dynamic>) {
+      return body;
     }
 
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    throw Exception('Profile request failed (${res.statusCode})');
   }
 
   static Future<List<Map<String, dynamic>>> getAds() async {
     final res = await http.get(_uri('/announcements'), headers: _headers());
-    if (res.statusCode != 200) {
-      throw Exception('Ads request failed (${res.statusCode})');
+    final body = await _decode(res);
+
+    if (body is List) {
+      return body.map<Map<String, dynamic>>((e) {
+        return Map<String, dynamic>.from(e as Map);
+      }).toList();
     }
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final list = (body['announcements'] as List?) ?? [];
-    
-    return list.map<Map<String, dynamic>>((e) {
-      final map = e as Map<String, dynamic>;
-      return {
-        'id': map['id']?.toString() ?? '',
-        'title': map['title']?.toString() ?? '',
-        'imageUrl': map['image_url']?.toString() ?? '',
-        'link': map['link']?.toString() ?? '',
-        'description': map['description']?.toString() ?? '',
-      };
-    }).toList();
+
+    throw Exception('Announcements request failed (${res.statusCode})');
   }
 
-  static String _normalizeDay(String? value) {
-    if (value == null || value.isEmpty) return 'Unknown';
-    final lower = value.toLowerCase();
-    if (lower.contains('sun')) return 'Sunday';
-    if (lower.contains('mon')) return 'Monday';
-    if (lower.contains('tue')) return 'Tuesday';
-    if (lower.contains('wed')) return 'Wednesday';
-    if (lower.contains('thu')) return 'Thursday';
-    if (lower.contains('fri')) return 'Friday';
-    if (lower.contains('sat')) return 'Saturday';
-    return value[0].toUpperCase() + value.substring(1);
-  }
+  static Future<Map<String, dynamic>> registerAttendance({
+    required String token,
+    required String courseId,
+  }) async {
+    final authToken = await _readToken();
+    final res = await http.post(
+      _uri('/attendance/register'),
+      headers: _headers(token: authToken),
+      body: jsonEncode({
+        'token': token,
+        'courseId': courseId,
+      }),
+    );
 
-  static String _formatRoom(dynamic building, dynamic room) {
-    final b = (building ?? '').toString().trim();
-    final r = (room ?? '').toString().trim();
-    if (b.isEmpty && r.isEmpty) return '';
-    if (b.isEmpty) return r;
-    if (r.isEmpty) return b;
-    return '$b / $r';
-  }
+    final body = await _decode(res);
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
 
-  static String _formatInstructor(dynamic first, dynamic last, dynamic email) {
-    final f = (first ?? '').toString().trim();
-    final l = (last ?? '').toString().trim();
-    final e = (email ?? '').toString().trim();
-    final name = [f, l].where((p) => p.isNotEmpty).join(' ');
-    if (name.isNotEmpty) return name;
-    return e.isNotEmpty ? e : 'N/A';
+    return {
+      'success': false,
+      'message': 'Unexpected attendance response (${res.statusCode})',
+    };
   }
 }

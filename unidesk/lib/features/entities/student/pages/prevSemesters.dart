@@ -6,8 +6,21 @@ import 'package:unidesk/shared/widgets/app_layout.dart';
 
 import '../providers_std/prevSemesters_provider.dart';
 
-class Prevsemesters extends StatelessWidget {
+class Prevsemesters extends StatefulWidget {
   const Prevsemesters({super.key});
+
+  @override
+  State<Prevsemesters> createState() => _PrevsemestersState();
+}
+
+class _PrevsemestersState extends State<Prevsemesters> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PrevsemestersProvider>().loadIfNeeded();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

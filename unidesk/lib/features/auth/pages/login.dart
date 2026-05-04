@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/constants.dart';
@@ -21,6 +22,10 @@ class _LoginPageState extends State<LoginPage> {
   final password = TextEditingController();
   bool _isPasswordVisible = false;
 
+  bool _looksLikeEmail(String value) {
+    return value.contains('@') && value.contains('.');
+  }
+
   @override
   void dispose() {
     userID.dispose();
@@ -40,10 +45,31 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    if (!_looksLikeEmail(enteredUser)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid university email.')),
+      );
+      return;
+    }
+
     final success =
         await context.read<AuthProvider>().login(enteredUser, enteredPass);
 
     if (!mounted) return;
+
+    if (success) {
+      final auth = context.read<AuthProvider>();
+      if (auth.isInstructor) {
+        context.go('/instructor/home');
+        return;
+      }
+      if (auth.isStudent) {
+        context.go('/');
+        return;
+      }
+      context.go('/unauthorized');
+      return;
+    }
 
     if (!success) {
       final error = context.read<AuthProvider>().errorMessage ??
@@ -136,6 +162,9 @@ class _LoginPageState extends State<LoginPage> {
                                       keyboardType: TextInputType.emailAddress,
                                       controller: userID,
                                       textInputAction: TextInputAction.next,
+                                      autofillHints: const [
+                                        AutofillHints.username,
+                                      ],
                                       decoration: InputDecoration(
                                         prefixIcon: const Icon(
                                           Icons.person_outline,
@@ -147,7 +176,6 @@ class _LoginPageState extends State<LoginPage> {
                                           fontFamily: 'PlusJakartaSans',
                                           fontWeight: FontWeight.w600,
                                         ),
-                                        suffixIcon: const Icon(Icons.check),
                                       ),
                                     ),
                                   ),
@@ -158,6 +186,9 @@ class _LoginPageState extends State<LoginPage> {
                                       controller: password,
                                       obscureText: !_isPasswordVisible,
                                       textInputAction: TextInputAction.done,
+                                      autofillHints: const [
+                                        AutofillHints.password,
+                                      ],
                                       onSubmitted: (_) {
                                         if (!auth.isLoading) {
                                           _handleLogin();

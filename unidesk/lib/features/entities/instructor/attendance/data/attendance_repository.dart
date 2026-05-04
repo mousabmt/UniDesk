@@ -1,4 +1,5 @@
 import 'package:unidesk/core/services/mockApi.dart';
+import 'package:unidesk/core/services/student_api.dart';
 import 'package:unidesk/features/entities/instructor/attendance/models/attendance_course.dart';
 import 'package:unidesk/features/entities/instructor/attendance/models/attendance_session.dart';
 import 'package:unidesk/features/entities/instructor/attendance/models/attendance_student.dart';
@@ -64,10 +65,9 @@ class AttendanceRepository {
     required String courseId,
     required String studentId,
   }) async {
-    final response = await MockApi.registerAttendance(
+    final response = await StudentApi.registerAttendance(
       token: token,
       courseId: courseId,
-      studentId: studentId,
     );
     if (response['success'] != true) {
       throw AttendanceRepositoryException(
