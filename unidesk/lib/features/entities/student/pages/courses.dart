@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/widgets_std/courseWidgets/custom_card.dart';
 import 'package:unidesk/features/language/langProvider.dart';
-
+import 'package:unidesk/features/auth/authProvider.dart';
 import '../../../../shared/widgets/custom_tealBottom.dart';
 import '../../widgets_std/courseWidgets/custom_progessCard.dart';
 
@@ -16,14 +16,14 @@ class CoursePage extends StatefulWidget {
 }
 
 class _CoursePageState extends State<CoursePage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CoursesProvider>().loadIfNeeded();
-    });
-  }
-
+@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final token = context.read<AuthProvider>().token;
+    context.read<CoursesProvider>().loadIfNeeded(token: token);
+  });
+}
   @override
   Widget build(BuildContext context) {
     final courseProvider = context.watch<CoursesProvider>();

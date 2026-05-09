@@ -10,7 +10,7 @@ class CurrentSemesterProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadIfNeeded() async {
+  Future<void> loadIfNeeded({String? token}) async {
     if (_schedule != null) return;
 
     _isLoading = true;
@@ -18,7 +18,7 @@ class CurrentSemesterProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _schedule = await StudentApi.getSchedule();
+      _schedule = await StudentApi.getSchedule(token: token);
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:unidesk/core/services/mockApi.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_data_source.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_repository.dart';
@@ -12,6 +14,7 @@ class MockInstructorCoursesDataSource implements InstructorCoursesDataSource {
   Future<InstructorCourseDetails> getCourseDetails({
     required String instructorId,
     required String courseId,
+    String? sectionId,
   }) async {
     final response = await MockApi.getInstructorCourseDetails(
       instructorId: instructorId,
@@ -37,9 +40,9 @@ class MockInstructorCoursesDataSource implements InstructorCoursesDataSource {
         response['message']?.toString() ?? 'Failed to load courses',
       );
     }
-    return List<Map<String, dynamic>>.from(response['data'] ?? const [])
-        .map(InstructorManagedCourse.fromMap)
-        .toList();
+    return List<Map<String, dynamic>>.from(
+      response['data'] ?? const [],
+    ).map(InstructorManagedCourse.fromMap).toList();
   }
 
   @override
@@ -50,6 +53,7 @@ class MockInstructorCoursesDataSource implements InstructorCoursesDataSource {
     required InstructorCourseFileCategory category,
     required String extensionLabel,
     String? localPath,
+    Uint8List? fileBytes,
   }) async {
     final response = await MockApi.uploadInstructorCourseFile(
       instructorId: instructorId,

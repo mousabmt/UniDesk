@@ -23,15 +23,26 @@ class AbsenceCard extends StatelessWidget {
       ),
       child: Column(
         children: List.generate(courses.length, (i) {
+          final course = courses[i];
           return AbsenceRow(
-            code: courses[i]['id'] as String,
-            name: courses[i]['name'] as String,
-            absences: courses[i]['absences'] as int,
+            code: course['id']?.toString() ?? '',
+            name: course['name']?.toString() ?? '',
+            absences: _toInt(course['absences']),
             showDivider: i < courses.length - 1,
           );
         }),
       ),
     );
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }
 

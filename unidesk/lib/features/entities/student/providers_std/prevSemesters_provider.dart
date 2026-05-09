@@ -10,7 +10,7 @@ class PrevsemestersProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadIfNeeded() async {
+  Future<void> loadIfNeeded({String? token}) async {
     if (_completedCourses != null) return;
 
     _isLoading = true;
@@ -18,7 +18,7 @@ class PrevsemestersProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _completedCourses = await StudentApi.getAcademicProgress();
+      _completedCourses = await StudentApi.getAcademicProgress(token: token);
     } catch (e) {
       _error = e.toString();
     } finally {

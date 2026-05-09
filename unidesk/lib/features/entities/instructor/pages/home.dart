@@ -53,31 +53,36 @@ class InstructorHomePage extends StatelessWidget {
                 final itemWidth = columns == 1
                     ? constraints.maxWidth
                     : (constraints.maxWidth - (spacing * (columns - 1))) /
-                        columns;
+                          columns;
 
                 return Wrap(
                   spacing: spacing,
                   runSpacing: spacing,
-                  children: [
-                    InstructorMetricCard(
-                      value: "2",
-                      label: "Lectures Today",
-                      valueColor: Colors.orange,
-                      compact: compact,
-                    ),
-                    InstructorMetricCard(
-                      value: "85%",
-                      label: "Today Attendance",
-                      valueColor: const Color(0xff0bb4b1),
-                      compact: compact,
-                    ),
-                    InstructorMetricCard(
-                      value: "24",
-                      label: "Students Absent",
-                      valueColor: Colors.red,
-                      compact: compact,
-                    ),
-                  ].map((card) => SizedBox(width: itemWidth, child: card)).toList(),
+                  children:
+                      [
+                            InstructorMetricCard(
+                              value: "2",
+                              label: "Lectures Today",
+                              valueColor: Colors.orange,
+                              compact: compact,
+                            ),
+                            InstructorMetricCard(
+                              value: "85%",
+                              label: "Today Attendance",
+                              valueColor: const Color(0xff0bb4b1),
+                              compact: compact,
+                            ),
+                            InstructorMetricCard(
+                              value: "24",
+                              label: "Students Absent",
+                              valueColor: Colors.red,
+                              compact: compact,
+                            ),
+                          ]
+                          .map(
+                            (card) => SizedBox(width: itemWidth, child: card),
+                          )
+                          .toList(),
                 );
               },
             ),
@@ -199,8 +204,8 @@ class _InstructorCourseHomeSectionState
           onTap: primary == null
               ? null
               : () => context.push(
-                    '/instructor/course-details?courseId=${primary.id}',
-                  ),
+                  '/instructor/course-details?courseId=${primary.selectionKey}',
+                ),
           child: InstructorCourseSummaryCard(
             primaryCode: primary?.id ?? 'Course',
             primaryTitle: primary?.name ?? 'No course data loaded yet',

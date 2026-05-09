@@ -14,8 +14,8 @@ import 'package:unidesk/features/entities/instructor/attendance/data/attendance_
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
+import 'package:unidesk/features/entities/instructor/course_management/data/api_instructor_courses_data_source.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_repository.dart';
-import 'package:unidesk/features/entities/instructor/course_management/data/mock_instructor_courses_data_source.dart';
 import 'package:unidesk/features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/pages/Announcements.dart';
 import 'package:unidesk/features/entities/instructor/pages/Attendance_Report.dart';
@@ -73,7 +73,7 @@ void main() {
         Provider(create: (_) => AttendanceRepository()),
         Provider<InstructorCoursesRepository>(
           create: (_) => const InstructorCoursesRepositoryImpl(
-            MockInstructorCoursesDataSource(),
+            ApiInstructorCoursesDataSource(),
           ),
         ),
         Provider<InstructorAssignmentsRepository>(

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:open_filex/open_filex.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment_attachment.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AssignmentAttachmentOpenResult {
   const AssignmentAttachmentOpenResult({
@@ -33,7 +34,7 @@ class AssignmentAttachmentOpener {
     }
 
     if (attachment.hasRemoteUrl) {
-      return _openTarget(attachment.url!);
+      return _openRemoteTarget(attachment.url!);
     }
 
     return const AssignmentAttachmentOpenResult(
@@ -59,6 +60,39 @@ class AssignmentAttachmentOpener {
       return const AssignmentAttachmentOpenResult(
         didOpen: false,
         message: 'Unable to open the selected attachment on this device.',
+      );
+    }
+  }
+
+  Future<AssignmentAttachmentOpenResult> _openRemoteTarget(
+    String target,
+  ) async {
+    final uri = Uri.tryParse(target);
+    if (uri == null) {
+      return const AssignmentAttachmentOpenResult(
+        didOpen: false,
+        message: 'The attachment link is invalid.',
+      );
+    }
+
+    try {
+      final didLaunch = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      );
+      if (didLaunch) {
+        return const AssignmentAttachmentOpenResult(didOpen: true);
+      }
+
+      return const AssignmentAttachmentOpenResult(
+        didOpen: false,
+        message: 'Unable to open the selected attachment.',
+      );
+    } catch (_) {
+      return const AssignmentAttachmentOpenResult(
+        didOpen: false,
+        message: 'Unable to open the selected attachment link.',
       );
     }
   }

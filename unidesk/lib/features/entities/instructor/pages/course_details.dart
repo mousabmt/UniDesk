@@ -91,7 +91,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 _CourseHeader(details: details),
                 const SizedBox(height: 20),
                 _CourseSwitcher(
-                  selectedCourseId: provider.selectedCourseId,
+                  selectedCourseKey: provider.selectedCourseKey,
                   courses: provider.courses,
                   onChanged: (courseId) async {
                     if (courseId == null) {
@@ -146,7 +146,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                   _FilesTab(files: details.files)
                 else if (_selectedTab == _CourseDetailsTab.assignments)
                   _AssignmentsTab(
-                    courseId: details.course.id,
+                    courseSelectionKey: details.course.selectionKey,
                     files: details.files,
                   )
                 else
@@ -256,12 +256,12 @@ class _CourseHeader extends StatelessWidget {
 
 class _CourseSwitcher extends StatelessWidget {
   const _CourseSwitcher({
-    required this.selectedCourseId,
+    required this.selectedCourseKey,
     required this.courses,
     required this.onChanged,
   });
 
-  final String? selectedCourseId;
+  final String? selectedCourseKey;
   final List<InstructorManagedCourse> courses;
   final ValueChanged<String?> onChanged;
 
@@ -272,12 +272,12 @@ class _CourseSwitcher extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: selectedCourseId,
+          value: selectedCourseKey,
           isExpanded: true,
           items: courses
               .map<DropdownMenuItem<String>>(
                 (course) => DropdownMenuItem<String>(
-                  value: course.id,
+                  value: course.selectionKey,
                   child: Text(course.displayLabel),
                 ),
               )
@@ -443,9 +443,12 @@ class _FilesTab extends StatelessWidget {
 }
 
 class _AssignmentsTab extends StatelessWidget {
-  const _AssignmentsTab({required this.courseId, required this.files});
+  const _AssignmentsTab({
+    required this.courseSelectionKey,
+    required this.files,
+  });
 
-  final String courseId;
+  final String courseSelectionKey;
   final List<InstructorCourseFile> files;
 
   @override
@@ -470,7 +473,7 @@ class _AssignmentsTab extends StatelessWidget {
           children: [
             TextButton(
               onPressed: () => context.push(
-                '/instructor/assignments-list?courseId=$courseId&lockCourse=1',
+                '/instructor/assignments-list?courseId=$courseSelectionKey&lockCourse=1',
               ),
               child: const Text(
                 'View Assignments',
@@ -479,7 +482,7 @@ class _AssignmentsTab extends StatelessWidget {
             ),
             ElevatedButton.icon(
               onPressed: () => context.push(
-                '/instructor/add-assignment?courseId=$courseId&lockCourse=1',
+                '/instructor/add-assignment?courseId=$courseSelectionKey&lockCourse=1',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff0bb4b1),

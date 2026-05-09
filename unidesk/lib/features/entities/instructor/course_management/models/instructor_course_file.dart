@@ -17,6 +17,7 @@ class InstructorCourseFile {
     required this.uploadedAtLabel,
     required this.category,
     this.localPath,
+    this.remoteUrl,
   });
 
   final String id;
@@ -27,8 +28,10 @@ class InstructorCourseFile {
   final String uploadedAtLabel;
   final InstructorCourseFileCategory category;
   final String? localPath;
+  final String? remoteUrl;
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
+  bool get hasRemoteFile => remoteUrl != null && remoteUrl!.isNotEmpty;
 
   Color get badgeColor {
     switch (extensionLabel.toUpperCase()) {
@@ -53,6 +56,7 @@ class InstructorCourseFile {
       uploadedAtLabel: map['uploadedAtLabel']?.toString() ?? '',
       category: _parseCategory(map['category']?.toString()),
       localPath: map['localPath']?.toString(),
+      remoteUrl: map['remoteUrl']?.toString() ?? map['download_url']?.toString(),
     );
   }
 

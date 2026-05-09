@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
@@ -79,10 +80,32 @@ class _AddFilesPageState extends State<AddFilesPage> {
                 ),
                 const SizedBox(height: 20),
                 if (provider.isCoursesLoading && provider.courses.isEmpty)
-                  const Center(child: CircularProgressIndicator())
+                  Column(
+                    children: [
+                      const Center(child: CircularProgressIndicator()),
+                      const SizedBox(height: 16),
+                      _CategoryRow(
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: (category) {
+                          setState(() => _selectedCategory = category);
+                        },
+                      ),
+                    ],
+                  )
                 else if (provider.coursesError != null &&
                     provider.courses.isEmpty)
-                  _InlineError(message: provider.coursesError!)
+                  Column(
+                    children: [
+                      _InlineError(message: provider.coursesError!),
+                      const SizedBox(height: 16),
+                      _CategoryRow(
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: (category) {
+                          setState(() => _selectedCategory = category);
+                        },
+                      ),
+                    ],
+                  )
                 else ...[
                   const Text(
                     'Select Course',
@@ -97,13 +120,13 @@ class _AddFilesPageState extends State<AddFilesPage> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: selectedCourse?.id,
+                        value: provider.selectedCourseKey,
                         hint: const Text('Choose a course'),
                         isExpanded: true,
                         items: provider.courses
                             .map(
                               (course) => DropdownMenuItem<String>(
-                                value: course.id,
+                                value: course.selectionKey,
                                 child: Text(course.displayLabel),
                               ),
                             )
@@ -135,6 +158,12 @@ class _AddFilesPageState extends State<AddFilesPage> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
+                  _CategoryRow(
+                    selectedCategory: _selectedCategory,
+                    onCategorySelected: (category) {
+                      setState(() => _selectedCategory = category);
+                    },
+                  ),
 
                   const SizedBox(height: 20),
                   _UploadDropzone(
@@ -167,7 +196,7 @@ class _AddFilesPageState extends State<AddFilesPage> {
                         onPressed: selectedCourse == null
                             ? null
                             : () => context.push(
-                                '/instructor/course-details?courseId=${selectedCourse.id}',
+                                '/instructor/course-details?courseId=${selectedCourse.selectionKey}',
                               ),
                         child: const Text(
                           'View Details',
@@ -175,14 +204,6 @@ class _AddFilesPageState extends State<AddFilesPage> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  _CategoryRow(
-                    selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
                   ),
                   const SizedBox(height: 8),
                   if (provider.isDetailsLoading &&
@@ -233,9 +254,11 @@ class _AddFilesPageState extends State<AddFilesPage> {
     required String instructorId,
     required InstructorCoursesProvider provider,
   }) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final picked = await FilePicker.platform.pickFiles(
       allowMultiple: false,
-      withData: false,
+      withData: true,
       type: FileType.any,
     );
 
@@ -245,7 +268,7 @@ class _AddFilesPageState extends State<AddFilesPage> {
 
     final selectedFile = picked.files.single;
     final result = await showDialog<_UploadRequest>(
-      context: context,
+      context: navigator.context,
       builder: (_) => _UploadFileDialog(file: selectedFile),
     );
 
@@ -253,19 +276,24 @@ class _AddFilesPageState extends State<AddFilesPage> {
       return;
     }
 
+    String? localPath;
+    if (!kIsWeb) {
+      localPath = selectedFile.path;
+    }
+
     final success = await provider.uploadCourseFile(
       instructorId: instructorId,
       fileName: result.fileName,
       category: result.category,
       extensionLabel: result.extensionLabel,
-      localPath: selectedFile.path,
+      localPath: localPath,
+      fileBytes: selectedFile.bytes,
     );
 
     if (!mounted) {
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(

@@ -10,7 +10,7 @@ class AnnoucProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadIfNeeded() async {
+  Future<void> loadIfNeeded({String? token}) async {
     if (_annouc != null) return;
 
     _isLoading = true;
@@ -27,8 +27,8 @@ class AnnoucProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({String? token}) async {
     _annouc = null;
-    await loadIfNeeded();
+    await loadIfNeeded(token: token);
   }
 }

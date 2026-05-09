@@ -10,15 +10,16 @@ class AttendanceCoursesProvider extends ChangeNotifier {
   List<AttendanceCourse> _courses = const [];
   bool _isLoading = false;
   String? _errorMessage;
-  String? _selectedCourseId;
+  String? _selectedCourseKey;
 
   List<AttendanceCourse> get courses => _courses;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String? get selectedCourseId => _selectedCourseId;
+  String? get selectedCourseId => selectedCourse?.id;
+  String? get selectedCourseKey => _selectedCourseKey;
   AttendanceCourse? get selectedCourse {
     for (final course in _courses) {
-      if (course.id == _selectedCourseId) {
+      if (course.matchesSelection(_selectedCourseKey)) {
         return course;
       }
     }
@@ -45,14 +46,11 @@ class AttendanceCoursesProvider extends ChangeNotifier {
 
     try {
       _courses = await _repository.getInstructorCourses(instructorId);
-      if (_selectedCourseId != null &&
-          !_courses.any((course) => course.id == _selectedCourseId)) {
-        _selectedCourseId = null;
-      }
+      _selectedCourseKey = _resolveSelectionKey(_selectedCourseKey);
     } on AttendanceRepositoryException catch (error) {
       _errorMessage = error.message;
       _courses = const [];
-      _selectedCourseId = null;
+      _selectedCourseKey = null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -60,7 +58,19 @@ class AttendanceCoursesProvider extends ChangeNotifier {
   }
 
   void selectCourse(String? courseId) {
-    _selectedCourseId = courseId;
+    _selectedCourseKey = _resolveSelectionKey(courseId);
     notifyListeners();
+  }
+
+  String? _resolveSelectionKey(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    for (final course in _courses) {
+      if (course.matchesSelection(value)) {
+        return course.selectionKey;
+      }
+    }
+    return null;
   }
 }

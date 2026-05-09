@@ -172,6 +172,7 @@ class MockApi {
   // Fields match the "Add Assignment" form:
   //   title, description, dueDate, attachedFile (optional),
   //   totalPoints, instructions (optional)
+  // curl : POST https://api.unidesk.local/courses/{courseId}/assignments
   static final Map<String, List<Map<String, dynamic>>> _courseAssignments = {
     '120414': [
       {
@@ -179,8 +180,8 @@ class MockApi {
         'courseId': '120414',
         'title': 'Assignment 1',
         'topic': 'Arrays & Linked Lists',
-        'description':
-            'Implement a singly linked list and an array-based stack.',
+        'sectionId': '1',
+        'description':'Implement a singly linked list and an array-based stack.',
         'dueDateLabel': 'May 20, 2024',
         'dueDate': '2024-05-20T23:59:00Z',
         'totalPoints': 100,
@@ -202,6 +203,7 @@ class MockApi {
         'courseId': '120414',
         'title': 'Assignment 2',
         'topic': 'Stacks & Queues',
+        'sectionId': '1',
         'description': 'Implement a queue using two stacks.',
         'dueDateLabel': 'May 28, 2024',
         'dueDate': '2024-05-28T23:59:00Z',

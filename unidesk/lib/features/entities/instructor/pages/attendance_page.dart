@@ -25,15 +25,19 @@ class _AttendancePageState extends State<AttendancePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
-          context.read<AttendanceCoursesProvider>().loadIfNeeded(
-            instructorId: auth.userId ?? '',
-          );
+      context.read<AttendanceCoursesProvider>().loadIfNeeded(
+        instructorId: auth.userId ?? '',
+      );
     });
   }
 
   Future<void> _refreshStudentsForSelectedCourse() async {
-    final selectedCourse = context.read<AttendanceCoursesProvider>().selectedCourse;
-    await context.read<AttendanceStudentsProvider>().refreshForCourse(selectedCourse);
+    final selectedCourse = context
+        .read<AttendanceCoursesProvider>()
+        .selectedCourse;
+    await context.read<AttendanceStudentsProvider>().refreshForCourse(
+      selectedCourse,
+    );
   }
 
   Future<void> _onCourseSelected(String? courseId) async {
@@ -48,7 +52,9 @@ class _AttendancePageState extends State<AttendancePage> {
 
   Future<void> _toggleSession() async {
     final sessionProvider = context.read<AttendanceSessionProvider>();
-    final selectedCourse = context.read<AttendanceCoursesProvider>().selectedCourse;
+    final selectedCourse = context
+        .read<AttendanceCoursesProvider>()
+        .selectedCourse;
     if (selectedCourse == null) {
       return;
     }
@@ -65,8 +71,9 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    final instructorName =
-        context.select<AuthProvider, String>((auth) => auth.user?['name']?.toString() ?? 'Instructor');
+    final instructorName = context.select<AuthProvider, String>(
+      (auth) => auth.user?['name']?.toString() ?? 'Instructor',
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xfff6f3f7),
@@ -111,10 +118,7 @@ class _AttendanceHeader extends StatelessWidget {
         children: [
           Text(
             'Hello $instructorName',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -124,11 +128,13 @@ class _AttendanceHeader extends StatelessWidget {
           const SizedBox(height: 18),
           Consumer<AttendanceCoursesProvider>(
             builder: (context, coursesProvider, _) {
-              if (coursesProvider.isLoading && coursesProvider.courses.isEmpty) {
+              if (coursesProvider.isLoading &&
+                  coursesProvider.courses.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (coursesProvider.errorMessage != null && coursesProvider.courses.isEmpty) {
+              if (coursesProvider.errorMessage != null &&
+                  coursesProvider.courses.isEmpty) {
                 return _InlineState(
                   icon: Icons.error_outline,
                   tone: const Color(0xffd36b6b),
@@ -142,11 +148,11 @@ class _AttendanceHeader extends StatelessWidget {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         isExpanded: true,
-                        value: coursesProvider.selectedCourseId,
+                        value: coursesProvider.selectedCourseKey,
                         hint: const Text('Select Course'),
                         items: coursesProvider.courses.map((course) {
                           return DropdownMenuItem<String>(
-                            value: course.id,
+                            value: course.selectionKey,
                             child: Text(course.displayLabel),
                           );
                         }).toList(),
@@ -158,7 +164,11 @@ class _AttendanceHeader extends StatelessWidget {
                   _SelectorBox(
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 10),
                         Text(_formatToday()),
                       ],
@@ -168,7 +178,11 @@ class _AttendanceHeader extends StatelessWidget {
                   _SelectorBox(
                     child: Row(
                       children: [
-                        const Icon(Icons.menu_book_outlined, size: 18, color: Colors.grey),
+                        const Icon(
+                          Icons.menu_book_outlined,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -241,8 +255,10 @@ class _AttendanceContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCourse =
-        context.select<AttendanceCoursesProvider, AttendanceCourse?>((provider) => provider.selectedCourse);
+    final selectedCourse = context
+        .select<AttendanceCoursesProvider, AttendanceCourse?>(
+          (provider) => provider.selectedCourse,
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,7 +308,8 @@ class _AttendanceContent extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (sessionProvider.hasError && sessionProvider.errorMessage != null) ...[
+                  if (sessionProvider.hasError &&
+                      sessionProvider.errorMessage != null) ...[
                     const SizedBox(height: 12),
                     _InlineState(
                       icon: Icons.error_outline,
@@ -300,7 +317,8 @@ class _AttendanceContent extends StatelessWidget {
                       message: sessionProvider.errorMessage!,
                     ),
                   ],
-                  if (sessionProvider.hasActiveSession && sessionProvider.currentSession != null) ...[
+                  if (sessionProvider.hasActiveSession &&
+                      sessionProvider.currentSession != null) ...[
                     const SizedBox(height: 18),
                     _SessionQrCard(sessionProvider: sessionProvider),
                   ],
@@ -670,10 +688,7 @@ class StudentAttendanceCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.grey),
-                ),
+                Text(subtitle, style: const TextStyle(color: Colors.grey)),
               ],
             ),
           ),
@@ -683,21 +698,21 @@ class StudentAttendanceCard extends StatelessWidget {
               color: student.isPresent
                   ? const Color(0xffd2f4f2)
                   : student.isAtRisk
-                      ? const Color(0xffffe6e6)
-                      : const Color(0xffeef2f5),
+                  ? const Color(0xffffe6e6)
+                  : const Color(0xffeef2f5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               student.isPresent
                   ? Icons.check
                   : student.isAtRisk
-                      ? Icons.warning_amber_rounded
-                      : Icons.close_rounded,
+                  ? Icons.warning_amber_rounded
+                  : Icons.close_rounded,
               color: student.isPresent
                   ? const Color(0xff0bb4b1)
                   : student.isAtRisk
-                      ? const Color(0xffd36b6b)
-                      : const Color(0xff7c8a96),
+                  ? const Color(0xffd36b6b)
+                  : const Color(0xff7c8a96),
             ),
           ),
         ],

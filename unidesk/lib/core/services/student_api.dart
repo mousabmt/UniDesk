@@ -1,22 +1,49 @@
 import 'dart:convert';
-
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentApi {
-  static const String _baseUrl = 'http://localhost:8000/api';
+  static const String _baseUrl = String.fromEnvironment(
+    'UNIDESK_API_BASE_URL',
+    defaultValue: 'https://anguished-ankle-footprint.ngrok-free.dev/api',
+  );
 
-  static Uri _uri(String path) => Uri.parse('$_baseUrl$path');
+  static final Uri _baseUri = Uri.parse(_baseUrl);
 
-  static Map<String, String> _headers({String? token}) {
+  static Uri _uri(String path, {Map<String, dynamic>? queryParameters}) {
+    return _baseUri.replace(
+      path: '${_baseUri.path}$path',
+      queryParameters: queryParameters?.map(
+        (key, value) => MapEntry(key, value?.toString()),
+      ),
+    );
+  }
+
+  static Map<String, String> _headers({
+    String? token,
+    String accept = 'application/json',
+    String? contentType = 'application/json',
+  }) {
     final headers = <String, String>{
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      'Accept': accept,
+      'ngrok-skip-browser-warning': 'true', // 👈 add this
+        'User-Agent': 'FlutterApp', // 👈 add this too
+
     };
+    if (contentType != null && contentType.isNotEmpty) {
+      headers['Content-Type'] = contentType;
+    }
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
     return headers;
+  }
+
+  static Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
   }
 
   static Future<String?> _readToken() async {
@@ -24,66 +51,140 @@ class StudentApi {
     return prefs.getString('token');
   }
 
+  static Future<String?> readToken() async => _readToken();
+
   static Future<dynamic> _decode(http.Response response) async {
     if (response.body.isEmpty) {
       return null;
     }
+
+    final contentType = response.headers['content-type'] ?? '';
+    if (!contentType.contains('application/json')) {
+      return response.body;
+    }
+
     return jsonDecode(response.body);
+  }
+
+  static String _messageFromBody(
+    dynamic body, {
+    String fallback = 'Request failed',
+  }) {
+    if (body is Map<String, dynamic>) {
+      final message = body['message']?.toString();
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+
+      final error = body['error']?.toString();
+      if (error != null && error.isNotEmpty) {
+        return error;
+      }
+    }
+
+    if (body is String && body.isNotEmpty) {
+      return body;
+    }
+
+    return fallback;
+  }
+
+  static bool _isSuccessStatus(int statusCode) {
+    return statusCode >= 200 && statusCode < 300;
+  }
+
+  static Future<Map<String, dynamic>> _normalizeLoginResponse(
+    http.Response response,
+  ) async {
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      return {
+        'success': false,
+        'message': 'Unexpected login response (${response.statusCode})',
+      };
+    }
+
+    final data = body['data'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
+        : const <String, dynamic>{};
+    final nestedUser = data['user'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(data['user'] as Map<String, dynamic>)
+        : const <String, dynamic>{};
+    final topUser = body['user'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['user'] as Map<String, dynamic>)
+        : const <String, dynamic>{};
+    final user = nestedUser.isNotEmpty ? nestedUser : topUser;
+    final token =
+        (body['access_token'] ??
+                body['token'] ??
+                data['access_token'] ??
+                data['token'] ??
+                '')
+            .toString();
+    final role = (body['role'] ?? data['role'] ?? user['role'])?.toString();
+    final explicitSuccess = body['success'];
+    final inferredSuccess =
+        _isSuccessStatus(response.statusCode) && token.isNotEmpty;
+    final success = explicitSuccess is bool ? explicitSuccess : inferredSuccess;
+
+    if (success && token.isNotEmpty) {
+      await _saveToken(token);
+    }
+
+    return {
+      'success': success,
+      'token': token,
+      'role': role,
+      'user': user,
+      'message': _messageFromBody(
+        body,
+        fallback: success ? 'Login successful' : 'Login failed',
+      ),
+    };
   }
 
   static Future<Map<String, dynamic>> login(
     String userId,
-    String password,
-  ) async {
-    final res = await http.post(
-      _uri('/login'),
-      headers: _headers(),
-      body: jsonEncode({
-        'email': userId,
-        'userId': userId,
-        'password': password,
-      }),
-    );
+    String password, {
+    String? roleHint,
+  }) async {
+    final preferredEndpoints = <String>[
+      if (roleHint == 'student') '/login/student',
+      if (roleHint == 'instructor') '/login/instructor',
+      '/login',
+      '/login/student',
+      '/login/instructor',
+    ];
 
-    final body = await _decode(res);
-    if (body is Map<String, dynamic>) {
-      final data = body['data'] is Map<String, dynamic>
-          ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
-          : const <String, dynamic>{};
-      final nestedUser = data['user'] is Map<String, dynamic>
-          ? Map<String, dynamic>.from(data['user'] as Map<String, dynamic>)
-          : const <String, dynamic>{};
-      final topUser = body['user'] is Map<String, dynamic>
-          ? Map<String, dynamic>.from(body['user'] as Map<String, dynamic>)
-          : const <String, dynamic>{};
-      final user = nestedUser.isNotEmpty ? nestedUser : topUser;
-      final token = (body['token'] ??
-              body['access_token'] ??
-              data['token'] ??
-              data['access_token'] ??
-              '')
-          .toString();
-      final role =
-          (body['role'] ?? data['role'] ?? user['role'])?.toString();
-      final message = body['message']?.toString() ?? '';
-      final explicitSuccess = body['success'];
-      final inferredSuccess = res.statusCode >= 200 &&
-          res.statusCode < 300 &&
-          (token.isNotEmpty || message.toLowerCase().contains('success'));
+    final attempted = <String>{};
+    Map<String, dynamic>? lastFailure;
 
-      return {
-        'success': explicitSuccess is bool ? explicitSuccess : inferredSuccess,
-        'token': token,
-        'role': role,
-        'user': user,
-        'message': message,
-      };
+    for (final endpoint in preferredEndpoints) {
+      if (!attempted.add(endpoint)) {
+        continue;
+      }
+
+      final response = await http.post(
+        _uri(endpoint),
+        headers: _headers(),
+        body: jsonEncode({'email': userId, 'password': password}),
+      );
+
+      final normalized = await _normalizeLoginResponse(response);
+      if (normalized['success'] == true) {
+        return normalized;
+      }
+
+      lastFailure = normalized;
+      if (response.statusCode == 401 || response.statusCode == 422) {
+        continue;
+      }
+
+      break;
     }
 
-    return {
-      'success': false,
-      'message': 'Unexpected login response (${res.statusCode})',
-    };
+    return lastFailure ??
+        {'success': false, 'message': 'Unable to login. Please try again.'};
   }
 
   static Future<void> logout({String? token}) async {
@@ -92,90 +193,180 @@ class StudentApi {
       return;
     }
 
-    await http.post(
-      _uri('/logout'),
-      headers: _headers(token: token),
-      body: jsonEncode(const <String, dynamic>{}),
-    );
+    try {
+      await http.post(
+        _uri('/logout'),
+        headers: _headers(token: token),
+        body: jsonEncode(const <String, dynamic>{}),
+      );
+    } finally {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getCourses({String? token}) async {
     token ??= await _readToken();
-    final res = await http.get(
+    final response = await http.get(
       _uri('/student/courses'),
-      headers: _headers(token: token),
+      headers: _headers(token: token, contentType: null),
     );
 
-    final body = await _decode(res);
-    if (body is List) {
-      return body.map<Map<String, dynamic>>((e) {
-        return Map<String, dynamic>.from(e as Map);
-      }).toList();
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load courses'),
+      );
     }
 
-    throw Exception('Courses request failed (${res.statusCode})');
+    final courses = body is Map<String, dynamic> ? body['courses'] : body;
+    if (courses is! List) {
+      throw Exception('Unexpected courses response (${response.statusCode})');
+    }
+
+    return courses.map<Map<String, dynamic>>((course) {
+      final map = Map<String, dynamic>.from(course as Map);
+      return {
+        ...map,
+        'id': map['course_code']?.toString() ?? map['id']?.toString() ?? '',
+        'name': map['course_name']?.toString() ?? map['name']?.toString() ?? '',
+        'credits': _toInt(map['credit_hours'] ?? map['credits']),
+        'instructor': map['teaching_mode']?.toString() ?? '',
+        'absences': _toInt(map['absences']),
+      };
+    }).toList();
   }
 
   static Future<Map<String, dynamic>> getAcademicProgress({
     String? token,
   }) async {
     token ??= await _readToken();
-    final res = await http.get(
+    final response = await http.get(
       _uri('/student/academic-progress'),
-      headers: _headers(token: token),
+      headers: _headers(token: token, contentType: null),
     );
 
-    final body = await _decode(res);
-    if (body is Map<String, dynamic>) {
-      return body;
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load academic progress'),
+      );
     }
 
-    throw Exception('Academic progress request failed (${res.statusCode})');
+    final progress = Map<String, dynamic>.from(body);
+    final grades = List<Map<String, dynamic>>.from(
+      progress['grades'] ?? const [],
+    );
+    progress['completed_courses'] = _groupGradesBySemester(grades);
+    return progress;
   }
 
   static Future<List<Map<String, dynamic>>> getSchedule({String? token}) async {
     token ??= await _readToken();
-    final res = await http.get(
+    final response = await http.get(
       _uri('/student/schedule'),
-      headers: _headers(token: token),
+      headers: _headers(token: token, contentType: null),
     );
 
-    final body = await _decode(res);
-    if (body is List) {
-      return body.map<Map<String, dynamic>>((e) {
-        return Map<String, dynamic>.from(e as Map);
-      }).toList();
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load schedule'),
+      );
     }
 
-    throw Exception('Schedule request failed (${res.statusCode})');
+    final schedule = body['schedule'];
+    if (schedule is! List) {
+      throw Exception('Unexpected schedule response (${response.statusCode})');
+    }
+
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final item in schedule) {
+      final map = Map<String, dynamic>.from(item as Map);
+      final dayLabel = _dayLabel(map['day_of_week']);
+      grouped.putIfAbsent(dayLabel, () => <Map<String, dynamic>>[]).add({
+        ...map,
+        'id': map['course_code']?.toString() ?? '',
+        'name': map['course_name']?.toString() ?? '',
+        'time': _formatTimeRange(map['start_time'], map['end_time']),
+        'room': _joinNonEmpty([
+          map['building']?.toString(),
+          map['room_code']?.toString(),
+        ], separator: ' / '),
+        'instructor': _joinNonEmpty([
+          map['section_number'] != null
+              ? 'Section ${map['section_number']}'
+              : null,
+          map['teaching_mode']?.toString(),
+        ]),
+      });
+    }
+
+    final orderedDays = <String>[
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+
+    return orderedDays
+        .where(grouped.containsKey)
+        .map((day) => {'day': day, 'courses': grouped[day]})
+        .toList();
   }
 
   static Future<Map<String, dynamic>> getProfile({String? token}) async {
     token ??= await _readToken();
-    final res = await http.get(
+    final response = await http.get(
       _uri('/profile'),
-      headers: _headers(token: token),
+      headers: _headers(token: token, contentType: null),
     );
 
-    final body = await _decode(res);
-    if (body is Map<String, dynamic>) {
-      return body;
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load profile'),
+      );
     }
 
-    throw Exception('Profile request failed (${res.statusCode})');
+    final user = body['user'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['user'] as Map<String, dynamic>)
+        : Map<String, dynamic>.from(body);
+    final role = body['role']?.toString() ?? user['role']?.toString();
+
+    return {
+      ...user,
+      if (role != null && role.isNotEmpty) 'role': role,
+      'user': user,
+    };
   }
 
   static Future<List<Map<String, dynamic>>> getAds() async {
-    final res = await http.get(_uri('/announcements'), headers: _headers());
-    final body = await _decode(res);
+    final response = await http.get(
+      _uri('/announcements'),
+      headers: _headers(contentType: null),
+    );
+    final body = await _decode(response);
 
-    if (body is List) {
-      return body.map<Map<String, dynamic>>((e) {
-        return Map<String, dynamic>.from(e as Map);
-      }).toList();
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load announcements'),
+      );
     }
 
-    throw Exception('Announcements request failed (${res.statusCode})');
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return {
+        ...map,
+        'imageUrl': _resolveAnnouncementImageUrl(map['image_url']?.toString()),
+      };
+    }).toList();
   }
 
   static Future<Map<String, dynamic>> registerAttendance({
@@ -183,23 +374,435 @@ class StudentApi {
     required String courseId,
   }) async {
     final authToken = await _readToken();
-    final res = await http.post(
+    final response = await http.post(
       _uri('/attendance/register'),
       headers: _headers(token: authToken),
       body: jsonEncode({
         'token': token,
+        'course_id': courseId,
         'courseId': courseId,
       }),
     );
 
-    final body = await _decode(res);
+    final body = await _decode(response);
     if (body is Map<String, dynamic>) {
       return body;
     }
 
     return {
       'success': false,
-      'message': 'Unexpected attendance response (${res.statusCode})',
+      'message': 'Unexpected attendance response (${response.statusCode})',
     };
+  }
+
+  static Future<List<Map<String, dynamic>>> getInstructorCourses({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/courses'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load instructor courses'),
+      );
+    }
+
+    final courses = body['courses'];
+    if (courses is! List) {
+      throw Exception(
+        'Unexpected instructor courses response (${response.statusCode})',
+      );
+    }
+
+    return courses.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return {
+        ...map,
+        'id': map['course_id']?.toString() ?? '',
+        'courseCode': map['course_code']?.toString() ?? '',
+        'name': map['course_name']?.toString() ?? '',
+        'credits': _toInt(map['credit_hours']),
+        'lectureId': map['section_id']?.toString() ?? '',
+        'sectionId': map['section_id']?.toString() ?? '',
+        'sectionLabel': map['section_number']?.toString() ?? '',
+        'teachingMode': map['teaching_mode']?.toString() ?? '',
+        'term': _joinNonEmpty([
+          map['academic_year']?.toString(),
+          map['term']?.toString(),
+        ], separator: ' - '),
+        'semesterId': map['semester_id']?.toString() ?? '',
+      };
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getSectionStudents({
+    required String sectionId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/sections/$sectionId/students'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load course students'),
+      );
+    }
+
+    final students = body['students'];
+    if (students is! List) {
+      throw Exception('Unexpected students response (${response.statusCode})');
+    }
+
+    return students.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return {
+        ...map,
+        'id': map['student_id']?.toString() ?? map['user_id']?.toString() ?? '',
+        'userId': map['user_id']?.toString() ?? '',
+        'name': map['name']?.toString() ?? '',
+        'email': map['email']?.toString() ?? '',
+        'status': map['student_status']?.toString() ?? 'enrolled',
+        'absences': 0,
+        'isPresent': false,
+      };
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getCourseFiles({
+    required String courseId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/courses/$courseId/files'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load course files'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  static Future<Map<String, dynamic>> uploadCourseFile({
+    required String courseId,
+    required String fileName,
+    String? localPath,
+    Uint8List? fileBytes,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final request = http.MultipartRequest(
+      'POST',
+      _uri('/courses/$courseId/files'),
+    );
+    request.headers.addAll(_headers(token: token, contentType: null));
+    if (fileBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+      );
+    } else if (localPath != null && localPath.isNotEmpty) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          localPath,
+          filename: fileName,
+        ),
+      );
+    } else {
+      throw Exception('No file data was provided for upload.');
+    }
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    final body = await _decode(response);
+
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to upload file'),
+      );
+    }
+
+    final data = body['data'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
+        : const <String, dynamic>{};
+    if (data.isEmpty) {
+      throw Exception('Unexpected upload response (${response.statusCode})');
+    }
+
+    return _normalizeCourseFile({
+      ...data,
+      'file_name': data['file_name'] ?? fileName,
+      'localPath': localPath,
+    });
+  }
+
+  static Future<Map<String, dynamic>> startAttendanceSession({
+    required String courseId,
+    required String lectureId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/attendance/start'),
+      headers: _headers(token: token),
+      body: jsonEncode({
+        'course_id': courseId,
+        'courseId': courseId,
+        'lecture_id': lectureId,
+        'lectureId': lectureId,
+        'section_id': lectureId,
+        'sectionId': lectureId,
+      }),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected attendance session response (${response.statusCode})',
+      );
+    }
+
+    return body;
+  }
+
+  static Future<Map<String, dynamic>> closeAttendanceSession({
+    required String sessionId,
+    String? token,
+    String? sessionToken,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/attendance/close'),
+      headers: _headers(token: token),
+      body: jsonEncode({
+        'session_id': sessionId,
+        'sessionId': sessionId,
+        if (sessionToken != null && sessionToken.isNotEmpty)
+          'token': sessionToken,
+      }),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected attendance close response (${response.statusCode})',
+      );
+    }
+
+    return body;
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceSession({
+    required String sessionId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/attendance/session/$sessionId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load attendance session'),
+      );
+    }
+
+    return body;
+  }
+
+  static Map<String, dynamic> _normalizeCourseFile(Map<String, dynamic> map) {
+    final fileName =
+        map['file_name']?.toString() ?? map['name']?.toString() ?? '';
+    final extension = _fileExtension(
+      fileName,
+      fallback: map['file_type']?.toString(),
+    );
+
+    return {
+      ...map,
+      'courseId':
+          map['course_id']?.toString() ?? map['courseId']?.toString() ?? '',
+      'name': fileName,
+      'extensionLabel': extension,
+      'sizeLabel': _formatBytes(map['file_size']),
+      'uploadedAtLabel': _formatDateLabel(map['uploaded_at']?.toString()),
+      'category': _inferFileCategory(fileName),
+      'remoteUrl': map['download_url']?.toString(),
+      'localPath': map['localPath']?.toString(),
+    };
+  }
+
+  static List<Map<String, dynamic>> _groupGradesBySemester(
+    List<Map<String, dynamic>> grades,
+  ) {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final grade in grades) {
+      final key = _joinNonEmpty([
+        grade['academic_year']?.toString(),
+        grade['term']?.toString(),
+      ], separator: ' - ');
+      grouped.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(grade);
+    }
+
+    return grouped.entries.map((entry) {
+      final items = entry.value;
+      return {
+        'semester': entry.key,
+        'courses': items.map<Map<String, dynamic>>((grade) {
+          return {
+            ...grade,
+            'id': grade['course_code']?.toString() ?? '',
+            'name': grade['course_name']?.toString() ?? '',
+            'grade': grade['grade_symbol']?.toString() ?? '',
+          };
+        }).toList(),
+      };
+    }).toList();
+  }
+
+  static String _resolveAnnouncementImageUrl(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return '';
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return raw;
+    }
+    if (raw.startsWith('/')) {
+      return _baseUri.resolve(raw).toString();
+    }
+    if (!raw.contains('/')) {
+      return _uri('/announcements/image/$raw').toString();
+    }
+    return _baseUri.resolve(raw).toString();
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _dayLabel(dynamic rawDay) {
+    final normalized = rawDay?.toString().trim() ?? '';
+    const dayNames = <int, String>{
+      0: 'Sunday',
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday',
+      7: 'Sunday',
+    };
+
+    final numeric = int.tryParse(normalized);
+    if (numeric != null && dayNames.containsKey(numeric)) {
+      return dayNames[numeric]!;
+    }
+
+    if (normalized.isEmpty) {
+      return 'Unknown';
+    }
+
+    return '${normalized[0].toUpperCase()}${normalized.substring(1).toLowerCase()}';
+  }
+
+  static String _formatTimeRange(dynamic start, dynamic end) {
+    final startLabel = start?.toString() ?? '';
+    final endLabel = end?.toString() ?? '';
+    if (startLabel.isEmpty && endLabel.isEmpty) {
+      return '';
+    }
+    return '$startLabel - $endLabel';
+  }
+
+  static String _joinNonEmpty(List<String?> parts, {String separator = ' • '}) {
+    return parts
+        .where((part) => part != null && part.trim().isNotEmpty)
+        .map((part) => part!.trim())
+        .join(separator);
+  }
+
+  static String _fileExtension(String fileName, {String? fallback}) {
+    final segment = fileName.split('.').last.trim();
+    if (fileName.contains('.') && segment.isNotEmpty) {
+      return segment.toUpperCase();
+    }
+
+    if (fallback != null && fallback.contains('/')) {
+      return fallback.split('/').last.toUpperCase();
+    }
+
+    return 'FILE';
+  }
+
+  static String _formatBytes(dynamic rawSize) {
+    final bytes = rawSize is num
+        ? rawSize.toDouble()
+        : double.tryParse(rawSize?.toString() ?? '');
+    if (bytes == null || bytes <= 0) {
+      return '';
+    }
+    const units = ['B', 'KB', 'MB', 'GB'];
+    var size = bytes;
+    var unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    final decimals = unitIndex == 0 ? 0 : 1;
+    return '${size.toStringAsFixed(decimals)} ${units[unitIndex]}';
+  }
+
+  static String _formatDateLabel(String? rawDate) {
+    if (rawDate == null || rawDate.isEmpty) {
+      return '';
+    }
+
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) {
+      return rawDate;
+    }
+
+    return DateFormat('MMM d, y').format(parsed.toLocal());
+  }
+
+  static String _inferFileCategory(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.contains('exam') ||
+        lower.contains('midterm') ||
+        lower.contains('final')) {
+      return 'exam';
+    }
+    if (lower.contains('assignment') || lower.contains('worksheet')) {
+      return 'assignment';
+    }
+    return 'lecture';
   }
 }

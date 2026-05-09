@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -116,13 +117,13 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                           _SectionLabel('Select Course'),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
-                            key: ValueKey(selectedCourse?.id),
-                            initialValue: selectedCourse?.id,
+                            key: ValueKey(selectedCourse?.selectionKey),
+                            initialValue: selectedCourse?.selectionKey,
                             decoration: _inputDecoration('Choose a course'),
                             items: provider.courses
                                 .map(
                                   (course) => DropdownMenuItem<String>(
-                                    value: course.id,
+                                    value: course.selectionKey,
                                     child: Text(course.name),
                                   ),
                                 )
@@ -320,7 +321,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
   Future<void> _pickAttachment() async {
     final picked = await FilePicker.platform.pickFiles(
       allowMultiple: false,
-      withData: false,
+      withData: true,
       type: FileType.any,
     );
 
@@ -331,13 +332,17 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
     final file = picked.files.single;
     final extension = (file.extension ?? file.name.split('.').last)
         .toUpperCase();
+    String? localPath;
+    if (!kIsWeb) {
+      localPath = file.path;
+    }
     setState(() {
       _attachment = AssignmentAttachment(
         id: '',
         name: file.name,
         extensionLabel: extension,
         sizeLabel: _formatBytes(file.size),
-        localPath: file.path,
+        localPath: localPath,
       );
     });
   }
@@ -363,7 +368,6 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
       attachment: _attachment,
     );
 
-    final selectedCourseId = provider.selectedCourse!.id;
     final success = await provider.createAssignment(request);
     if (!mounted || !success) {
       return;
@@ -372,7 +376,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
     context.goNamed(
       'instructor-assignments-list',
       queryParameters: <String, String>{
-        'courseId': selectedCourseId,
+        'courseId': provider.selectedCourse!.selectionKey,
         if (widget.lockCourseSelection) 'lockCourse': '1',
       },
       extra: 'Assignment created successfully.',

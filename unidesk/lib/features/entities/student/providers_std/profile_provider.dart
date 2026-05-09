@@ -12,7 +12,7 @@ class ProfileProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadIfNeeded() async {
+  Future<void> loadIfNeeded({String? token}) async {
     if (_profile != null) return;
 
     _isLoading = true;

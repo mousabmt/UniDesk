@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_repository.dart';
 import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_details.dart';
@@ -12,7 +14,7 @@ class InstructorCoursesProvider extends ChangeNotifier {
   List<InstructorManagedCourse> _courses = const [];
   bool _isCoursesLoading = false;
   String? _coursesError;
-  String? _selectedCourseId;
+  String? _selectedCourseKey;
   InstructorCourseDetails? _currentCourseDetails;
   bool _isDetailsLoading = false;
   String? _detailsError;
@@ -22,14 +24,15 @@ class InstructorCoursesProvider extends ChangeNotifier {
   List<InstructorManagedCourse> get courses => _courses;
   bool get isCoursesLoading => _isCoursesLoading;
   String? get coursesError => _coursesError;
-  String? get selectedCourseId => _selectedCourseId;
+  String? get selectedCourseId => selectedCourse?.id;
+  String? get selectedCourseKey => _selectedCourseKey;
   InstructorManagedCourse? get selectedCourse {
     for (final course in _courses) {
-      if (course.id == _selectedCourseId) {
+      if (course.matchesSelection(_selectedCourseKey)) {
         return course;
       }
     }
-    return _courses.isEmpty ? null : _courses.first;
+    return null;
   }
 
   InstructorCourseDetails? get currentCourseDetails => _currentCourseDetails;
@@ -47,8 +50,13 @@ class InstructorCoursesProvider extends ChangeNotifier {
     String? preferredCourseId,
   }) async {
     if (_courses.isNotEmpty) {
-      if (preferredCourseId != null && preferredCourseId != _selectedCourseId) {
-        await selectCourse(instructorId: instructorId, courseId: preferredCourseId);
+      final preferredSelectionKey = _resolveSelectionKey(preferredCourseId);
+      if (preferredSelectionKey != null &&
+          preferredSelectionKey != _selectedCourseKey) {
+        await selectCourse(
+          instructorId: instructorId,
+          courseId: preferredSelectionKey,
+        );
       } else if (_currentCourseDetails == null) {
         await _loadCourseDetails(instructorId: instructorId);
       }
@@ -74,23 +82,23 @@ class InstructorCoursesProvider extends ChangeNotifier {
     try {
       _courses = await _repository.getInstructorCourses(instructorId);
       if (_courses.isNotEmpty) {
-        final fallbackId = preferredCourseId ?? _selectedCourseId ?? _courses.first.id;
-        _selectedCourseId = _courses.any((course) => course.id == fallbackId)
-            ? fallbackId
-            : _courses.first.id;
+        _selectedCourseKey =
+            _resolveSelectionKey(preferredCourseId) ??
+            _resolveSelectionKey(_selectedCourseKey) ??
+            _courses.first.selectionKey;
       } else {
-        _selectedCourseId = null;
+        _selectedCourseKey = null;
       }
     } catch (e) {
       _courses = const [];
-      _selectedCourseId = null;
+      _selectedCourseKey = null;
       _coursesError = e.toString();
     } finally {
       _isCoursesLoading = false;
       notifyListeners();
     }
 
-    if (_selectedCourseId != null) {
+    if (selectedCourse != null) {
       await _loadCourseDetails(instructorId: instructorId);
     }
   }
@@ -99,10 +107,15 @@ class InstructorCoursesProvider extends ChangeNotifier {
     required String instructorId,
     required String courseId,
   }) async {
-    if (courseId == _selectedCourseId && _currentCourseDetails != null) {
+    final nextSelectionKey = _resolveSelectionKey(courseId);
+    if (nextSelectionKey == null) {
       return;
     }
-    _selectedCourseId = courseId;
+    if (nextSelectionKey == _selectedCourseKey &&
+        _currentCourseDetails != null) {
+      return;
+    }
+    _selectedCourseKey = nextSelectionKey;
     _currentCourseDetails = null;
     _detailsError = null;
     notifyListeners();
@@ -117,7 +130,7 @@ class InstructorCoursesProvider extends ChangeNotifier {
     _uploadError = null;
     await loadCourses(
       instructorId: instructorId,
-      preferredCourseId: preferredCourseId ?? _selectedCourseId,
+      preferredCourseId: preferredCourseId ?? _selectedCourseKey,
     );
   }
 
@@ -127,8 +140,9 @@ class InstructorCoursesProvider extends ChangeNotifier {
     required InstructorCourseFileCategory category,
     required String extensionLabel,
     String? localPath,
+    Uint8List? fileBytes,
   }) async {
-    final courseId = _selectedCourseId;
+    final courseId = selectedCourse?.id;
     if (courseId == null || _isUploading) {
       return false;
     }
@@ -145,6 +159,7 @@ class InstructorCoursesProvider extends ChangeNotifier {
         category: category,
         extensionLabel: extensionLabel,
         localPath: localPath,
+        fileBytes: fileBytes,
       );
       await _loadCourseDetails(instructorId: instructorId);
       return true;
@@ -158,7 +173,11 @@ class InstructorCoursesProvider extends ChangeNotifier {
   }
 
   Future<void> _loadCourseDetails({required String instructorId}) async {
-    final courseId = _selectedCourseId;
+    final course = selectedCourse;
+    final courseId = course?.id;
+    final sectionId = course?.sectionId.isNotEmpty == true
+        ? course!.sectionId
+        : course?.lectureId;
     if (courseId == null || _isDetailsLoading) {
       return;
     }
@@ -171,6 +190,7 @@ class InstructorCoursesProvider extends ChangeNotifier {
       _currentCourseDetails = await _repository.getCourseDetails(
         instructorId: instructorId,
         courseId: courseId,
+        sectionId: sectionId,
       );
     } catch (e) {
       _currentCourseDetails = null;
@@ -179,5 +199,17 @@ class InstructorCoursesProvider extends ChangeNotifier {
       _isDetailsLoading = false;
       notifyListeners();
     }
+  }
+
+  String? _resolveSelectionKey(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    for (final course in _courses) {
+      if (course.matchesSelection(value)) {
+        return course.selectionKey;
+      }
+    }
+    return null;
   }
 }

@@ -13,7 +13,7 @@ class CoursesProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadIfNeeded() async {
+  Future<void> loadIfNeeded({String? token}) async {
     if (_courses != null && _academicProgress != null) return;
 
     _isLoading = true;
@@ -21,8 +21,30 @@ class CoursesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _courses = await StudentApi.getCourses();
-      _academicProgress = await StudentApi.getAcademicProgress();
+      _courses = await StudentApi.getCourses(token: token);
+      _academicProgress = await StudentApi.getAcademicProgress(token: token);
+      final grades = List<Map<String, dynamic>>.from(
+        _academicProgress?['grades'] ?? const [],
+      );
+      final gradesByCourseCode = <String, Map<String, dynamic>>{
+        for (final grade in grades)
+          grade['course_code']?.toString() ?? '': grade,
+      };
+
+      _courses = (_courses ?? const []).map((course) {
+        final code = course['id']?.toString() ?? '';
+        final grade = gradesByCourseCode[code];
+        if (grade == null) {
+          return course;
+        }
+
+        return {
+          ...course,
+          'grade': grade['final_score']?.toString() ??
+              grade['grade_symbol']?.toString() ??
+              course['grade'],
+        };
+      }).toList();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -31,9 +53,9 @@ class CoursesProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({String? token}) async {
     _courses = null;
     _academicProgress = null;
-    await loadIfNeeded();
+    await loadIfNeeded(token: token);
   }
 }

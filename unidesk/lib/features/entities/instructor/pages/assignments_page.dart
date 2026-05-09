@@ -135,7 +135,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                             : () => context.pushNamed(
                                 'instructor-add-assignment',
                                 queryParameters: <String, String>{
-                                  'courseId': selectedCourse.id,
+                                  'courseId': selectedCourse.selectionKey,
                                   if (widget.lockCourseSelection)
                                     'lockCourse': '1',
                                 },
@@ -169,7 +169,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                 instructorId:
                                     context.read<AuthProvider>().userId ??
                                     'D001',
-                                preferredCourseId: provider.selectedCourseId,
+                                preferredCourseId: provider.selectedCourseKey,
                                 lockCourseSelection: provider.isCourseLocked,
                               ),
                               onAttachmentTap: (attachment) =>
@@ -195,7 +195,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                 instructorId:
                                     context.read<AuthProvider>().userId ??
                                     'D001',
-                                preferredCourseId: provider.selectedCourseId,
+                                preferredCourseId: provider.selectedCourseKey,
                                 lockCourseSelection: provider.isCourseLocked,
                               ),
                               onAttachmentTap: (attachment) =>
@@ -306,13 +306,13 @@ class _CourseSelector extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: provider.selectedCourseId,
+          value: provider.selectedCourseKey,
           isExpanded: true,
           hint: const Text('Choose a course'),
           items: provider.courses
               .map(
                 (course) => DropdownMenuItem<String>(
-                  value: course.id,
+                  value: course.selectionKey,
                   child: Text(course.displayLabel),
                 ),
               )
