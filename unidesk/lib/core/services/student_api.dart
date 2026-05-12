@@ -28,8 +28,8 @@ class StudentApi {
   }) {
     final headers = <String, String>{
       'Accept': accept,
-      'ngrok-skip-browser-warning': 'true', // 👈 add this
-        'User-Agent': 'FlutterApp', // 👈 add this too
+      'ngrok-skip-browser-warning': 'true',
+        'User-Agent': 'FlutterApp', 
 
     };
     if (contentType != null && contentType.isNotEmpty) {
