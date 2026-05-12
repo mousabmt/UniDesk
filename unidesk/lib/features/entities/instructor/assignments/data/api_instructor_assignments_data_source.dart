@@ -1,3 +1,4 @@
+import 'package:unidesk/core/services/student_api.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_data_source.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_repository.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment.dart';
@@ -9,26 +10,41 @@ class ApiInstructorAssignmentsDataSource
   const ApiInstructorAssignmentsDataSource();
 
   @override
-  Future<List<Assignment>> getAssignments({required String courseId}) {
-    throw const InstructorAssignmentsRepositoryException(
-      'Instructor assignments API is not connected yet.',
-    );
+  Future<List<Assignment>> getAssignments() async {
+    try {
+      final response = await StudentApi.getInstructorAssignments();
+      return response.map(Assignment.fromMap).toList();
+    } catch (error) {
+      throw InstructorAssignmentsRepositoryException(error.toString());
+    }
   }
 
   @override
-  Future<List<AssignmentSubmission>> getAssignmentSubmissions({
-    required String courseId,
-    required String assignmentId,
-  }) {
-    throw const InstructorAssignmentsRepositoryException(
-      'Instructor assignments API is not connected yet.',
-    );
+  Future<List<AssignmentSubmission>> getAssignmentSubmissions(
+    String assignmentId,
+  ) async {
+    try {
+      final response = await StudentApi.getAssignmentSubmissions(
+        assignmentId: assignmentId,
+      );
+      return response.map(AssignmentSubmission.fromMap).toList();
+    } catch (error) {
+      throw InstructorAssignmentsRepositoryException(error.toString());
+    }
   }
 
   @override
-  Future<Assignment> createAssignment(CreateAssignmentRequest request) {
-    throw const InstructorAssignmentsRepositoryException(
-      'Instructor assignments API is not connected yet.',
-    );
+  Future<Assignment> createAssignment(CreateAssignmentRequest request) async {
+    try {
+      final response = await StudentApi.createInstructorAssignment(
+        fields: request.toApiFields(),
+        fileName: request.attachment?.name,
+        localPath: request.attachment?.localPath,
+        fileBytes: request.attachment?.bytes,
+      );
+      return Assignment.fromMap(response);
+    } catch (error) {
+      throw InstructorAssignmentsRepositoryException(error.toString());
+    }
   }
 }

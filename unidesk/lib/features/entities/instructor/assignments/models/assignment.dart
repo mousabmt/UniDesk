@@ -1,65 +1,125 @@
+import 'package:intl/intl.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment_attachment.dart';
 
 class Assignment {
   const Assignment({
     required this.id,
     required this.courseId,
+    required this.sectionId,
+    required this.instructorId,
     required this.title,
     required this.description,
     required this.dueDate,
-    required this.dueDateLabel,
-    required this.totalPoints,
-    required this.submittedCount,
-    required this.totalStudents,
-    this.topic = '',
-    this.instructions,
-    this.attachment,
-    this.status = 'active',
+    required this.maxScore,
+    required this.isActive,
+    this.filePath,
+    this.fileUrl,
+    this.fileName,
   });
 
   final String id;
   final String courseId;
+  final String sectionId;
+  final String instructorId;
   final String title;
-  final String topic;
   final String description;
   final DateTime? dueDate;
-  final String dueDateLabel;
-  final int totalPoints;
-  final String? instructions;
-  final AssignmentAttachment? attachment;
-  final int submittedCount;
-  final int totalStudents;
-  final String status;
+  final int maxScore;
+  final bool isActive;
+  final String? filePath;
+  final String? fileUrl;
+  final String? fileName;
 
   factory Assignment.fromMap(Map<String, dynamic> map) {
+    final nestedFile = map['file'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(map['file'] as Map<String, dynamic>)
+        : map['file'] is Map
+        ? Map<String, dynamic>.from(map['file'] as Map)
+        : null;
     return Assignment(
       id: map['id']?.toString() ?? '',
-      courseId: map['courseId']?.toString() ?? '',
+      courseId:
+          map['course_id']?.toString() ?? map['courseId']?.toString() ?? '',
+      sectionId:
+          map['section_id']?.toString() ?? map['sectionId']?.toString() ?? '',
+      instructorId:
+          map['instructor_id']?.toString() ??
+          map['instructorId']?.toString() ??
+          '',
       title: map['title']?.toString() ?? '',
-      topic: map['topic']?.toString() ?? '',
       description: map['description']?.toString() ?? '',
-      dueDate: _parseDate(map['dueDate']),
-      dueDateLabel: map['dueDateLabel']?.toString() ?? '',
-      totalPoints: _toInt(map['totalPoints']),
-      instructions: map['instructions']?.toString(),
-      attachment: map['attachedFile'] is Map
-          ? AssignmentAttachment.fromMap(
-              Map<String, dynamic>.from(map['attachedFile'] as Map),
-            )
-          : null,
-      submittedCount: _toInt(map['submittedCount']),
-      totalStudents: _toInt(map['totalStudents']),
-      status: map['status']?.toString() ?? 'active',
+      dueDate: _parseDate(map['due_date'] ?? map['dueDate']),
+      maxScore: _toInt(map['max_score'] ?? map['totalPoints']),
+      filePath:
+          map['file_path']?.toString() ?? nestedFile?['file_path']?.toString(),
+      fileUrl:
+          map['file_url']?.toString() ?? nestedFile?['file_url']?.toString(),
+      fileName:
+          map['file_name']?.toString() ?? nestedFile?['file_name']?.toString(),
     );
   }
 
-  String get submissionRatioLabel => '$submittedCount/$totalStudents';
+  AssignmentAttachment? get attachment => _attachmentFromStoredValues(
+    filePath: filePath,
+    fileUrl: fileUrl,
+    fileName: fileName,
+    title: title,
+  );
+
+  String get dueDateLabel {
+    if (dueDate == null) {
+      return '';
+    }
+    return DateFormat('MMM d, y').format(dueDate!.toLocal());
+  }
+
+  String get statusLabel => isActive ? 'Active' : 'Inactive';
 
   static DateTime? _parseDate(dynamic value) {
     if (value == null) {
       return null;
     }
     return DateTime.tryParse(value.toString());
+  }
+
+  static AssignmentAttachment? _attachmentFromStoredValues({
+    required String? filePath,
+    required String? fileUrl,
+    required String? fileName,
+    required String title,
+  }) {
+    final resolvedUrl = fileUrl?.trim();
+    final resolvedPath = filePath?.trim();
+    if ((resolvedUrl == null || resolvedUrl.isEmpty) &&
+        (resolvedPath == null || resolvedPath.isEmpty)) {
+      return null;
+    }
+    final rawName =
+        fileName != null && fileName.trim().isNotEmpty
+        ? fileName.trim()
+        : _fileNameFromPath(resolvedPath ?? resolvedUrl ?? title);
+    return AssignmentAttachment(
+      id: '',
+      name: rawName,
+      extensionLabel: _fileExtension(rawName),
+      sizeLabel: '',
+      url: resolvedUrl,
+      localPath: resolvedPath,
+    );
+  }
+
+  static String _fileNameFromPath(String value) {
+    final normalized = value.replaceAll('\\', '/');
+    final last = normalized.split('/').last.trim();
+    return last.isEmpty ? 'attachment' : last;
+  }
+
+  static String _fileExtension(String value) {
+    if (!value.contains('.')) {
+      return 'FILE';
+    }
+    final extension = value.split('.').last.trim();
+    return extension.isEmpty ? 'FILE' : extension.toUpperCase();
   }
 }
 
@@ -68,4 +128,15 @@ int _toInt(dynamic value) {
     return value;
   }
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+bool _toBool(dynamic value) {
+  if (value is bool) {
+    return value;
+  }
+  final normalized = value?.toString().trim().toLowerCase() ?? '';
+  return normalized == '1' ||
+      normalized == 'true' ||
+      normalized == 'active' ||
+      normalized == 'yes';
 }

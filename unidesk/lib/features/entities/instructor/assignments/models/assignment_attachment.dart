@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 class AssignmentAttachment {
@@ -8,6 +10,7 @@ class AssignmentAttachment {
     required this.sizeLabel,
     this.url,
     this.localPath,
+    this.bytes,
   });
 
   final String id;
@@ -16,6 +19,7 @@ class AssignmentAttachment {
   final String sizeLabel;
   final String? url;
   final String? localPath;
+  final Uint8List? bytes;
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
   bool get hasRemoteUrl => url != null && url!.isNotEmpty;
@@ -35,13 +39,29 @@ class AssignmentAttachment {
   }
 
   factory AssignmentAttachment.fromMap(Map<String, dynamic> map) {
+    final name =
+        map['name']?.toString() ??
+        map['file_name']?.toString() ??
+        map['original_name']?.toString() ??
+        '';
+    final extension =
+        map['extensionLabel']?.toString() ??
+        map['extension_label']?.toString() ??
+        _extensionFromName(name);
     return AssignmentAttachment(
       id: map['id']?.toString() ?? '',
-      name: map['name']?.toString() ?? '',
-      extensionLabel: map['extensionLabel']?.toString() ?? 'FILE',
-      sizeLabel: map['sizeLabel']?.toString() ?? '',
-      url: map['url']?.toString(),
+      name: name,
+      extensionLabel: extension,
+      sizeLabel:
+          map['sizeLabel']?.toString() ??
+          map['size_label']?.toString() ??
+          '',
+      url:
+          map['url']?.toString() ??
+          map['file_url']?.toString() ??
+          map['download_url']?.toString(),
       localPath: map['localPath']?.toString(),
+      bytes: null,
     );
   }
 
@@ -52,5 +72,13 @@ class AssignmentAttachment {
       'sizeLabel': sizeLabel,
       if (localPath != null && localPath!.isNotEmpty) 'localPath': localPath,
     };
+  }
+
+  static String _extensionFromName(String name) {
+    if (!name.contains('.')) {
+      return 'FILE';
+    }
+    final extension = name.split('.').last.trim();
+    return extension.isEmpty ? 'FILE' : extension.toUpperCase();
   }
 }

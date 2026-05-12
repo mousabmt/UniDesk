@@ -10,8 +10,8 @@ class MockInstructorAssignmentsDataSource
   const MockInstructorAssignmentsDataSource();
 
   @override
-  Future<List<Assignment>> getAssignments({required String courseId}) async {
-    final response = await MockApi.getCourseAssignments(courseId);
+  Future<List<Assignment>> getAssignments() async {
+    final response = await MockApi.getInstructorAssignments();
     if (response['success'] != true) {
       throw InstructorAssignmentsRepositoryException(
         response['message']?.toString() ?? 'Failed to load assignments',
@@ -24,13 +24,11 @@ class MockInstructorAssignmentsDataSource
   }
 
   @override
-  Future<List<AssignmentSubmission>> getAssignmentSubmissions({
-    required String courseId,
-    required String assignmentId,
-  }) async {
-    final response = await MockApi.getAssignmentSubmissions(
-      courseId: courseId,
-      assignmentId: assignmentId,
+  Future<List<AssignmentSubmission>> getAssignmentSubmissions(
+    String assignmentId,
+  ) async {
+    final response = await MockApi.getInstructorAssignmentSubmissions(
+      assignmentId,
     );
     if (response['success'] != true) {
       throw InstructorAssignmentsRepositoryException(
@@ -48,11 +46,12 @@ class MockInstructorAssignmentsDataSource
   Future<Assignment> createAssignment(CreateAssignmentRequest request) async {
     final response = await MockApi.createAssignment(
       courseId: request.courseId,
+      sectionId: request.sectionId,
       title: request.title,
       description: request.description,
       dueDate: request.dueDate.toUtc().toIso8601String(),
-      totalPoints: request.totalPoints,
-      instructions: request.instructions,
+      totalPoints: request.maxScore,
+      isActive: request.isActive,
       attachedFile: request.attachment?.toCreatePayload(),
     );
     if (response['success'] != true) {

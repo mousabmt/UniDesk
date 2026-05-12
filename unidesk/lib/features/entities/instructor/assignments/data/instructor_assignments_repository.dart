@@ -4,12 +4,9 @@ import 'package:unidesk/features/entities/instructor/assignments/models/assignme
 import 'package:unidesk/features/entities/instructor/assignments/models/create_assignment_request.dart';
 
 abstract class InstructorAssignmentsRepository {
-  Future<List<Assignment>> getAssignments({required String courseId});
+  Future<List<Assignment>> getAssignments();
 
-  Future<List<AssignmentSubmission>> getAssignmentSubmissions({
-    required String courseId,
-    required String assignmentId,
-  });
+  Future<List<AssignmentSubmission>> getAssignmentSubmissions(String assignmentId);
 
   Future<Assignment> createAssignment(CreateAssignmentRequest request);
 }
@@ -21,19 +18,15 @@ class InstructorAssignmentsRepositoryImpl
   final InstructorAssignmentsDataSource _dataSource;
 
   @override
-  Future<List<Assignment>> getAssignments({required String courseId}) {
-    return _dataSource.getAssignments(courseId: courseId);
+  Future<List<Assignment>> getAssignments() {
+    return _dataSource.getAssignments();
   }
 
   @override
-  Future<List<AssignmentSubmission>> getAssignmentSubmissions({
-    required String courseId,
-    required String assignmentId,
-  }) {
-    return _dataSource.getAssignmentSubmissions(
-      courseId: courseId,
-      assignmentId: assignmentId,
-    );
+  Future<List<AssignmentSubmission>> getAssignmentSubmissions(
+    String assignmentId,
+  ) {
+    return _dataSource.getAssignmentSubmissions(assignmentId);
   }
 
   @override

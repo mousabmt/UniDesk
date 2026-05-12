@@ -18,10 +18,11 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   List<InstructorManagedCourse> _courses = const [];
   bool _isCoursesLoading = false;
   String? _coursesError;
-  String? _selectedCourseKey;
+  String? _selectedCourseGroupKey;
+  String? _selectedSectionId;
   bool _isCourseLocked = false;
 
-  List<Assignment> _assignments = const [];
+  List<Assignment> _allAssignments = const [];
   bool _isAssignmentsLoading = false;
   String? _assignmentsError;
   String? _selectedAssignmentId;
@@ -37,9 +38,10 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   bool get isCoursesLoading => _isCoursesLoading;
   String? get coursesError => _coursesError;
   String? get selectedCourseId => selectedCourse?.id;
-  String? get selectedCourseKey => _selectedCourseKey;
+  String? get selectedCourseGroupKey => _selectedCourseGroupKey;
+  String? get selectedSectionId => _selectedSectionId;
+  String? get selectedSectionSelectionKey => selectedCourse?.selectionKey;
   bool get isCourseLocked => _isCourseLocked;
-  List<Assignment> get assignments => _assignments;
   bool get isAssignmentsLoading => _isAssignmentsLoading;
   String? get assignmentsError => _assignmentsError;
   String? get selectedAssignmentId => _selectedAssignmentId;
@@ -49,27 +51,75 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   bool get isCreating => _isCreating;
   String? get createError => _createError;
 
-  InstructorManagedCourse? get selectedCourse {
+  List<InstructorManagedCourse> get availableCourses {
+    final seen = <String>{};
+    final unique = <InstructorManagedCourse>[];
     for (final course in _courses) {
-      if (course.matchesSelection(_selectedCourseKey)) {
+      if (seen.add(_courseIdentityKey(course))) {
+        unique.add(course);
+      }
+    }
+    return unique;
+  }
+
+  List<InstructorManagedCourse> get availableSections {
+    final courseGroupKey = _selectedCourseGroupKey;
+    if (courseGroupKey == null || courseGroupKey.isEmpty) {
+      return const [];
+    }
+    final seen = <String>{};
+    final sections = <InstructorManagedCourse>[];
+    for (final course in _courses) {
+      if (_courseIdentityKey(course) == courseGroupKey &&
+          seen.add(course.selectionKey)) {
+        sections.add(course);
+      }
+    }
+    return sections;
+  }
+
+  InstructorManagedCourse? get selectedCourse {
+    final courseGroupKey = _selectedCourseGroupKey;
+    final sectionId = _selectedSectionId;
+    if (courseGroupKey == null || courseGroupKey.isEmpty) {
+      return null;
+    }
+    for (final course in _courses) {
+      final scopeId = _scopeIdFor(course);
+      if (_courseIdentityKey(course) == courseGroupKey &&
+          (sectionId == null || sectionId.isEmpty || scopeId == sectionId)) {
         return course;
       }
     }
     return null;
   }
 
+  List<Assignment> get assignments {
+    final currentCourse = selectedCourse;
+    final sectionId = _selectedSectionId;
+    if (currentCourse == null || sectionId == null) {
+      return const [];
+    }
+    return _allAssignments.where((assignment) {
+      return _normalized(assignment.courseId) == _normalized(currentCourse.id) &&
+          _normalized(assignment.sectionId) == _normalized(sectionId);
+    }).toList();
+  }
+
   Assignment? get selectedAssignment {
-    for (final assignment in _assignments) {
+    for (final assignment in assignments) {
       if (assignment.id == _selectedAssignmentId) {
         return assignment;
       }
     }
-    return _assignments.isEmpty ? null : _assignments.first;
+    final visibleAssignments = assignments;
+    return visibleAssignments.isEmpty ? null : visibleAssignments.first;
   }
 
   Future<void> loadIfNeeded({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
     bool lockCourseSelection = false,
   }) async {
     _isCourseLocked = lockCourseSelection;
@@ -77,23 +127,21 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       await loadCourses(
         instructorId: instructorId,
         preferredCourseId: preferredCourseId,
+        preferredSectionId: preferredSectionId,
         lockCourseSelection: lockCourseSelection,
       );
       return;
     }
 
-    final preferredSelectionKey = _resolveSelectionKey(preferredCourseId);
-    if (preferredSelectionKey != null &&
-        preferredSelectionKey != _selectedCourseKey) {
-      await selectCourse(
-        instructorId: instructorId,
-        courseId: preferredSelectionKey,
-        lockCourseSelection: lockCourseSelection,
-      );
+    if (_applyPreferredSelection(
+      preferredCourseId: preferredCourseId,
+      preferredSectionId: preferredSectionId,
+    )) {
+      await _loadAssignments();
       return;
     }
 
-    if (_assignments.isEmpty && selectedCourse != null) {
+    if (_allAssignments.isEmpty && selectedCourse != null) {
       await _loadAssignments();
     } else if (_submissions.isEmpty && selectedAssignment != null) {
       await selectAssignment(selectedAssignment!.id);
@@ -104,6 +152,7 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   Future<void> loadCourses({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
     bool lockCourseSelection = false,
   }) async {
     if (_isCoursesLoading) {
@@ -118,16 +167,18 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     try {
       _courses = await _coursesRepository.getInstructorCourses(instructorId);
       if (_courses.isEmpty) {
-        _selectedCourseKey = null;
+        _selectedCourseGroupKey = null;
+        _selectedSectionId = null;
       } else {
-        _selectedCourseKey =
-            _resolveSelectionKey(preferredCourseId) ??
-            _resolveSelectionKey(_selectedCourseKey) ??
-            _courses.first.selectionKey;
+        _selectPreferredCourseAndSection(
+          preferredCourseId: preferredCourseId,
+          preferredSectionId: preferredSectionId,
+        );
       }
     } catch (e) {
       _courses = const [];
-      _selectedCourseKey = null;
+      _selectedCourseGroupKey = null;
+      _selectedSectionId = null;
       _coursesError = e.toString();
     } finally {
       _isCoursesLoading = false;
@@ -142,16 +193,15 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   Future<void> selectCourse({
     required String instructorId,
     required String courseId,
+    String? sectionId,
     bool? lockCourseSelection,
   }) async {
     if (lockCourseSelection != null) {
       _isCourseLocked = lockCourseSelection;
     }
-    final nextSelectionKey = _resolveSelectionKey(courseId);
-    if (nextSelectionKey == null) {
-      return;
-    }
-    if (nextSelectionKey == _selectedCourseKey && _assignments.isNotEmpty) {
+    final resolvedCourseId = _resolveCourseId(courseId);
+    final resolvedCourse = _resolveCourse(resolvedCourseId ?? courseId);
+    if (resolvedCourse == null) {
       return;
     }
 
@@ -159,16 +209,51 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       await loadCourses(
         instructorId: instructorId,
         preferredCourseId: courseId,
+        preferredSectionId: sectionId,
         lockCourseSelection: _isCourseLocked,
       );
       return;
     }
 
-    _selectedCourseKey = nextSelectionKey;
+    final nextSectionId = _resolveSectionForCourse(
+      _courseIdentityKey(resolvedCourse),
+      preferredSectionId: sectionId,
+    );
+    final noChange =
+        _courseIdentityKey(resolvedCourse) == _selectedCourseGroupKey &&
+        nextSectionId == _selectedSectionId &&
+        assignments.isNotEmpty;
+    if (noChange) {
+      return;
+    }
+
+    _selectedCourseGroupKey = _courseIdentityKey(resolvedCourse);
+    _selectedSectionId = nextSectionId;
     _selectedAssignmentId = null;
-    _assignments = const [];
     _submissions = const [];
-    _assignmentsError = null;
+    _submissionsError = null;
+    notifyListeners();
+    await _loadAssignments();
+  }
+
+  Future<void> selectSection({
+    required String instructorId,
+    required String sectionId,
+  }) async {
+    if (_selectedCourseGroupKey == null) {
+      return;
+    }
+    final nextSectionId = _resolveSectionForCourse(
+      _selectedCourseGroupKey!,
+      preferredSectionId: sectionId,
+    );
+    if (nextSectionId == null || nextSectionId == _selectedSectionId) {
+      return;
+    }
+
+    _selectedSectionId = nextSectionId;
+    _selectedAssignmentId = null;
+    _submissions = const [];
     _submissionsError = null;
     notifyListeners();
     await _loadAssignments();
@@ -177,14 +262,16 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   Future<void> refresh({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
     bool? lockCourseSelection,
   }) async {
-    _assignments = const [];
+    _allAssignments = const [];
     _submissions = const [];
     _selectedAssignmentId = null;
     await loadCourses(
       instructorId: instructorId,
-      preferredCourseId: preferredCourseId ?? _selectedCourseKey,
+      preferredCourseId: preferredCourseId ?? _selectedCourseGroupKey,
+      preferredSectionId: preferredSectionId ?? _selectedSectionId,
       lockCourseSelection: lockCourseSelection ?? _isCourseLocked,
     );
   }
@@ -212,8 +299,12 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
 
     try {
       final created = await _assignmentsRepository.createAssignment(request);
-      if (created.courseId == selectedCourse?.id) {
+      if (selectedCourse != null &&
+          created.courseId == selectedCourse!.id &&
+          created.sectionId == _selectedSectionId) {
         await _loadAssignments(preferredAssignmentId: created.id);
+      } else {
+        await _loadAssignments();
       }
       return true;
     } catch (e) {
@@ -225,9 +316,25 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     }
   }
 
+  String? sectionLabelFor(InstructorManagedCourse course) {
+    if (course.sectionLabel.trim().isNotEmpty) {
+      return course.sectionLabel.trim();
+    }
+    if (course.sectionId.trim().isNotEmpty) {
+      return 'Section ${course.sectionId.trim()}';
+    }
+    if (course.lectureId.trim().isNotEmpty) {
+      return 'Section ${course.lectureId.trim()}';
+    }
+    return null;
+  }
+
+  String courseSelectionValueFor(InstructorManagedCourse course) {
+    return _courseIdentityKey(course);
+  }
+
   Future<void> _loadAssignments({String? preferredAssignmentId}) async {
-    final courseId = selectedCourse?.id;
-    if (courseId == null || _isAssignmentsLoading) {
+    if (selectedCourse == null || _isAssignmentsLoading) {
       return;
     }
 
@@ -236,24 +343,31 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _assignments = await _assignmentsRepository.getAssignments(
-        courseId: courseId,
+      _allAssignments = await _assignmentsRepository.getAssignments();
+      final missingSectionIds = _allAssignments.any(
+        (assignment) => assignment.sectionId.trim().isEmpty,
       );
-      if (_assignments.isEmpty) {
+      if (missingSectionIds) {
+        throw const InstructorAssignmentsRepositoryException(
+          'Assignments response is missing section identifiers.',
+        );
+      }
+
+      final visibleAssignments = assignments;
+      if (visibleAssignments.isEmpty) {
         _selectedAssignmentId = null;
         _submissions = const [];
       } else {
         final nextAssignmentId =
-            preferredAssignmentId ??
-            _selectedAssignmentId ??
-            _assignments.first.id;
-        _selectedAssignmentId =
-            _assignments.any((item) => item.id == nextAssignmentId)
+            preferredAssignmentId ?? _selectedAssignmentId ?? visibleAssignments.first.id;
+        _selectedAssignmentId = visibleAssignments.any(
+              (item) => item.id == nextAssignmentId,
+            )
             ? nextAssignmentId
-            : _assignments.first.id;
+            : visibleAssignments.first.id;
       }
     } catch (e) {
-      _assignments = const [];
+      _allAssignments = const [];
       _selectedAssignmentId = null;
       _submissions = const [];
       _assignmentsError = e.toString();
@@ -268,9 +382,8 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> _loadSubmissions() async {
-    final courseId = selectedCourse?.id;
     final assignmentId = _selectedAssignmentId;
-    if (courseId == null || assignmentId == null || _isSubmissionsLoading) {
+    if (assignmentId == null || _isSubmissionsLoading) {
       return;
     }
 
@@ -280,8 +393,7 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
 
     try {
       _submissions = await _assignmentsRepository.getAssignmentSubmissions(
-        courseId: courseId,
-        assignmentId: assignmentId,
+        assignmentId,
       );
     } catch (e) {
       _submissions = const [];
@@ -292,15 +404,140 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     }
   }
 
-  String? _resolveSelectionKey(String? value) {
+  void _selectPreferredCourseAndSection({
+    String? preferredCourseId,
+    String? preferredSectionId,
+  }) {
+    final resolvedCourseId =
+        _resolveCourseId(preferredCourseId) ??
+        _resolveCourseId(selectedCourse?.id) ??
+        _courses.first.id;
+    final resolvedCourse = _resolveCourse(resolvedCourseId) ?? _courses.first;
+    _selectedCourseGroupKey = _courseIdentityKey(resolvedCourse);
+    _selectedSectionId = _resolveSectionForCourse(
+      _selectedCourseGroupKey!,
+      preferredSectionId: preferredSectionId ?? _selectedSectionId,
+    );
+  }
+
+  bool _applyPreferredSelection({
+    String? preferredCourseId,
+    String? preferredSectionId,
+  }) {
+    final nextCourseId = _resolveCourseId(preferredCourseId);
+    final nextCourse = _resolveCourse(nextCourseId ?? preferredCourseId);
+    if (nextCourse == null) {
+      return false;
+    }
+    final nextCourseGroupKey = _courseIdentityKey(nextCourse);
+    final nextSectionId = _resolveSectionForCourse(
+      nextCourseGroupKey,
+      preferredSectionId: preferredSectionId,
+    );
+    if (nextCourseGroupKey == _selectedCourseGroupKey &&
+        nextSectionId == _selectedSectionId) {
+      return false;
+    }
+    _selectedCourseGroupKey = nextCourseGroupKey;
+    _selectedSectionId = nextSectionId;
+    _selectedAssignmentId = null;
+    _submissions = const [];
+    _submissionsError = null;
+    notifyListeners();
+    return true;
+  }
+
+  String? _resolveCourseId(String? value) {
     if (value == null || value.isEmpty) {
       return null;
     }
+    final normalizedValue = _normalized(value);
+    if (value.contains('::')) {
+      final parts = value.split('::');
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        return parts.first;
+      }
+    }
     for (final course in _courses) {
-      if (course.matchesSelection(value)) {
-        return course.selectionKey;
+      if (course.matchesSelection(value) ||
+          _normalized(course.id) == normalizedValue ||
+          _normalized(_courseIdentityKey(course)) == normalizedValue) {
+        return course.id;
       }
     }
     return null;
+  }
+
+  InstructorManagedCourse? _resolveCourse(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    final normalizedValue = _normalized(value);
+    for (final course in _courses) {
+      if (course.matchesSelection(value) ||
+          _normalized(course.id) == normalizedValue ||
+          _normalized(_courseIdentityKey(course)) == normalizedValue) {
+        return course;
+      }
+    }
+    return null;
+  }
+
+  String? _resolveSectionForCourse(
+    String courseGroupKey, {
+    String? preferredSectionId,
+  }) {
+    final normalizedCourseGroupKey = _normalized(courseGroupKey);
+    final sections = _courses
+        .where(
+          (course) => _normalized(_courseIdentityKey(course)) == normalizedCourseGroupKey,
+        )
+        .toList();
+    if (sections.isEmpty) {
+      return null;
+    }
+
+    final preferred = preferredSectionId;
+    if (preferred != null && preferred.isNotEmpty) {
+      for (final course in sections) {
+        if (_scopeIdFor(course) == preferred || course.selectionKey == preferred) {
+          return _scopeIdFor(course);
+        }
+      }
+      if (preferred.contains('::')) {
+        final parts = preferred.split('::');
+        if (parts.length > 1) {
+          return _resolveSectionForCourse(
+            courseGroupKey,
+            preferredSectionId: parts[1],
+          );
+        }
+      }
+    }
+
+    return _scopeIdFor(sections.first);
+  }
+
+  String _scopeIdFor(InstructorManagedCourse course) {
+    if (course.sectionId.isNotEmpty) {
+      return course.sectionId;
+    }
+    if (course.lectureId.isNotEmpty) {
+      return course.lectureId;
+    }
+    return course.id;
+  }
+
+  String _courseIdentityKey(InstructorManagedCourse course) {
+    final code = _normalized(course.courseCode);
+    final name = _normalized(course.name);
+    final term = _normalized(course.term);
+    final semesterId = _normalized(course.semesterId);
+    final primary = code.isNotEmpty ? code : _normalized(course.id);
+    return '$primary::$name::$semesterId::$term';
+  }
+
+  String _normalized(String? value) {
+    return value?.trim().toLowerCase() ?? '';
   }
 }

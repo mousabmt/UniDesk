@@ -225,6 +225,7 @@ class MockApi {
         'courseId': '120414',
         'title': 'Assignment 3',
         'topic': 'Trees',
+        'sectionId': '1',
         'description': 'Please solve all the questions in the attached file.',
         'dueDateLabel': 'Jun 5, 2024',
         'dueDate': '2024-06-05T23:59:00Z',
@@ -242,6 +243,7 @@ class MockApi {
         'courseId': '132120',
         'title': 'Assignment 1',
         'topic': 'Limits & Continuity',
+        'sectionId': '3',
         'description': 'Solve the limit problems in the attached worksheet.',
         'dueDateLabel': 'May 22, 2024',
         'dueDate': '2024-05-22T23:59:00Z',
@@ -263,6 +265,7 @@ class MockApi {
         'courseId': '132120',
         'title': 'Assignment 2',
         'topic': 'Derivatives',
+        'sectionId': '3',
         'description': 'Differentiate the given functions and show your work.',
         'dueDateLabel': 'Jun 1, 2024',
         'dueDate': '2024-06-01T23:59:00Z',
@@ -800,6 +803,14 @@ class MockApi {
   }
 
   // ─── INSTRUCTOR: ASSIGNMENTS ─────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> getInstructorAssignments() async {
+    final assignments = _courseAssignments.values
+        .expand((items) => items)
+        .map(_normalizeInstructorAssignment)
+        .toList();
+    return {'success': true, 'data': assignments};
+  }
+
   // GET https://api.unidesk.local/courses/{courseId}/assignments
   static Future<Map<String, dynamic>> getCourseAssignments(
     String courseId,
@@ -835,6 +846,21 @@ class MockApi {
     };
   }
 
+  static Future<Map<String, dynamic>> getInstructorAssignmentSubmissions(
+    String assignmentId,
+  ) async {
+    for (final assignments in _courseAssignments.values) {
+      if (assignments.any((item) => item['id']?.toString() == assignmentId)) {
+        final submissions = _assignmentSubmissions[assignmentId] ?? [];
+        return {
+          'success': true,
+          'data': submissions.map(_normalizeSubmission).toList(),
+        };
+      }
+    }
+    return {'success': false, 'message': 'Assignment not found'};
+  }
+
   // POST https://api.unidesk.local/courses/{courseId}/assignments
   // body: {
   //   "title": "...",
@@ -850,11 +876,12 @@ class MockApi {
   // }
   static Future<Map<String, dynamic>> createAssignment({
     required String courseId,
+    String? sectionId,
     required String title,
     required String description,
     required String dueDate,
     required int totalPoints,
-    String? instructions,
+    bool isActive = true,
     Map<String, dynamic>?
     attachedFile, // { name, sizeLabel, extensionLabel, localPath? }
   }) async {
@@ -904,16 +931,16 @@ class MockApi {
     final newAssignment = <String, dynamic>{
       'id': assignmentId,
       'courseId': courseId,
+      'sectionId': sectionId ?? '',
       'title': title,
       'description': description,
       'dueDateLabel': '${months[due.month - 1]} ${due.day}, ${due.year}',
       'dueDate': dueDate,
       'totalPoints': totalPoints,
-      'instructions': instructions,
       'attachedFile': filePayload,
       'submittedCount': 0,
       'totalStudents': totalStudents,
-      'status': 'active',
+      'status': isActive ? 'active' : 'inactive',
     };
 
     assignments.add(newAssignment);
@@ -925,7 +952,7 @@ class MockApi {
       details['summary'] = summary;
     }
 
-    return {'success': true, 'data': Map<String, dynamic>.from(newAssignment)};
+    return {'success': true, 'data': _normalizeInstructorAssignment(newAssignment)};
   }
 
   // ─── STUDENT: SUBMIT ASSIGNMENT ──────────────────────────────────────────────
@@ -1014,6 +1041,40 @@ class MockApi {
     }
 
     return {'success': true, 'data': Map<String, dynamic>.from(newSubmission)};
+  }
+
+  static Map<String, dynamic> _normalizeInstructorAssignment(
+    Map<String, dynamic> raw,
+  ) {
+    final attachment = raw['attachedFile'] is Map
+        ? Map<String, dynamic>.from(raw['attachedFile'] as Map)
+        : null;
+    return {
+      'id': raw['id']?.toString() ?? '',
+      'course_id': raw['courseId']?.toString() ?? '',
+      'section_id': raw['sectionId']?.toString() ?? '',
+      'instructor_id': _defaultInstructorId,
+      'title': raw['title']?.toString() ?? '',
+      'description': raw['description']?.toString() ?? '',
+      'file_name': attachment?['name']?.toString(),
+      'file_path': attachment?['localPath']?.toString(),
+      'file_url': attachment?['url']?.toString(),
+      'due_date': raw['dueDate']?.toString() ?? '',
+      'max_score': raw['totalPoints'] ?? 100,
+      'is_active': (raw['status']?.toString() ?? 'active') == 'active',
+    };
+  }
+
+  static Map<String, dynamic> _normalizeSubmission(Map<String, dynamic> raw) {
+    return {
+      'id': raw['id']?.toString() ?? '',
+      'assignment_id': raw['assignmentId']?.toString() ?? '',
+      'student_id': raw['studentId']?.toString() ?? '',
+      'student_name': raw['studentName']?.toString() ?? '',
+      'submitted_at': raw['submittedAt']?.toString() ?? '',
+      'status': raw['status']?.toString() ?? 'submitted',
+      if (raw['file'] is Map) 'file': Map<String, dynamic>.from(raw['file'] as Map),
+    };
   }
 
   // ─── ATTENDANCE ──────────────────────────────────────────────────────────────

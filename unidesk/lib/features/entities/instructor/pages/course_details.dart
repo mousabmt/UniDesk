@@ -146,7 +146,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                   _FilesTab(files: details.files)
                 else if (_selectedTab == _CourseDetailsTab.assignments)
                   _AssignmentsTab(
-                    courseSelectionKey: details.course.selectionKey,
+                    courseId: details.course.id,
+                    sectionId: details.course.sectionId.isNotEmpty
+                        ? details.course.sectionId
+                        : details.course.lectureId,
                     files: details.files,
                   )
                 else
@@ -444,11 +447,13 @@ class _FilesTab extends StatelessWidget {
 
 class _AssignmentsTab extends StatelessWidget {
   const _AssignmentsTab({
-    required this.courseSelectionKey,
+    required this.courseId,
+    required this.sectionId,
     required this.files,
   });
 
-  final String courseSelectionKey;
+  final String courseId;
+  final String sectionId;
   final List<InstructorCourseFile> files;
 
   @override
@@ -473,7 +478,7 @@ class _AssignmentsTab extends StatelessWidget {
           children: [
             TextButton(
               onPressed: () => context.push(
-                '/instructor/assignments-list?courseId=$courseSelectionKey&lockCourse=1',
+                '/instructor/assignments-list?courseId=$courseId&sectionId=$sectionId&lockCourse=1',
               ),
               child: const Text(
                 'View Assignments',
@@ -482,7 +487,7 @@ class _AssignmentsTab extends StatelessWidget {
             ),
             ElevatedButton.icon(
               onPressed: () => context.push(
-                '/instructor/add-assignment?courseId=$courseSelectionKey&lockCourse=1',
+                '/instructor/add-assignment?courseId=$courseId&sectionId=$sectionId&lockCourse=1',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff0bb4b1),

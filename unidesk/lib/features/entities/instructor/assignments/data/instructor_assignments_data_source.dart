@@ -3,12 +3,9 @@ import 'package:unidesk/features/entities/instructor/assignments/models/assignme
 import 'package:unidesk/features/entities/instructor/assignments/models/create_assignment_request.dart';
 
 abstract class InstructorAssignmentsDataSource {
-  Future<List<Assignment>> getAssignments({required String courseId});
+  Future<List<Assignment>> getAssignments();
 
-  Future<List<AssignmentSubmission>> getAssignmentSubmissions({
-    required String courseId,
-    required String assignmentId,
-  });
+  Future<List<AssignmentSubmission>> getAssignmentSubmissions(String assignmentId);
 
   Future<Assignment> createAssignment(CreateAssignmentRequest request);
 }

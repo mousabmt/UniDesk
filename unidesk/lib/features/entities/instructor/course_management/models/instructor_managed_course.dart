@@ -26,7 +26,7 @@ class InstructorManagedCourse {
   final String semesterId;
 
   String get displayLabel =>
-      '${courseCode.isNotEmpty ? courseCode : id} - $name';
+      ' $name';
   String get selectionKey => _selectionKeyFor(
     courseId: id,
     sectionId: sectionId,

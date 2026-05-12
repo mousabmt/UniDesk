@@ -3,32 +3,43 @@ import 'package:unidesk/features/entities/instructor/assignments/models/assignme
 class CreateAssignmentRequest {
   const CreateAssignmentRequest({
     required this.courseId,
+    required this.sectionId,
     required this.title,
     required this.description,
     required this.dueDate,
-    required this.totalPoints,
-    this.instructions,
+    required this.maxScore,
+    this.isActive = true,
     this.attachment,
   });
 
   final String courseId;
+  final String sectionId;
   final String title;
   final String description;
   final DateTime dueDate;
-  final int totalPoints;
-  final String? instructions;
+  final int maxScore;
+  final bool isActive;
   final AssignmentAttachment? attachment;
 
-  Map<String, dynamic> toMap() {
+  Map<String, String> toApiFields() {
     return {
-      'courseId': courseId,
+      'course_id': courseId,
+      'section_id': sectionId,
       'title': title,
       'description': description,
-      'dueDate': dueDate.toUtc().toIso8601String(),
-      'totalPoints': totalPoints,
-      if (instructions != null && instructions!.trim().isNotEmpty)
-        'instructions': instructions!.trim(),
-      if (attachment != null) 'attachedFile': attachment!.toCreatePayload(),
+      'due_date': _formatApiDateTime(dueDate),
+      'max_score': maxScore.toString(),
     };
+  }
+
+  static String _formatApiDateTime(DateTime value) {
+    final normalized = value.toLocal();
+    final twoDigits = (int number) => number.toString().padLeft(2, '0');
+    return '${normalized.year}-'
+        '${twoDigits(normalized.month)}-'
+        '${twoDigits(normalized.day)} '
+        '${twoDigits(normalized.hour)}:'
+        '${twoDigits(normalized.minute)}:'
+        '${twoDigits(normalized.second)}';
   }
 }

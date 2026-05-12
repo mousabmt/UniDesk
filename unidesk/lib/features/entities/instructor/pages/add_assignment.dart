@@ -8,6 +8,7 @@ import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment_attachment.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/create_assignment_request.dart';
 import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
+import 'package:unidesk/features/entities/instructor/course_management/models/instructor_managed_course.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_card.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_wave_header_card.dart';
 
@@ -15,10 +16,12 @@ class AddAssignmentPage extends StatefulWidget {
   const AddAssignmentPage({
     super.key,
     this.initialCourseId,
+    this.initialSectionId,
     this.lockCourseSelection = false,
   });
 
   final String? initialCourseId;
+  final String? initialSectionId;
   final bool lockCourseSelection;
 
   @override
@@ -32,7 +35,6 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _pointsController = TextEditingController(text: '100');
-  final _instructionsController = TextEditingController();
 
   DateTime? _dueDate;
   AssignmentAttachment? _attachment;
@@ -48,6 +50,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
   void didUpdateWidget(covariant AddAssignmentPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialCourseId != widget.initialCourseId ||
+        oldWidget.initialSectionId != widget.initialSectionId ||
         oldWidget.lockCourseSelection != widget.lockCourseSelection) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _syncRouteState());
     }
@@ -58,7 +61,6 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
     _titleController.dispose();
     _descriptionController.dispose();
     _pointsController.dispose();
-    _instructionsController.dispose();
     super.dispose();
   }
 
@@ -95,8 +97,8 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                   content: _HeaderContent(
                     title: 'Create Assignment',
                     subtitle: selectedCourse == null
-                        ? 'Select a course, add instructions, and publish when ready.'
-                        : 'Publishing to ${selectedCourse.displayLabel}.',
+                        ? 'Select a course and section, then publish when ready.'
+                        : 'Publishing to ${selectedCourse.displayLabel}${provider.sectionLabelFor(selectedCourse) == null ? '' : ' • ${provider.sectionLabelFor(selectedCourse)!}'}.',
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -116,38 +118,85 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                         children: [
                           _SectionLabel('Select Course'),
                           const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            key: ValueKey(selectedCourse?.selectionKey),
-                            initialValue: selectedCourse?.selectionKey,
-                            decoration: _inputDecoration('Choose a course'),
-                            items: provider.courses
-                                .map(
-                                  (course) => DropdownMenuItem<String>(
-                                    value: course.selectionKey,
-                                    child: Text(course.name),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: provider.isCourseLocked
-                                ? null
-                                : (value) async {
-                                    if (value == null) {
-                                      return;
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: DropdownButtonFormField<String>(
+                                  key: ValueKey(provider.selectedCourseGroupKey),
+                                  initialValue: provider.selectedCourseGroupKey,
+                                  decoration: _inputDecoration('Choose a course'),
+                                  items: provider.availableCourses
+                                      .map(
+                                        (course) => DropdownMenuItem<String>(
+                                          value: provider.courseSelectionValueFor(course),
+                                          child: Text(course.displayLabel),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: provider.isCourseLocked
+                                      ? null
+                                      : (value) async {
+                                          if (value == null) {
+                                            return;
+                                          }
+                                          final instructorId =
+                                              context.read<AuthProvider>().userId ??
+                                              'D001';
+                                          await provider.selectCourse(
+                                            instructorId: instructorId,
+                                            courseId: value,
+                                          );
+                                        },
+                                  validator: (value) {
+                                    if ((value ?? '').trim().isEmpty) {
+                                      return 'Please choose a course.';
                                     }
-                                    final instructorId =
-                                        context.read<AuthProvider>().userId ??
-                                        'D001';
-                                    await provider.selectCourse(
-                                      instructorId: instructorId,
-                                      courseId: value,
-                                    );
+                                    return null;
                                   },
-                            validator: (value) {
-                              if ((value ?? '').trim().isEmpty) {
-                                return 'Please choose a course.';
-                              }
-                              return null;
-                            },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: DropdownButtonFormField<String>(
+                                  key: ValueKey(
+                                    '${provider.selectedCourseId}-${provider.selectedSectionSelectionKey}',
+                                  ),
+                                  initialValue: provider.selectedSectionSelectionKey,
+                                  decoration: _inputDecoration('Choose a section'),
+                                  items: provider.availableSections
+                                      .map(
+                                        (course) => DropdownMenuItem<String>(
+                                          value: course.selectionKey,
+                                          child: Text(
+                                            provider.sectionLabelFor(course) ??
+                                                _fallbackSectionLabel(course),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) async {
+                                          if (value == null) {
+                                            return;
+                                          }
+                                          final instructorId =
+                                              context.read<AuthProvider>().userId ??
+                                              'D001';
+                                          await provider.selectSection(
+                                            instructorId: instructorId,
+                                            sectionId: value,
+                                          );
+                                        },
+                                  validator: (value) {
+                                    if ((value ?? '').trim().isEmpty) {
+                                      return 'Please choose a section.';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 18),
                           _SectionLabel('Title'),
@@ -235,16 +284,6 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                               }
                               return null;
                             },
-                          ),
-                          const SizedBox(height: 18),
-                          _SectionLabel('Instructions'),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _instructionsController,
-                            maxLines: 4,
-                            decoration: _inputDecoration(
-                              'Optional notes for students',
-                            ),
                           ),
                           const SizedBox(height: 18),
                           _SectionLabel('Attachment'),
@@ -343,13 +382,17 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
         extensionLabel: extension,
         sizeLabel: _formatBytes(file.size),
         localPath: localPath,
+        bytes: file.bytes,
       );
     });
   }
 
   Future<void> _submitForm(InstructorAssignmentsProvider provider) async {
     final formIsValid = _formKey.currentState?.validate() ?? false;
-    if (!formIsValid || _dueDate == null || provider.selectedCourse == null) {
+    if (!formIsValid ||
+        _dueDate == null ||
+        provider.selectedCourse == null ||
+        provider.selectedSectionId == null) {
       setState(() => _showValidationErrors = true);
       return;
     }
@@ -358,13 +401,12 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
 
     final request = CreateAssignmentRequest(
       courseId: provider.selectedCourse!.id,
+      sectionId: provider.selectedSectionId!,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       dueDate: _dueDate!,
-      totalPoints: int.parse(_pointsController.text.trim()),
-      instructions: _instructionsController.text.trim().isEmpty
-          ? null
-          : _instructionsController.text.trim(),
+      maxScore: int.parse(_pointsController.text.trim()),
+      isActive: true,
       attachment: _attachment,
     );
 
@@ -376,7 +418,8 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
     context.goNamed(
       'instructor-assignments-list',
       queryParameters: <String, String>{
-        'courseId': provider.selectedCourse!.selectionKey,
+        'courseId': provider.selectedCourse!.id,
+        'sectionId': provider.selectedSectionId!,
         if (widget.lockCourseSelection) 'lockCourse': '1',
       },
       extra: 'Assignment created successfully.',
@@ -427,8 +470,19 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
     await context.read<InstructorAssignmentsProvider>().loadIfNeeded(
       instructorId: instructorId,
       preferredCourseId: widget.initialCourseId,
+      preferredSectionId: widget.initialSectionId,
       lockCourseSelection: widget.lockCourseSelection,
     );
+  }
+
+  static String _fallbackSectionLabel(InstructorManagedCourse course) {
+    if (course.sectionId.isNotEmpty) {
+      return 'Section ${course.sectionId}';
+    }
+    if (course.lectureId.isNotEmpty) {
+      return 'Section ${course.lectureId}';
+    }
+    return 'Section';
   }
 }
 

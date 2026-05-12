@@ -91,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
     final isCompact = ResponsiveLayout.isCompact(context);
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           Positioned.fill(

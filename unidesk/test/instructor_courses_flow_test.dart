@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/instructor/assignments/models/assignment.dart';
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment_attachment.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_repository.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/mock_instructor_assignments_data_source.dart';
@@ -119,15 +120,56 @@ void main() {
   test(
     'mock instructor assignments repository returns typed assignments',
     () async {
-      final assignments = await assignmentsRepository.getAssignments(
-        courseId: '120414',
-      );
+      final assignments = await assignmentsRepository.getAssignments();
 
       expect(assignments, isNotEmpty);
       expect(assignments.first.courseId, '120414');
       expect(assignments.first.title, isNotEmpty);
     },
   );
+
+  test('assignment parses nested file payload from API response', () {
+    final assignment = Assignment.fromMap({
+      'id': 3,
+      'course_id': 7,
+      'section_id': 16,
+      'instructor_id': 1,
+      'title': 'test assignments',
+      'description': 'test test',
+      'due_date': '2026-05-20 23:59:59',
+      'max_score': 10,
+      'file': {
+        'id': 3,
+        'file_name': 'Controller.php',
+        'file_path': 'assignments/example',
+        'file_url': 'https://example.com/storage/assignments/example',
+      },
+    });
+
+    expect(assignment.fileName, 'Controller.php');
+    expect(assignment.filePath, 'assignments/example');
+    expect(
+      assignment.fileUrl,
+      'https://example.com/storage/assignments/example',
+    );
+    expect(assignment.attachment, isNotNull);
+    expect(assignment.attachment!.name, 'Controller.php');
+  });
+
+  test('create assignment request matches backend date format', () {
+    final request = CreateAssignmentRequest(
+      courseId: '2',
+      sectionId: '1',
+      title: 'Midterm Project',
+      description: 'Build a Laravel REST API for course management.',
+      dueDate: DateTime(2026, 6, 1, 23, 59),
+      maxScore: 100,
+    );
+
+      expect(request.toApiFields()['due_date'], '2026-06-01 23:59:00');
+      expect(request.toApiFields()['course_id'], '2');
+      expect(request.toApiFields()['section_id'], '1');
+    });
 
   test(
     'assignment attachment reports open capability for local and remote',
@@ -170,9 +212,11 @@ void main() {
       await provider.loadIfNeeded(
         instructorId: 'D001',
         preferredCourseId: '120414',
+        preferredSectionId: '1',
       );
 
       expect(provider.selectedCourseId, '120414');
+      expect(provider.selectedSectionId, '1');
       expect(provider.assignments, isNotEmpty);
       expect(provider.selectedAssignmentId, isNotNull);
       expect(provider.submissionsError, isNull);
@@ -190,6 +234,7 @@ void main() {
       await provider.loadIfNeeded(
         instructorId: 'D001',
         preferredCourseId: '120414',
+        preferredSectionId: '1',
       );
       final beforeCount = provider.assignments.length;
       final selectedCourse = provider.selectedCourse!;
@@ -197,10 +242,11 @@ void main() {
       final success = await provider.createAssignment(
         CreateAssignmentRequest(
           courseId: selectedCourse.id,
+          sectionId: provider.selectedSectionId!,
           title: 'Provider Test Assignment',
           description: 'Validate creation flow.',
           dueDate: DateTime(2026, 5, 20),
-          totalPoints: 25,
+          maxScore: 25,
         ),
       );
 
@@ -232,15 +278,19 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(body: AssignmentsPage(initialCourseId: '132120')),
+          home: Scaffold(
+            body: AssignmentsPage(
+              initialCourseId: '132120',
+              initialSectionId: '3',
+            ),
+          ),
         ),
       ),
     );
 
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-    expect(find.textContaining('132120 - Calculus I'), findsWidgets);
     expect(find.text('Assignment 1'), findsWidgets);
     expect(find.text('limits_worksheet.pdf'), findsOneWidget);
   });

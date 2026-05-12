@@ -405,15 +405,14 @@ class StudentApi {
     );
 
     final body = await _decode(response);
-    if (!_isSuccessStatus(response.statusCode) ||
-        body is! Map<String, dynamic>) {
+    if (!_isSuccessStatus(response.statusCode) || body is! Map<String, dynamic>) {
       throw Exception(
         _messageFromBody(body, fallback: 'Failed to load instructor courses'),
       );
     }
 
-    final courses = body['courses'];
-    if (courses is! List) {
+    final courses = _extractInstructorCourses(body);
+    if (courses == null) {
       throw Exception(
         'Unexpected instructor courses response (${response.statusCode})',
       );
@@ -421,21 +420,39 @@ class StudentApi {
 
     return courses.map<Map<String, dynamic>>((item) {
       final map = Map<String, dynamic>.from(item as Map);
+      final sectionId =
+          map['section_id']?.toString() ?? map['sectionId']?.toString() ?? '';
+      final sectionNumber =
+          map['section_number']?.toString() ??
+          map['sectionLabel']?.toString() ??
+          '';
       return {
         ...map,
-        'id': map['course_id']?.toString() ?? '',
-        'courseCode': map['course_code']?.toString() ?? '',
-        'name': map['course_name']?.toString() ?? '',
-        'credits': _toInt(map['credit_hours']),
-        'lectureId': map['section_id']?.toString() ?? '',
-        'sectionId': map['section_id']?.toString() ?? '',
-        'sectionLabel': map['section_number']?.toString() ?? '',
-        'teachingMode': map['teaching_mode']?.toString() ?? '',
-        'term': _joinNonEmpty([
-          map['academic_year']?.toString(),
-          map['term']?.toString(),
-        ], separator: ' - '),
-        'semesterId': map['semester_id']?.toString() ?? '',
+        'id': map['course_id']?.toString() ?? map['id']?.toString() ?? '',
+        'courseCode':
+            map['course_code']?.toString() ??
+            map['courseCode']?.toString() ??
+            '',
+        'name':
+            map['course_name']?.toString() ?? map['name']?.toString() ?? '',
+        'credits': _toInt(map['credit_hours'] ?? map['credits']),
+        'studentsEnrolled':
+            _toInt(map['students_enrolled'] ?? map['studentsEnrolled']),
+        'lectureId': sectionId.isNotEmpty ? sectionId : sectionNumber,
+        'sectionId': sectionId,
+        'sectionLabel': sectionNumber,
+        'teachingMode':
+            map['teaching_mode']?.toString() ??
+            map['teachingMode']?.toString() ??
+            '',
+        'term':
+            map['semester_name']?.toString() ??
+            map['term']?.toString() ??
+            '',
+        'semesterId':
+            map['semester_id']?.toString() ??
+            map['semesterId']?.toString() ??
+            '',
       };
     }).toList();
   }
@@ -553,6 +570,111 @@ class StudentApi {
       'file_name': data['file_name'] ?? fileName,
       'localPath': localPath,
     });
+  }
+
+  static Future<List<Map<String, dynamic>>> getInstructorAssignments({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/assignments'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignments'),
+      );
+    }
+
+    final assignments = body is Map<String, dynamic> ? body['data'] ?? body['assignments'] : body;
+    if (assignments is! List) {
+      throw Exception('Unexpected assignments response (${response.statusCode})');
+    }
+
+    return assignments.map<Map<String, dynamic>>((item) {
+      return Map<String, dynamic>.from(item as Map);
+    }).toList();
+  }
+
+  static Future<Map<String, dynamic>> createInstructorAssignment({
+    required Map<String, String> fields,
+    String? fileName,
+    String? localPath,
+    Uint8List? fileBytes,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final request = http.MultipartRequest('POST', _uri('/assignments'));
+    request.headers.addAll(_headers(token: token, contentType: null));
+    request.fields.addAll(fields);
+
+    if (fileBytes != null && fileName != null && fileName.isNotEmpty) {
+      request.files.add(
+        http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+      );
+    } else if (localPath != null &&
+        localPath.isNotEmpty &&
+        fileName != null &&
+        fileName.isNotEmpty) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          localPath,
+          filename: fileName,
+        ),
+      );
+    }
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    final body = await _decode(response);
+
+    if (!_isSuccessStatus(response.statusCode) || body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to create assignment'),
+      );
+    }
+
+    final data = body['data'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
+        : Map<String, dynamic>.from(body);
+    if (data.isEmpty) {
+      throw Exception('Unexpected create assignment response (${response.statusCode})');
+    }
+    return data;
+  }
+
+  static Future<List<Map<String, dynamic>>> getAssignmentSubmissions({
+    required String assignmentId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/assignments/$assignmentId/submissions'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignment submissions'),
+      );
+    }
+
+    final submissions = body is Map<String, dynamic>
+        ? body['data'] ?? body['submissions']
+        : body;
+    if (submissions is! List) {
+      throw Exception(
+        'Unexpected assignment submissions response (${response.statusCode})',
+      );
+    }
+
+    return submissions.map<Map<String, dynamic>>((item) {
+      return Map<String, dynamic>.from(item as Map);
+    }).toList();
   }
 
   static Future<Map<String, dynamic>> startAttendanceSession({
@@ -804,5 +926,22 @@ class StudentApi {
       return 'assignment';
     }
     return 'lecture';
+  }
+
+  static List<dynamic>? _extractInstructorCourses(Map<String, dynamic> body) {
+    final direct = body['courses'];
+    if (direct is List) {
+      return direct;
+    }
+
+    final data = body['data'];
+    if (data is Map<String, dynamic>) {
+      final nested = data['courses'];
+      if (nested is List) {
+        return nested;
+      }
+    }
+
+    return null;
   }
 }

@@ -7,8 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
+import 'package:unidesk/features/entities/instructor/assignments/data/api_instructor_assignments_data_source.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_repository.dart';
-import 'package:unidesk/features/entities/instructor/assignments/data/mock_instructor_assignments_data_source.dart';
 import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
@@ -78,7 +78,7 @@ void main() {
         ),
         Provider<InstructorAssignmentsRepository>(
           create: (_) => const InstructorAssignmentsRepositoryImpl(
-            MockInstructorAssignmentsDataSource(),
+            ApiInstructorAssignmentsDataSource(),
           ),
         ),
         ChangeNotifierProvider(
@@ -277,6 +277,7 @@ class _MyAppState extends State<MyApp> {
                   name: 'instructor-assignments-list',
                   builder: (context, state) => AssignmentsPage(
                     initialCourseId: state.uri.queryParameters['courseId'],
+                    initialSectionId: state.uri.queryParameters['sectionId'],
                     lockCourseSelection:
                         state.uri.queryParameters['lockCourse'] == '1',
                     successMessage: state.extra as String?,
@@ -287,6 +288,7 @@ class _MyAppState extends State<MyApp> {
                   name: 'instructor-add-assignment',
                   builder: (context, state) => AddAssignmentPage(
                     initialCourseId: state.uri.queryParameters['courseId'],
+                    initialSectionId: state.uri.queryParameters['sectionId'],
                     lockCourseSelection:
                         state.uri.queryParameters['lockCourse'] == '1',
                   ),

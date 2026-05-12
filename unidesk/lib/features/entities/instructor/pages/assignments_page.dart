@@ -7,6 +7,7 @@ import 'package:unidesk/features/entities/instructor/assignments/models/assignme
 import 'package:unidesk/features/entities/instructor/assignments/models/assignment_submission.dart';
 import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import 'package:unidesk/features/entities/instructor/assignments/services/assignment_attachment_opener.dart';
+import 'package:unidesk/features/entities/instructor/course_management/models/instructor_managed_course.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_file_item.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_card.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_wave_header_card.dart';
@@ -15,11 +16,13 @@ class AssignmentsPage extends StatefulWidget {
   const AssignmentsPage({
     super.key,
     this.initialCourseId,
+    this.initialSectionId,
     this.lockCourseSelection = false,
     this.successMessage,
   });
 
   final String? initialCourseId;
+  final String? initialSectionId;
   final bool lockCourseSelection;
   final String? successMessage;
 
@@ -44,6 +47,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
   void didUpdateWidget(covariant AssignmentsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialCourseId != widget.initialCourseId ||
+        oldWidget.initialSectionId != widget.initialSectionId ||
         oldWidget.lockCourseSelection != widget.lockCourseSelection ||
         oldWidget.successMessage != widget.successMessage) {
       _didShowSuccessMessage = false;
@@ -106,6 +110,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                       instructorId:
                           context.read<AuthProvider>().userId ?? 'D001',
                       preferredCourseId: widget.initialCourseId,
+                      preferredSectionId: widget.initialSectionId,
                       lockCourseSelection: widget.lockCourseSelection,
                     ),
                   )
@@ -113,9 +118,9 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: _CourseSelector(
+                        child: _CourseSectionSelector(
                           provider: provider,
-                          onChanged: (courseId) async {
+                          onCourseChanged: (courseId) async {
                             if (courseId == null) {
                               return;
                             }
@@ -124,6 +129,17 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                             await provider.selectCourse(
                               instructorId: instructorId,
                               courseId: courseId,
+                            );
+                          },
+                          onSectionChanged: (sectionId) async {
+                            if (sectionId == null) {
+                              return;
+                            }
+                            final instructorId =
+                                context.read<AuthProvider>().userId ?? 'D001';
+                            await provider.selectSection(
+                              instructorId: instructorId,
+                              sectionId: sectionId,
                             );
                           },
                         ),
@@ -135,7 +151,8 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                             : () => context.pushNamed(
                                 'instructor-add-assignment',
                                 queryParameters: <String, String>{
-                                  'courseId': selectedCourse.selectionKey,
+                                  'courseId': selectedCourse.id,
+                                  'sectionId': provider.selectedSectionId ?? '',
                                   if (widget.lockCourseSelection)
                                     'lockCourse': '1',
                                 },
@@ -169,7 +186,8 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                 instructorId:
                                     context.read<AuthProvider>().userId ??
                                     'D001',
-                                preferredCourseId: provider.selectedCourseKey,
+                                preferredCourseId: provider.selectedCourseId,
+                                preferredSectionId: provider.selectedSectionId,
                                 lockCourseSelection: provider.isCourseLocked,
                               ),
                               onAttachmentTap: (attachment) =>
@@ -195,7 +213,8 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                 instructorId:
                                     context.read<AuthProvider>().userId ??
                                     'D001',
-                                preferredCourseId: provider.selectedCourseKey,
+                                preferredCourseId: provider.selectedCourseId,
+                                preferredSectionId: provider.selectedSectionId,
                                 lockCourseSelection: provider.isCourseLocked,
                               ),
                               onAttachmentTap: (attachment) =>
@@ -244,6 +263,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
     await context.read<InstructorAssignmentsProvider>().loadIfNeeded(
       instructorId: instructorId,
       preferredCourseId: widget.initialCourseId,
+      preferredSectionId: widget.initialSectionId,
       lockCourseSelection: widget.lockCourseSelection,
     );
     _showSuccessMessageIfNeeded();
@@ -275,6 +295,11 @@ class _AssignmentsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sectionLabel =
+        context.select<InstructorAssignmentsProvider, String?>((provider) {
+          final course = provider.selectedCourse;
+          return course == null ? null : provider.sectionLabelFor(course);
+        });
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -285,7 +310,7 @@ class _AssignmentsHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '$assignmentCount assignment${assignmentCount == 1 ? '' : 's'} in $courseLabel',
+          '${assignmentCount == 1 ? '1 assignment' : '$assignmentCount assignments'} in $courseLabel${sectionLabel == null ? '' : ' • $sectionLabel'}',
           style: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ],
@@ -293,11 +318,84 @@ class _AssignmentsHeader extends StatelessWidget {
   }
 }
 
-class _CourseSelector extends StatelessWidget {
-  const _CourseSelector({required this.provider, required this.onChanged});
+class _CourseSectionSelector extends StatelessWidget {
+  const _CourseSectionSelector({
+    required this.provider,
+    required this.onCourseChanged,
+    required this.onSectionChanged,
+  });
 
   final InstructorAssignmentsProvider provider;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String?> onCourseChanged;
+  final ValueChanged<String?> onSectionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _SelectorCard(
+            value: provider.selectedCourseGroupKey,
+            hint: 'Choose a course',
+            items: provider.availableCourses
+                .map(
+                  (course) => DropdownMenuItem<String>(
+                    value: provider.courseSelectionValueFor(course),
+                    child: Text(course.displayLabel),
+                  ),
+                )
+                .toList(),
+            onChanged: provider.isCourseLocked ? null : onCourseChanged,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: _SelectorCard(
+            value: provider.selectedSectionSelectionKey,
+            hint: 'Choose a section',
+            items: provider.availableSections
+                .map(
+                  (course) => DropdownMenuItem<String>(
+                    value: course.selectionKey,
+                    child: Text(
+                      provider.sectionLabelFor(course) ??
+                          _fallbackSectionLabel(course),
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: onSectionChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _fallbackSectionLabel(InstructorManagedCourse course) {
+    if (course.sectionId.isNotEmpty) {
+      return 'Section ${course.sectionId}';
+    }
+    if (course.lectureId.isNotEmpty) {
+      return 'Section ${course.lectureId}';
+    }
+    return 'Section';
+  }
+}
+
+class _SelectorCard extends StatelessWidget {
+  const _SelectorCard({
+    required this.value,
+    required this.hint,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final String hint;
+  final List<DropdownMenuItem<String>> items;
+  final ValueChanged<String?>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -306,18 +404,11 @@ class _CourseSelector extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: provider.selectedCourseKey,
+          value: value,
           isExpanded: true,
-          hint: const Text('Choose a course'),
-          items: provider.courses
-              .map(
-                (course) => DropdownMenuItem<String>(
-                  value: course.selectionKey,
-                  child: Text(course.displayLabel),
-                ),
-              )
-              .toList(),
-          onChanged: provider.isCourseLocked ? null : onChanged,
+          hint: Text(hint),
+          items: items,
+          onChanged: onChanged,
         ),
       ),
     );
@@ -370,7 +461,7 @@ class _AssignmentsListCard extends StatelessWidget {
       return const Padding(
         padding: EdgeInsets.all(20),
         child: Text(
-          'No assignments published for this course yet.',
+          'No assignments published for this course section yet.',
           style: TextStyle(color: Colors.grey),
         ),
       );
@@ -458,7 +549,13 @@ class _AssignmentTile extends StatelessWidget {
                       ),
                       _MetaChip(
                         icon: Icons.grade_outlined,
-                        text: '${assignment.totalPoints} points',
+                        text: '${assignment.maxScore} points',
+                      ),
+                      _MetaChip(
+                        icon: assignment.isActive
+                            ? Icons.check_circle_outline
+                            : Icons.pause_circle_outline,
+                        text: assignment.statusLabel,
                       ),
                     ],
                   ),
@@ -473,22 +570,24 @@ class _AssignmentTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  assignment.submissionRatioLabel,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: assignment.isActive
+                    ? const Color(0xffe7f7ef)
+                    : const Color(0xfff5f5f5),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                assignment.statusLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: assignment.isActive
+                      ? const Color(0xff237a44)
+                      : Colors.grey.shade700,
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Submitted',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
+              ),
             ),
           ],
         ),
