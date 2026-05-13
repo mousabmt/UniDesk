@@ -27,6 +27,18 @@ class AssignmentSubmission {
   bool get isSubmitted => status.toLowerCase() == 'submitted';
 
   factory AssignmentSubmission.fromMap(Map<String, dynamic> map) {
+    // Parse file from various possible keys
+    AssignmentAttachment? parsedFile;
+    if (map['file'] is Map) {
+      parsedFile = AssignmentAttachment.fromMap(
+        Map<String, dynamic>.from(map['file'] as Map),
+      );
+    } else if (map['submission_file'] is Map) {
+      parsedFile = AssignmentAttachment.fromMap(
+        Map<String, dynamic>.from(map['submission_file'] as Map),
+      );
+    }
+    
     return AssignmentSubmission(
       id: map['id']?.toString() ?? '',
       assignmentId:
@@ -57,15 +69,7 @@ class AssignmentSubmission {
           _formatSubmittedAt(
             map['submitted_at']?.toString() ?? map['submittedAt']?.toString(),
           ),
-      file: map['file'] is Map
-          ? AssignmentAttachment.fromMap(
-              Map<String, dynamic>.from(map['file'] as Map),
-            )
-          : map['submission_file'] is Map
-          ? AssignmentAttachment.fromMap(
-              Map<String, dynamic>.from(map['submission_file'] as Map),
-            )
-          : null,
+      file: parsedFile,
     );
   }
 

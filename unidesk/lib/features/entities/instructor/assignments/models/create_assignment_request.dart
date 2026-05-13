@@ -9,6 +9,7 @@ class CreateAssignmentRequest {
     required this.dueDate,
     required this.maxScore,
     this.isActive = true,
+    this.category_id,
     this.attachment,
   });
 
@@ -19,18 +20,20 @@ class CreateAssignmentRequest {
   final DateTime dueDate;
   final int maxScore;
   final bool isActive;
+  final int? category_id;
   final AssignmentAttachment? attachment;
 
-  Map<String, String> toApiFields() {
-    return {
-      'course_id': courseId,
-      'section_id': sectionId,
-      'title': title,
-      'description': description,
-      'due_date': _formatApiDateTime(dueDate),
-      'max_score': maxScore.toString(),
-    };
-  }
+Map<String, dynamic> toApiFields() {
+  return {
+    'course_id': courseId,
+    'section_id': sectionId,
+    'title': title,
+    'description': description,
+    'due_date': _formatApiDateTime(dueDate),
+    'max_score': maxScore,
+    'category_id': category_id ?? 3,
+  };
+}
 
   static String _formatApiDateTime(DateTime value) {
     final normalized = value.toLocal();

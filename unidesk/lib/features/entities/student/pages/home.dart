@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/entities/widgets_std/homeWidgets/actions_row.dart';
 import 'package:unidesk/features/entities/widgets_std/homeWidgets/stats_row.dart';
 import 'package:unidesk/features/entities/widgets_std/homeWidgets/ads.dart';
-import 'package:unidesk/shared/widgets/app_layout.dart';
 import '../../../language/langProvider.dart';
 import '../providers_std/profile_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
@@ -21,10 +19,8 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Auth guard — safe place to redirect
 
 
-      // Trigger all cached loads
       context.read<ProfileProvider>().loadIfNeeded();
       context.read<CoursesProvider>().loadIfNeeded();
       context.read<AnnoucProvider>().loadIfNeeded();

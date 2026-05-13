@@ -48,14 +48,16 @@ class AssignmentAttachment {
         map['extensionLabel']?.toString() ??
         map['extension_label']?.toString() ??
         _extensionFromName(name);
+    final sizeLabel = _formatFileSize(
+      map['sizeLabel']?.toString(),
+      map['size_label']?.toString(),
+      map['file_size'],
+    );
     return AssignmentAttachment(
       id: map['id']?.toString() ?? '',
       name: name,
       extensionLabel: extension,
-      sizeLabel:
-          map['sizeLabel']?.toString() ??
-          map['size_label']?.toString() ??
-          '',
+      sizeLabel: sizeLabel,
       url:
           map['url']?.toString() ??
           map['file_url']?.toString() ??
@@ -98,5 +100,32 @@ class AssignmentAttachment {
     }
     final windowsDrive = RegExp(r'^[a-zA-Z]:[\\/]');
     return windowsDrive.hasMatch(normalized);
+  }
+
+  static String _formatFileSize(
+    String? formattedLabel,
+    String? sizeLabel,
+    dynamic rawSize,
+  ) {
+    if (formattedLabel != null && formattedLabel.isNotEmpty) {
+      return formattedLabel;
+    }
+    if (sizeLabel != null && sizeLabel.isNotEmpty) {
+      return sizeLabel;
+    }
+    final bytes =
+        rawSize is num ? rawSize.toDouble() : double.tryParse(rawSize?.toString() ?? '');
+    if (bytes == null || bytes <= 0) {
+      return '';
+    }
+    const units = ['B', 'KB', 'MB', 'GB'];
+    var size = bytes;
+    var unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    final decimals = unitIndex == 0 ? 0 : 1;
+    return '${size.toStringAsFixed(decimals)} ${units[unitIndex]}';
   }
 }

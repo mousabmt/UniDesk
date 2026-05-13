@@ -153,18 +153,7 @@ class _AddFilesPageState extends State<AddFilesPage> {
                       studentsEnrolled: selectedCourse.studentsEnrolled,
                     ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'File Category',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 10),
-                  _CategoryRow(
-                    selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
-                  ),
-
+                 
                   const SizedBox(height: 20),
                   _UploadDropzone(
                     isUploading: provider.isUploading,
@@ -177,6 +166,20 @@ class _AddFilesPageState extends State<AddFilesPage> {
                             provider: provider,
                           ),
                   ),
+                  const SizedBox(height: 10),
+                   const Text(
+                    'File Category',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _CategoryRow(
+                    selectedCategory: _selectedCategory,
+                    onCategorySelected: (category) {
+                      setState(() => _selectedCategory = category);
+                    },
+                  ),
+
                   if (provider.uploadError != null) ...[
                     const SizedBox(height: 12),
                     _InlineError(message: provider.uploadError!),

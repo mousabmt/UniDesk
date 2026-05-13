@@ -212,6 +212,8 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                             _SubmissionsPanel(
                               provider: provider,
                               selectedAssignment: selectedAssignment,
+                              onSubmissionFileTap: (attachment) =>
+                                  _handleAttachmentTap(context, attachment),
                             ),
                           ],
                         );
@@ -242,6 +244,8 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                             child: _SubmissionsPanel(
                               provider: provider,
                               selectedAssignment: selectedAssignment,
+                              onSubmissionFileTap: (attachment) =>
+                                  _handleAttachmentTap(context, attachment),
                             ),
                           ),
                         ],
@@ -694,10 +698,12 @@ class _SubmissionsPanel extends StatelessWidget {
   const _SubmissionsPanel({
     required this.provider,
     required this.selectedAssignment,
+    this.onSubmissionFileTap,
   });
 
   final InstructorAssignmentsProvider provider;
   final Assignment? selectedAssignment;
+  final ValueChanged<AssignmentAttachment>? onSubmissionFileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -753,7 +759,12 @@ class _SubmissionsPanel extends StatelessWidget {
         final submission = provider.submissions[index];
         return Column(
           children: [
-            _SubmissionTile(submission: submission),
+            _SubmissionTile(
+              submission: submission,
+              onFileTap: submission.file != null
+                  ? () => onSubmissionFileTap?.call(submission.file!)
+                  : null,
+            ),
             if (index < provider.submissions.length - 1)
               const Divider(height: 1, indent: 16, endIndent: 16),
           ],
@@ -764,9 +775,13 @@ class _SubmissionsPanel extends StatelessWidget {
 }
 
 class _SubmissionTile extends StatelessWidget {
-  const _SubmissionTile({required this.submission});
+  const _SubmissionTile({
+    required this.submission,
+    this.onFileTap,
+  });
 
   final AssignmentSubmission submission;
+  final VoidCallback? onFileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -804,13 +819,65 @@ class _SubmissionTile extends StatelessWidget {
                       : 'Submitted on ${submission.submittedAtLabel}',
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                if (submission.file != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    submission.file!.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                if (submission.file != null) ...[  
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: submission.file!.canOpen ? onFileTap : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: submission.file!.badgeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: submission.file!.badgeColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: submission.file!.badgeColor,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              submission.file!.extensionLabel,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              submission.file!.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            submission.file!.canOpen
+                                ? Icons.open_in_new
+                                : Icons.info_outline,
+                            size: 12,
+                            color: submission.file!.canOpen
+                                ? submission.file!.badgeColor
+                                : Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ],

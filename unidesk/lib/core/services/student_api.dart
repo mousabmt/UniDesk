@@ -29,8 +29,7 @@ class StudentApi {
     final headers = <String, String>{
       'Accept': accept,
       'ngrok-skip-browser-warning': 'true',
-        'User-Agent': 'FlutterApp', 
-
+      'User-Agent': 'FlutterApp',
     };
     if (contentType != null && contentType.isNotEmpty) {
       headers['Content-Type'] = contentType;
@@ -405,7 +404,8 @@ class StudentApi {
     );
 
     final body = await _decode(response);
-    if (!_isSuccessStatus(response.statusCode) || body is! Map<String, dynamic>) {
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
       throw Exception(
         _messageFromBody(body, fallback: 'Failed to load instructor courses'),
       );
@@ -433,11 +433,11 @@ class StudentApi {
             map['course_code']?.toString() ??
             map['courseCode']?.toString() ??
             '',
-        'name':
-            map['course_name']?.toString() ?? map['name']?.toString() ?? '',
+        'name': map['course_name']?.toString() ?? map['name']?.toString() ?? '',
         'credits': _toInt(map['credit_hours'] ?? map['credits']),
-        'studentsEnrolled':
-            _toInt(map['students_enrolled'] ?? map['studentsEnrolled']),
+        'studentsEnrolled': _toInt(
+          map['students_enrolled'] ?? map['studentsEnrolled'],
+        ),
         'lectureId': sectionId.isNotEmpty ? sectionId : sectionNumber,
         'sectionId': sectionId,
         'sectionLabel': sectionNumber,
@@ -446,9 +446,7 @@ class StudentApi {
             map['teachingMode']?.toString() ??
             '',
         'term':
-            map['semester_name']?.toString() ??
-            map['term']?.toString() ??
-            '',
+            map['semester_name']?.toString() ?? map['term']?.toString() ?? '',
         'semesterId':
             map['semester_id']?.toString() ??
             map['semesterId']?.toString() ??
@@ -590,9 +588,13 @@ class StudentApi {
       );
     }
 
-    final assignments = body is Map<String, dynamic> ? body['data'] ?? body['assignments'] : body;
+    final assignments = body is Map<String, dynamic>
+        ? body['data'] ?? body['assignments']
+        : body;
     if (assignments is! List) {
-      throw Exception('Unexpected assignments response (${response.statusCode})');
+      throw Exception(
+        'Unexpected assignments response (${response.statusCode})',
+      );
     }
 
     return assignments.map<Map<String, dynamic>>((item) {
@@ -601,7 +603,7 @@ class StudentApi {
   }
 
   static Future<Map<String, dynamic>> createInstructorAssignment({
-    required Map<String, String> fields,
+    required Map<String, dynamic> fields,
     String? fileName,
     String? localPath,
     Uint8List? fileBytes,
@@ -610,8 +612,9 @@ class StudentApi {
     token ??= await _readToken();
     final request = http.MultipartRequest('POST', _uri('/assignments'));
     request.headers.addAll(_headers(token: token, contentType: null));
-    request.fields.addAll(fields);
-
+    request.fields.addAll(
+      fields.map((key, value) => MapEntry(key, value.toString())),
+    );
     if (fileBytes != null && fileName != null && fileName.isNotEmpty) {
       request.files.add(
         http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
@@ -633,7 +636,8 @@ class StudentApi {
     final response = await http.Response.fromStream(streamed);
     final body = await _decode(response);
 
-    if (!_isSuccessStatus(response.statusCode) || body is! Map<String, dynamic>) {
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
       throw Exception(
         _messageFromBody(body, fallback: 'Failed to create assignment'),
       );
@@ -643,7 +647,9 @@ class StudentApi {
         ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
         : Map<String, dynamic>.from(body);
     if (data.isEmpty) {
-      throw Exception('Unexpected create assignment response (${response.statusCode})');
+      throw Exception(
+        'Unexpected create assignment response (${response.statusCode})',
+      );
     }
     return data;
   }
@@ -661,7 +667,10 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode)) {
       throw Exception(
-        _messageFromBody(body, fallback: 'Failed to load assignment submissions'),
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load assignment submissions',
+        ),
       );
     }
 
@@ -797,7 +806,10 @@ class StudentApi {
     }
   }
 
-  static String _resolveCategoryLabel(Map<String, dynamic> map, String fileName) {
+  static String _resolveCategoryLabel(
+    Map<String, dynamic> map,
+    String fileName,
+  ) {
     final raw = map['category']?.toString().trim().toLowerCase();
     if (raw == 'assignment' || raw == 'exam' || raw == 'material') {
       return raw!;
