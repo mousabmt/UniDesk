@@ -278,8 +278,6 @@ class _MyAppState extends State<MyApp> {
                   builder: (context, state) => AssignmentsPage(
                     initialCourseId: state.uri.queryParameters['courseId'],
                     initialSectionId: state.uri.queryParameters['sectionId'],
-                    lockCourseSelection:
-                        state.uri.queryParameters['lockCourse'] == '1',
                     successMessage: state.extra as String?,
                   ),
                 ),
@@ -289,8 +287,6 @@ class _MyAppState extends State<MyApp> {
                   builder: (context, state) => AddAssignmentPage(
                     initialCourseId: state.uri.queryParameters['courseId'],
                     initialSectionId: state.uri.queryParameters['sectionId'],
-                    lockCourseSelection:
-                        state.uri.queryParameters['lockCourse'] == '1',
                   ),
                 ),
                 GoRoute(

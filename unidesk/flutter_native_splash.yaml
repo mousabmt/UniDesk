@@ -1,11 +1,10 @@
 flutter_native_splash:
-  color: "#0F172A"
   background_image: assets/images/load_bg.png
-
   background_image_dark: assets/images/load_bg.png
-
-
   android: true
   ios: true
   web: true
   fullscreen: true
+  android_12:
+    color: "#0F172A"
+    color_dark: "#0F172A"

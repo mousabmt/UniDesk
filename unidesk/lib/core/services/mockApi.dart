@@ -720,6 +720,7 @@ class MockApi {
     required String courseId,
     required String fileName,
     required String category,
+    int? categoryId,
     required String extensionLabel,
     String? localPath,
   }) async {
@@ -769,6 +770,7 @@ class MockApi {
       'sizeLabel': normalizedExtension == 'PPTX' ? '4.8 MB' : '1.2 MB',
       'uploadedAtLabel': '${monthNames[now.month - 1]} ${now.day}, ${now.year}',
       'category': category,
+      'category_id': categoryId,
       'localPath': localPath,
     };
 
@@ -1061,7 +1063,6 @@ class MockApi {
       'file_url': attachment?['url']?.toString(),
       'due_date': raw['dueDate']?.toString() ?? '',
       'max_score': raw['totalPoints'] ?? 100,
-      'is_active': (raw['status']?.toString() ?? 'active') == 'active',
     };
   }
 

@@ -21,7 +21,7 @@ class AssignmentAttachment {
   final String? localPath;
   final Uint8List? bytes;
 
-  bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
+  bool get hasLocalFile => _looksLikeLocalPath(localPath);
   bool get hasRemoteUrl => url != null && url!.isNotEmpty;
   bool get canOpen => hasLocalFile || hasRemoteUrl;
 
@@ -80,5 +80,23 @@ class AssignmentAttachment {
     }
     final extension = name.split('.').last.trim();
     return extension.isEmpty ? 'FILE' : extension.toUpperCase();
+  }
+
+  static bool _looksLikeLocalPath(String? value) {
+    if (value == null) {
+      return false;
+    }
+    final normalized = value.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+    if (normalized.startsWith('file://')) {
+      return true;
+    }
+    if (normalized.startsWith('/') || normalized.startsWith('\\')) {
+      return true;
+    }
+    final windowsDrive = RegExp(r'^[a-zA-Z]:[\\/]');
+    return windowsDrive.hasMatch(normalized);
   }
 }

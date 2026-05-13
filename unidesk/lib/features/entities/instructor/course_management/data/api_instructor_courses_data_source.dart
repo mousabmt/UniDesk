@@ -113,6 +113,7 @@ class ApiInstructorCoursesDataSource implements InstructorCoursesDataSource {
       final response = await StudentApi.uploadCourseFile(
         courseId: courseId,
         fileName: fileName,
+        categoryId: category.categoryId,
         localPath: localPath,
         fileBytes: fileBytes,
       );

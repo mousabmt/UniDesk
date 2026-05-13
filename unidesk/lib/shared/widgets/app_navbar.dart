@@ -42,8 +42,12 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     } else {
       // Refresh instructor providers
       if (userId != null) {
-        await context.read<InstructorCoursesProvider>().refresh(instructorId: userId);
-        await context.read<InstructorAssignmentsProvider>().refresh(instructorId: userId);
+        await context.read<InstructorCoursesProvider>().refresh(
+          instructorId: userId,
+        );
+        await context.read<InstructorAssignmentsProvider>().refresh(
+          instructorId: userId,
+        );
       }
     }
   }
@@ -129,12 +133,13 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               case 'profile':
                 context.go(isStudent ? '/profile' : '/instructor/profile');
                 break;
+
+              case 'Refresh App':
+                _refreshAllProviders(context);
+                break;
               case 'logout':
                 context.read<AuthProvider>().logout();
                 context.go('/login');
-                break;
-              case 'Refresh App':
-                _refreshAllProviders(context);
                 break;
             }
           },
@@ -149,8 +154,8 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               child: Text(isStudent ? scheduleLabel : attendanceLabel),
             ),
             PopupMenuItem(value: 'profile', child: Text(profileLabel)),
-            PopupMenuItem(value: 'logout', child: Text(logoutLabel)),
             PopupMenuItem(value: 'Refresh App', child: Text(refreshLabel)),
+            PopupMenuItem(value: 'logout', child: Text(logoutLabel)),
           ],
         ),
       ],

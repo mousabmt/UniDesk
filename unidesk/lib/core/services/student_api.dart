@@ -521,6 +521,7 @@ class StudentApi {
   static Future<Map<String, dynamic>> uploadCourseFile({
     required String courseId,
     required String fileName,
+    required int categoryId,
     String? localPath,
     Uint8List? fileBytes,
     String? token,
@@ -531,6 +532,7 @@ class StudentApi {
       _uri('/courses/$courseId/files'),
     );
     request.headers.addAll(_headers(token: token, contentType: null));
+    request.fields['category_id'] = categoryId.toString();
     if (fileBytes != null) {
       request.files.add(
         http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
@@ -770,10 +772,40 @@ class StudentApi {
       'extensionLabel': extension,
       'sizeLabel': _formatBytes(map['file_size']),
       'uploadedAtLabel': _formatDateLabel(map['uploaded_at']?.toString()),
-      'category': _inferFileCategory(fileName),
-      'remoteUrl': map['download_url']?.toString(),
+      'category_id': _resolveCategoryId(map, fileName),
+      'category': _resolveCategoryLabel(map, fileName),
+      'remoteUrl':
+          map['download_url']?.toString() ?? map['file_url']?.toString(),
       'localPath': map['localPath']?.toString(),
     };
+  }
+
+  static int _resolveCategoryId(Map<String, dynamic> map, String fileName) {
+    final parsed = int.tryParse(map['category_id']?.toString() ?? '');
+    if (parsed != null) {
+      return parsed;
+    }
+    switch (_resolveCategoryLabel(map, fileName)) {
+      case 'assignment':
+        return 1;
+      case 'exam':
+        return 2;
+      case 'material':
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
+  static String _resolveCategoryLabel(Map<String, dynamic> map, String fileName) {
+    final raw = map['category']?.toString().trim().toLowerCase();
+    if (raw == 'assignment' || raw == 'exam' || raw == 'material') {
+      return raw!;
+    }
+    if (raw == 'lecture') {
+      return 'material';
+    }
+    return _inferFileCategory(fileName);
   }
 
   static List<Map<String, dynamic>> _groupGradesBySemester(
@@ -925,7 +957,7 @@ class StudentApi {
     if (lower.contains('assignment') || lower.contains('worksheet')) {
       return 'assignment';
     }
-    return 'lecture';
+    return 'material';
   }
 
   static List<dynamic>? _extractInstructorCourses(Map<String, dynamic> body) {

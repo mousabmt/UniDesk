@@ -5,7 +5,7 @@
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>NSCameraUsageDescription</key>
-<string>Camera is needed to scan attendance QR codes</string>
+		<string>Camera is needed to scan attendance QR codes</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

@@ -277,11 +277,29 @@ class _CourseSwitcher extends StatelessWidget {
         child: DropdownButton<String>(
           value: selectedCourseKey,
           isExpanded: true,
+          selectedItemBuilder: (context) {
+            return courses
+                .map(
+                  (course) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      course.displayLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList();
+          },
           items: courses
               .map<DropdownMenuItem<String>>(
                 (course) => DropdownMenuItem<String>(
                   value: course.selectionKey,
-                  child: Text(course.displayLabel),
+                  child: Text(
+                    course.displayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               )
               .toList(),
@@ -478,7 +496,7 @@ class _AssignmentsTab extends StatelessWidget {
           children: [
             TextButton(
               onPressed: () => context.push(
-                '/instructor/assignments-list?courseId=$courseId&sectionId=$sectionId&lockCourse=1',
+                '/instructor/assignments-list?courseId=$courseId&sectionId=$sectionId',
               ),
               child: const Text(
                 'View Assignments',
@@ -487,7 +505,7 @@ class _AssignmentsTab extends StatelessWidget {
             ),
             ElevatedButton.icon(
               onPressed: () => context.push(
-                '/instructor/add-assignment?courseId=$courseId&sectionId=$sectionId&lockCourse=1',
+                '/instructor/add-assignment?courseId=$courseId&sectionId=$sectionId',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff0bb4b1),

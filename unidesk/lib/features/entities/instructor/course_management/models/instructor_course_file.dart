@@ -7,6 +7,34 @@ enum InstructorCourseFileCategory {
   other,
 }
 
+extension InstructorCourseFileCategoryX on InstructorCourseFileCategory {
+  int get categoryId {
+    switch (this) {
+      case InstructorCourseFileCategory.assignment:
+        return 1;
+      case InstructorCourseFileCategory.exam:
+        return 2;
+      case InstructorCourseFileCategory.lecture:
+        return 3;
+      case InstructorCourseFileCategory.other:
+        return 0;
+    }
+  }
+
+  String get apiCategory {
+    switch (this) {
+      case InstructorCourseFileCategory.assignment:
+        return 'assignment';
+      case InstructorCourseFileCategory.exam:
+        return 'exam';
+      case InstructorCourseFileCategory.lecture:
+        return 'material';
+      case InstructorCourseFileCategory.other:
+        return 'other';
+    }
+  }
+}
+
 class InstructorCourseFile {
   const InstructorCourseFile({
     required this.id,
@@ -54,15 +82,34 @@ class InstructorCourseFile {
       extensionLabel: map['extensionLabel']?.toString() ?? 'FILE',
       sizeLabel: map['sizeLabel']?.toString() ?? '',
       uploadedAtLabel: map['uploadedAtLabel']?.toString() ?? '',
-      category: _parseCategory(map['category']?.toString()),
+      category: _parseCategory(
+        map['category']?.toString(),
+        categoryId: map['category_id'],
+      ),
       localPath: map['localPath']?.toString(),
-      remoteUrl: map['remoteUrl']?.toString() ?? map['download_url']?.toString(),
+      remoteUrl:
+          map['remoteUrl']?.toString() ??
+          map['download_url']?.toString() ??
+          map['file_url']?.toString(),
     );
   }
 
-  static InstructorCourseFileCategory _parseCategory(String? raw) {
+  static InstructorCourseFileCategory _parseCategory(
+    String? raw, {
+    dynamic categoryId,
+  }) {
+    final parsedId = int.tryParse(categoryId?.toString() ?? '');
+    switch (parsedId) {
+      case 1:
+        return InstructorCourseFileCategory.assignment;
+      case 2:
+        return InstructorCourseFileCategory.exam;
+      case 3:
+        return InstructorCourseFileCategory.lecture;
+    }
     switch (raw?.toLowerCase()) {
       case 'lecture':
+      case 'material':
         return InstructorCourseFileCategory.lecture;
       case 'assignment':
         return InstructorCourseFileCategory.assignment;

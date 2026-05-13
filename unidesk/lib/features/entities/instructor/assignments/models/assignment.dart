@@ -7,6 +7,7 @@ class Assignment {
     required this.courseId,
     required this.sectionId,
     required this.instructorId,
+    required this.categoryId,
     required this.title,
     required this.description,
     required this.dueDate,
@@ -21,6 +22,7 @@ class Assignment {
   final String courseId;
   final String sectionId;
   final String instructorId;
+  final int categoryId;
   final String title;
   final String description;
   final DateTime? dueDate;
@@ -46,10 +48,14 @@ class Assignment {
           map['instructor_id']?.toString() ??
           map['instructorId']?.toString() ??
           '',
+      categoryId: _toInt(
+        map['category_id'] ?? nestedFile?['category_id'] ?? 1,
+      ),
       title: map['title']?.toString() ?? '',
       description: map['description']?.toString() ?? '',
       dueDate: _parseDate(map['due_date'] ?? map['dueDate']),
       maxScore: _toInt(map['max_score'] ?? map['totalPoints']),
+      isActive: _toBool(map['is_active'] ?? map['isActive'] ?? map['status']),
       filePath:
           map['file_path']?.toString() ?? nestedFile?['file_path']?.toString(),
       fileUrl:

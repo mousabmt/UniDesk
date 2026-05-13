@@ -59,7 +59,8 @@ class MockInstructorCoursesDataSource implements InstructorCoursesDataSource {
       instructorId: instructorId,
       courseId: courseId,
       fileName: fileName,
-      category: category.name,
+      category: category.apiCategory,
+      categoryId: category.categoryId,
       extensionLabel: extensionLabel,
       localPath: localPath,
     );

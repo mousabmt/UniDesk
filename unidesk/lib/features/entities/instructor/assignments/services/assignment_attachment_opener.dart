@@ -24,6 +24,9 @@ class AssignmentAttachmentOpener {
       final localPath = attachment.localPath!;
       final exists = await File(localPath).exists();
       if (!exists) {
+        if (attachment.hasRemoteUrl) {
+          return _openRemoteTarget(attachment.url!);
+        }
         return const AssignmentAttachmentOpenResult(
           didOpen: false,
           message: 'The selected file is no longer available on this device.',

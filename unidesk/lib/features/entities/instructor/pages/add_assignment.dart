@@ -118,85 +118,150 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                         children: [
                           _SectionLabel('Select Course'),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: DropdownButtonFormField<String>(
-                                  key: ValueKey(provider.selectedCourseGroupKey),
-                                  initialValue: provider.selectedCourseGroupKey,
-                                  decoration: _inputDecoration('Choose a course'),
-                                  items: provider.availableCourses
-                                      .map(
-                                        (course) => DropdownMenuItem<String>(
-                                          value: provider.courseSelectionValueFor(course),
-                                          child: Text(course.displayLabel),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: provider.isCourseLocked
-                                      ? null
-                                      : (value) async {
-                                          if (value == null) {
-                                            return;
-                                          }
-                                          final instructorId =
-                                              context.read<AuthProvider>().userId ??
-                                              'D001';
-                                          await provider.selectCourse(
-                                            instructorId: instructorId,
-                                            courseId: value,
-                                          );
-                                        },
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return 'Please choose a course.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: DropdownButtonFormField<String>(
-                                  key: ValueKey(
-                                    '${provider.selectedCourseId}-${provider.selectedSectionSelectionKey}',
-                                  ),
-                                  initialValue: provider.selectedSectionSelectionKey,
-                                  decoration: _inputDecoration('Choose a section'),
-                                  items: provider.availableSections
-                                      .map(
-                                        (course) => DropdownMenuItem<String>(
-                                          value: course.selectionKey,
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final useStackedSelectors =
+                                  constraints.maxWidth < 560;
+                              final courseDropdown =
+                                  DropdownButtonFormField<String>(
+                                    key: ValueKey(
+                                      provider.selectedCourseGroupKey,
+                                    ),
+                                    initialValue:
+                                        provider.selectedCourseGroupKey,
+                                    isExpanded: true,
+                                    decoration: _inputDecoration(
+                                      'Choose a course',
+                                    ),
+                                    selectedItemBuilder: (context) {
+                                      return provider.availableCourses.map((
+                                        course,
+                                      ) {
+                                        return Align(
+                                          alignment: Alignment.centerLeft,
                                           child: Text(
-                                            provider.sectionLabelFor(course) ??
-                                                _fallbackSectionLabel(course),
+                                            course.displayLabel,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (value) async {
-                                          if (value == null) {
-                                            return;
-                                          }
-                                          final instructorId =
-                                              context.read<AuthProvider>().userId ??
-                                              'D001';
-                                          await provider.selectSection(
-                                            instructorId: instructorId,
-                                            sectionId: value,
-                                          );
-                                        },
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return 'Please choose a section.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ],
+                                        );
+                                      }).toList();
+                                    },
+                                    items: provider.availableCourses
+                                        .map(
+                                          (course) => DropdownMenuItem<String>(
+                                            value: provider
+                                                .courseSelectionValueFor(
+                                                  course,
+                                                ),
+                                            child: Text(
+                                              course.displayLabel,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) async {
+                                      if (value == null) {
+                                        return;
+                                      }
+                                      final instructorId =
+                                          context.read<AuthProvider>().userId ??
+                                          'D001';
+                                      await provider.selectCourse(
+                                        instructorId: instructorId,
+                                        courseId: value,
+                                      );
+                                    },
+                                    validator: (value) {
+                                      if ((value ?? '').trim().isEmpty) {
+                                        return 'Please choose a course.';
+                                      }
+                                      return null;
+                                    },
+                                  );
+                              final sectionDropdown =
+                                  DropdownButtonFormField<String>(
+                                    key: ValueKey(
+                                      '${provider.selectedCourseId}-${provider.selectedSectionSelectionKey}',
+                                    ),
+                                    initialValue:
+                                        provider.selectedSectionSelectionKey,
+                                    isExpanded: true,
+                                    decoration: _inputDecoration(
+                                      'Choose a section',
+                                    ),
+                                    selectedItemBuilder: (context) {
+                                      return provider.availableSections.map((
+                                        course,
+                                      ) {
+                                        final label =
+                                            provider.sectionLabelFor(course) ??
+                                            _fallbackSectionLabel(course);
+                                        return Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      }).toList();
+                                    },
+                                    items: provider.availableSections
+                                        .map(
+                                          (course) => DropdownMenuItem<String>(
+                                            value: course.selectionKey,
+                                            child: Text(
+                                              provider.sectionLabelFor(
+                                                    course,
+                                                  ) ??
+                                                  _fallbackSectionLabel(course),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) async {
+                                      if (value == null) {
+                                        return;
+                                      }
+                                      final instructorId =
+                                          context.read<AuthProvider>().userId ??
+                                          'D001';
+                                      await provider.selectSection(
+                                        instructorId: instructorId,
+                                        sectionId: value,
+                                      );
+                                    },
+                                    validator: (value) {
+                                      if ((value ?? '').trim().isEmpty) {
+                                        return 'Please choose a section.';
+                                      }
+                                      return null;
+                                    },
+                                  );
+
+                              if (useStackedSelectors) {
+                                return Column(
+                                  children: [
+                                    courseDropdown,
+                                    const SizedBox(height: 12),
+                                    sectionDropdown,
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  Expanded(flex: 3, child: courseDropdown),
+                                  const SizedBox(width: 12),
+                                  Expanded(flex: 2, child: sectionDropdown),
+                                ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 18),
                           _SectionLabel('Title'),
@@ -420,7 +485,6 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
       queryParameters: <String, String>{
         'courseId': provider.selectedCourse!.id,
         'sectionId': provider.selectedSectionId!,
-        if (widget.lockCourseSelection) 'lockCourse': '1',
       },
       extra: 'Assignment created successfully.',
     );
@@ -471,7 +535,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
       instructorId: instructorId,
       preferredCourseId: widget.initialCourseId,
       preferredSectionId: widget.initialSectionId,
-      lockCourseSelection: widget.lockCourseSelection,
+      lockCourseSelection: false,
     );
   }
 

@@ -199,8 +199,9 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     if (lockCourseSelection != null) {
       _isCourseLocked = lockCourseSelection;
     }
-    final resolvedCourseId = _resolveCourseId(courseId);
-    final resolvedCourse = _resolveCourse(resolvedCourseId ?? courseId);
+    final resolvedCourse =
+        _resolveCourse(courseId) ??
+        _resolveCourse(_resolveCourseId(courseId) ?? courseId);
     if (resolvedCourse == null) {
       return;
     }
@@ -452,17 +453,17 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       return null;
     }
     final normalizedValue = _normalized(value);
-    if (value.contains('::')) {
-      final parts = value.split('::');
-      if (parts.isNotEmpty && parts.first.isNotEmpty) {
-        return parts.first;
-      }
-    }
     for (final course in _courses) {
       if (course.matchesSelection(value) ||
           _normalized(course.id) == normalizedValue ||
           _normalized(_courseIdentityKey(course)) == normalizedValue) {
         return course.id;
+      }
+    }
+    if (value.contains('::')) {
+      final parts = value.split('::');
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        return parts.first;
       }
     }
     return null;

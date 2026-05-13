@@ -111,41 +111,39 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                           context.read<AuthProvider>().userId ?? 'D001',
                       preferredCourseId: widget.initialCourseId,
                       preferredSectionId: widget.initialSectionId,
-                      lockCourseSelection: widget.lockCourseSelection,
+                      lockCourseSelection: false,
                     ),
                   )
                 else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _CourseSectionSelector(
-                          provider: provider,
-                          onCourseChanged: (courseId) async {
-                            if (courseId == null) {
-                              return;
-                            }
-                            final instructorId =
-                                context.read<AuthProvider>().userId ?? 'D001';
-                            await provider.selectCourse(
-                              instructorId: instructorId,
-                              courseId: courseId,
-                            );
-                          },
-                          onSectionChanged: (sectionId) async {
-                            if (sectionId == null) {
-                              return;
-                            }
-                            final instructorId =
-                                context.read<AuthProvider>().userId ?? 'D001';
-                            await provider.selectSection(
-                              instructorId: instructorId,
-                              sectionId: sectionId,
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final useStackedHeader = constraints.maxWidth < 720;
+                      final selector = _CourseSectionSelector(
+                        provider: provider,
+                        onCourseChanged: (courseId) async {
+                          if (courseId == null) {
+                            return;
+                          }
+                          final instructorId =
+                              context.read<AuthProvider>().userId ?? 'D001';
+                          await provider.selectCourse(
+                            instructorId: instructorId,
+                            courseId: courseId,
+                          );
+                        },
+                        onSectionChanged: (sectionId) async {
+                          if (sectionId == null) {
+                            return;
+                          }
+                          final instructorId =
+                              context.read<AuthProvider>().userId ?? 'D001';
+                          await provider.selectSection(
+                            instructorId: instructorId,
+                            sectionId: sectionId,
+                          );
+                        },
+                      );
+                      final addButton = ElevatedButton.icon(
                         onPressed: selectedCourse == null
                             ? null
                             : () => context.pushNamed(
@@ -153,8 +151,6 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                 queryParameters: <String, String>{
                                   'courseId': selectedCourse.id,
                                   'sectionId': provider.selectedSectionId ?? '',
-                                  if (widget.lockCourseSelection)
-                                    'lockCourse': '1',
                                 },
                               ),
                         style: ElevatedButton.styleFrom(
@@ -170,8 +166,27 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                         ),
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text('Add'),
-                      ),
-                    ],
+                      );
+
+                      if (useStackedHeader) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            selector,
+                            const SizedBox(height: 12),
+                            addButton,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: selector),
+                          const SizedBox(width: 12),
+                          addButton,
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
                   LayoutBuilder(
@@ -188,7 +203,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                     'D001',
                                 preferredCourseId: provider.selectedCourseId,
                                 preferredSectionId: provider.selectedSectionId,
-                                lockCourseSelection: provider.isCourseLocked,
+                                lockCourseSelection: false,
                               ),
                               onAttachmentTap: (attachment) =>
                                   _handleAttachmentTap(context, attachment),
@@ -215,7 +230,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
                                     'D001',
                                 preferredCourseId: provider.selectedCourseId,
                                 preferredSectionId: provider.selectedSectionId,
-                                lockCourseSelection: provider.isCourseLocked,
+                                lockCourseSelection: false,
                               ),
                               onAttachmentTap: (attachment) =>
                                   _handleAttachmentTap(context, attachment),
@@ -264,7 +279,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
       instructorId: instructorId,
       preferredCourseId: widget.initialCourseId,
       preferredSectionId: widget.initialSectionId,
-      lockCourseSelection: widget.lockCourseSelection,
+      lockCourseSelection: false,
     );
     _showSuccessMessageIfNeeded();
   }
@@ -331,45 +346,73 @@ class _CourseSectionSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: _SelectorCard(
-            value: provider.selectedCourseGroupKey,
-            hint: 'Choose a course',
-            items: provider.availableCourses
-                .map(
-                  (course) => DropdownMenuItem<String>(
-                    value: provider.courseSelectionValueFor(course),
-                    child: Text(course.displayLabel),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useStackedSelectors = constraints.maxWidth < 560;
+        final courseSelector = _SelectorCard(
+          value: provider.selectedCourseGroupKey,
+          hint: 'Choose a course',
+          items: provider.availableCourses
+              .map(
+                (course) => DropdownMenuItem<String>(
+                  value: provider.courseSelectionValueFor(course),
+                  child: Text(
+                    course.displayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                )
-                .toList(),
-            onChanged: provider.isCourseLocked ? null : onCourseChanged,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: _SelectorCard(
-            value: provider.selectedSectionSelectionKey,
-            hint: 'Choose a section',
-            items: provider.availableSections
-                .map(
-                  (course) => DropdownMenuItem<String>(
-                    value: course.selectionKey,
-                    child: Text(
-                      provider.sectionLabelFor(course) ??
-                          _fallbackSectionLabel(course),
-                    ),
+                ),
+              )
+              .toList(),
+          selectedLabels: provider.availableCourses
+              .map((course) => course.displayLabel)
+              .toList(),
+          onChanged: onCourseChanged,
+        );
+        final sectionSelector = _SelectorCard(
+          value: provider.selectedSectionSelectionKey,
+          hint: 'Choose a section',
+          items: provider.availableSections
+              .map(
+                (course) => DropdownMenuItem<String>(
+                  value: course.selectionKey,
+                  child: Text(
+                    provider.sectionLabelFor(course) ??
+                        _fallbackSectionLabel(course),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                )
-                .toList(),
-            onChanged: onSectionChanged,
-          ),
-        ),
-      ],
+                ),
+              )
+              .toList(),
+          selectedLabels: provider.availableSections
+              .map(
+                (course) =>
+                    provider.sectionLabelFor(course) ??
+                    _fallbackSectionLabel(course),
+              )
+              .toList(),
+          onChanged: onSectionChanged,
+        );
+
+        if (useStackedSelectors) {
+          return Column(
+            children: [
+              courseSelector,
+              const SizedBox(height: 12),
+              sectionSelector,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(flex: 3, child: courseSelector),
+            const SizedBox(width: 12),
+            Expanded(flex: 2, child: sectionSelector),
+          ],
+        );
+      },
     );
   }
 
@@ -389,12 +432,14 @@ class _SelectorCard extends StatelessWidget {
     required this.value,
     required this.hint,
     required this.items,
+    required this.selectedLabels,
     required this.onChanged,
   });
 
   final String? value;
   final String hint;
   final List<DropdownMenuItem<String>> items;
+  final List<String> selectedLabels;
   final ValueChanged<String?>? onChanged;
 
   @override
@@ -407,6 +452,20 @@ class _SelectorCard extends StatelessWidget {
           value: value,
           isExpanded: true,
           hint: Text(hint),
+          selectedItemBuilder: (context) {
+            return selectedLabels
+                .map(
+                  (label) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList();
+          },
           items: items,
           onChanged: onChanged,
         ),

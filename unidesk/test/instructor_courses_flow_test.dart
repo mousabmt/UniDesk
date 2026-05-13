@@ -134,6 +134,7 @@ void main() {
       'course_id': 7,
       'section_id': 16,
       'instructor_id': 1,
+      'category_id': 1,
       'title': 'test assignments',
       'description': 'test test',
       'due_date': '2026-05-20 23:59:59',
@@ -154,6 +155,23 @@ void main() {
     );
     expect(assignment.attachment, isNotNull);
     expect(assignment.attachment!.name, 'Controller.php');
+    expect(assignment.categoryId, 1);
+  });
+
+  test('course file parses category_id from shared backend shape', () {
+    final file = InstructorCourseFile.fromMap({
+      'id': 1,
+      'courseId': '2',
+      'name': 'course_material.pdf',
+      'extensionLabel': 'PDF',
+      'sizeLabel': '1.2 MB',
+      'uploadedAtLabel': 'May 13, 2026',
+      'category_id': 3,
+      'file_url': 'https://example.com/files/course_material.pdf',
+    });
+
+    expect(file.category, InstructorCourseFileCategory.lecture);
+    expect(file.remoteUrl, 'https://example.com/files/course_material.pdf');
   });
 
   test('create assignment request matches backend date format', () {
@@ -198,6 +216,34 @@ void main() {
       expect(localAttachment.canOpen, isTrue);
       expect(remoteAttachment.canOpen, isTrue);
       expect(unavailableAttachment.canOpen, isFalse);
+    },
+  );
+
+  test(
+    'api attachment uses remote url when file_path is a storage-relative path',
+    () {
+      final assignment = Assignment.fromMap({
+        'id': 3,
+        'course_id': 7,
+        'section_id': 16,
+        'instructor_id': 1,
+        'title': 'test assignments',
+        'description': 'test test',
+        'due_date': '2026-05-20 23:59:59',
+        'max_score': 10,
+        'is_active': true,
+        'file': {
+          'file_name': 'Controller.php',
+          'file_path': 'assignments/BbzUxDCUcc1khycUxvPdtl4KyPHGMKow8oQA8a1i',
+          'file_url':
+              'https://anguished-ankle-footprint.ngrok-free.dev/storage/assignments/BbzUxDCUcc1khycUxvPdtl4KyPHGMKow8oQA8a1i',
+        },
+      });
+
+      expect(assignment.attachment, isNotNull);
+      expect(assignment.attachment!.hasLocalFile, isFalse);
+      expect(assignment.attachment!.hasRemoteUrl, isTrue);
+      expect(assignment.attachment!.canOpen, isTrue);
     },
   );
 
@@ -254,6 +300,33 @@ void main() {
       expect(provider.createError, isNull);
       expect(provider.assignments.length, beforeCount + 1);
       expect(provider.assignments.last.title, 'Provider Test Assignment');
+    },
+  );
+
+  test(
+    'instructor assignments provider switches course from dropdown selection key',
+    () async {
+      final provider = InstructorAssignmentsProvider(
+        assignmentsRepository,
+        repository,
+      );
+
+      await provider.loadIfNeeded(instructorId: 'D001');
+      final firstSelection = provider.selectedCourseGroupKey;
+      final targetCourse = provider.availableCourses.firstWhere(
+        (course) => provider.courseSelectionValueFor(course) != firstSelection,
+      );
+
+      await provider.selectCourse(
+        instructorId: 'D001',
+        courseId: provider.courseSelectionValueFor(targetCourse),
+      );
+
+      expect(
+        provider.selectedCourseGroupKey,
+        provider.courseSelectionValueFor(targetCourse),
+      );
+      expect(provider.selectedCourse?.id, targetCourse.id);
     },
   );
 
