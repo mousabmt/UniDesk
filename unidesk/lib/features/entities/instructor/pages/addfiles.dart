@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_file.dart';
+import 'package:unidesk/features/entities/instructor/course_management/models/instructor_managed_course.dart';
 import 'package:unidesk/features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/course_management/widgets/course_file_list_item.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_surface_card.dart';
@@ -112,24 +113,26 @@ class _AddFilesPageState extends State<AddFilesPage> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  InstructorSurfaceCard(
-                    radius: 12,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: provider.selectedCourseKey,
-                        hint: const Text('Choose a course'),
-                        isExpanded: true,
-                        items: provider.courses
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final useStackedSelectors = constraints.maxWidth < 560;
+                      final courseSelector = _SelectorCard(
+                        value: provider.selectedCourseGroupKey,
+                        hint: 'Choose a course',
+                        items: provider.availableCourses
                             .map(
                               (course) => DropdownMenuItem<String>(
-                                value: course.selectionKey,
-                                child: Text(course.displayLabel),
+                                value: provider.courseSelectionValueFor(course),
+                                child: Text(
+                                  course.displayLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
+                            .toList(),
+                        selectedLabels: provider.availableCourses
+                            .map((course) => course.displayLabel)
                             .toList(),
                         onChanged: (value) async {
                           if (value == null) {
@@ -142,8 +145,61 @@ class _AddFilesPageState extends State<AddFilesPage> {
                             courseId: value,
                           );
                         },
-                      ),
-                    ),
+                      );
+                      final sectionSelector = _SelectorCard(
+                        value: provider.selectedSectionSelectionKey,
+                        hint: 'Choose a section',
+                        items: provider.availableSections
+                            .map(
+                              (course) => DropdownMenuItem<String>(
+                                value: course.selectionKey,
+                                child: Text(
+                                  provider.sectionLabelFor(course) ??
+                                      _fallbackSectionLabel(course),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        selectedLabels: provider.availableSections
+                            .map(
+                              (course) =>
+                                  provider.sectionLabelFor(course) ??
+                                  _fallbackSectionLabel(course),
+                            )
+                            .toList(),
+                        onChanged: (value) async {
+                          if (value == null) {
+                            return;
+                          }
+                          final instructorId =
+                              context.read<AuthProvider>().userId ?? 'D001';
+                          await provider.selectSection(
+                            instructorId: instructorId,
+                            sectionId: value,
+                          );
+                        },
+                      );
+
+                      if (useStackedSelectors) {
+                        return Column(
+                          children: [
+                            courseSelector,
+                            const SizedBox(height: 12),
+                            sectionSelector,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(flex: 3, child: courseSelector),
+                          const SizedBox(width: 12),
+                          Expanded(flex: 2, child: sectionSelector),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   if (selectedCourse != null)
@@ -308,6 +364,63 @@ class _AddFilesPageState extends State<AddFilesPage> {
       ),
     );
   }
+}
+
+class _SelectorCard extends StatelessWidget {
+  const _SelectorCard({
+    required this.value,
+    required this.hint,
+    required this.items,
+    required this.selectedLabels,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final String hint;
+  final List<DropdownMenuItem<String>> items;
+  final List<String> selectedLabels;
+  final ValueChanged<String?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InstructorSurfaceCard(
+      radius: 12,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          hint: Text(hint),
+          isExpanded: true,
+          selectedItemBuilder: (context) {
+            return selectedLabels
+                .map(
+                  (label) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList();
+          },
+          items: items,
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+String _fallbackSectionLabel(InstructorManagedCourse course) {
+  if (course.sectionId.isNotEmpty) {
+    return 'Section ${course.sectionId}';
+  }
+  if (course.lectureId.isNotEmpty) {
+    return 'Section ${course.lectureId}';
+  }
+  return 'Section';
 }
 
 class _FilesGreetingText extends StatelessWidget {

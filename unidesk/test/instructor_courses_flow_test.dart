@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,11 +12,78 @@ import 'package:unidesk/features/entities/instructor/assignments/data/mock_instr
 import 'package:unidesk/features/entities/instructor/assignments/models/create_assignment_request.dart';
 import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/instructor_courses_repository.dart';
+import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_details.dart';
 import 'package:unidesk/features/entities/instructor/course_management/data/mock_instructor_courses_data_source.dart';
 import 'package:unidesk/features/entities/instructor/course_management/models/instructor_course_file.dart';
+import 'package:unidesk/features/entities/instructor/course_management/models/instructor_managed_course.dart';
 import 'package:unidesk/features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/pages/addfiles.dart';
 import 'package:unidesk/features/entities/instructor/pages/assignments_page.dart';
+
+class _FakeInstructorCoursesRepository implements InstructorCoursesRepository {
+  const _FakeInstructorCoursesRepository({
+    required this.courses,
+    required this.detailsBySelectionKey,
+  });
+
+  final List<InstructorManagedCourse> courses;
+  final Map<String, InstructorCourseDetails> detailsBySelectionKey;
+
+  @override
+  Future<List<InstructorManagedCourse>> getInstructorCourses(
+    String instructorId,
+  ) async {
+    return courses;
+  }
+
+  @override
+  Future<InstructorCourseDetails> getCourseDetails({
+    required String instructorId,
+    required String courseId,
+    String? sectionId,
+  }) async {
+    final selectionKey = sectionId == null || sectionId.isEmpty
+        ? courseId
+        : '$courseId::$sectionId';
+    final details = detailsBySelectionKey[selectionKey];
+    if (details == null) {
+      throw const InstructorCoursesRepositoryException('Course not found');
+    }
+    return details;
+  }
+
+  @override
+  Future<InstructorCourseFile> uploadCourseFile({
+    required String instructorId,
+    required String courseId,
+    required String fileName,
+    required InstructorCourseFileCategory category,
+    required String extensionLabel,
+    String? localPath,
+    Uint8List? fileBytes,
+  }) async {
+    throw UnimplementedError();
+  }
+}
+
+InstructorCourseDetails _buildCourseDetails(InstructorManagedCourse course) {
+  return InstructorCourseDetails(
+    course: course,
+    summary: const InstructorCourseSummary(
+      averageAttendanceLabel: '90%',
+      assignmentsCount: 0,
+      filesCount: 0,
+    ),
+    upcomingLecture: const InstructorUpcomingLecture(
+      title: 'Upcoming class',
+      dateLabel: 'May 13, 2026',
+      timeLabel: '10:00 AM',
+      locationLabel: 'Room 101',
+    ),
+    files: const [],
+    students: const [],
+  );
+}
 
 void main() {
   const repository = InstructorCoursesRepositoryImpl(
@@ -67,6 +136,78 @@ void main() {
   });
 
   test(
+    'instructor courses provider groups duplicate course names and filters sections',
+    () async {
+      const sectionA = InstructorManagedCourse(
+        id: '120414',
+        name: 'Introduction to Programming',
+        credits: 3,
+        studentsEnrolled: 20,
+        lectureId: '1',
+        courseCode: 'CS101',
+        sectionId: '1',
+        term: 'Spring 2026',
+        sectionLabel: 'Section A',
+        semesterId: '2026S',
+      );
+      const sectionB = InstructorManagedCourse(
+        id: '120414',
+        name: 'Introduction to Programming',
+        credits: 3,
+        studentsEnrolled: 18,
+        lectureId: '2',
+        courseCode: 'CS101',
+        sectionId: '2',
+        term: 'Spring 2026',
+        sectionLabel: 'Section B',
+        semesterId: '2026S',
+      );
+      const calculus = InstructorManagedCourse(
+        id: '132120',
+        name: 'Calculus I',
+        credits: 3,
+        studentsEnrolled: 25,
+        lectureId: '3',
+        courseCode: 'MATH101',
+        sectionId: '3',
+        term: 'Spring 2026',
+        sectionLabel: 'Section C',
+        semesterId: '2026S',
+      );
+
+      final fakeRepository = _FakeInstructorCoursesRepository(
+        courses: const [sectionA, sectionB, calculus],
+        detailsBySelectionKey: {
+          sectionA.selectionKey: _buildCourseDetails(sectionA),
+          sectionB.selectionKey: _buildCourseDetails(sectionB),
+          calculus.selectionKey: _buildCourseDetails(calculus),
+        },
+      );
+      final provider = InstructorCoursesProvider(fakeRepository);
+
+      await provider.loadIfNeeded(instructorId: 'D001');
+
+      expect(provider.availableCourses.length, 2);
+      expect(
+        provider.availableCourses
+            .where((course) => course.name == 'Introduction to Programming')
+            .length,
+        1,
+      );
+      expect(provider.availableSections.length, 2);
+
+      await provider.selectSection(
+        instructorId: 'D001',
+        sectionId: sectionB.selectionKey,
+      );
+
+      expect(provider.selectedCourse?.selectionKey, sectionB.selectionKey);
+      expect(provider.selectedSectionId, '2');
+      expect(provider.currentCourseDetails?.course.sectionLabel, 'Section B');
+    },
+  );
+
+  test(
     'instructor courses provider uploads a file to the selected course',
     () async {
       final provider = InstructorCoursesProvider(repository);
@@ -110,11 +251,84 @@ void main() {
     );
 
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.scrollUntilVisible(find.text('File Category'), 300);
+    await tester.pumpAndSettle();
 
     expect(find.text('Assignment'), findsNothing);
     expect(find.text('Lecture'), findsOneWidget);
     expect(find.text('Exam'), findsOneWidget);
+  });
+
+  testWidgets('add files page renders separate course and section dropdowns', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    const sectionA = InstructorManagedCourse(
+      id: '120414',
+      name: 'Introduction to Programming',
+      credits: 3,
+      studentsEnrolled: 20,
+      lectureId: '1',
+      courseCode: 'CS101',
+      sectionId: '1',
+      term: 'Spring 2026',
+      sectionLabel: 'Section A',
+      semesterId: '2026S',
+    );
+    const sectionB = InstructorManagedCourse(
+      id: '120414',
+      name: 'Introduction to Programming',
+      credits: 3,
+      studentsEnrolled: 18,
+      lectureId: '2',
+      courseCode: 'CS101',
+      sectionId: '2',
+      term: 'Spring 2026',
+      sectionLabel: 'Section B',
+      semesterId: '2026S',
+    );
+    const calculus = InstructorManagedCourse(
+      id: '132120',
+      name: 'Calculus I',
+      credits: 3,
+      studentsEnrolled: 25,
+      lectureId: '3',
+      courseCode: 'MATH101',
+      sectionId: '3',
+      term: 'Spring 2026',
+      sectionLabel: 'Section C',
+      semesterId: '2026S',
+    );
+
+    final fakeRepository = _FakeInstructorCoursesRepository(
+      courses: const [sectionA, sectionB, calculus],
+      detailsBySelectionKey: {
+        sectionA.selectionKey: _buildCourseDetails(sectionA),
+        sectionB.selectionKey: _buildCourseDetails(sectionB),
+        calculus.selectionKey: _buildCourseDetails(calculus),
+      },
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          Provider<InstructorCoursesRepository>.value(value: fakeRepository),
+          ChangeNotifierProvider(
+            create: (_) => InstructorCoursesProvider(fakeRepository),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: AddFilesPage())),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    expect(find.byType(DropdownButton<String>), findsNWidgets(2));
+    expect(find.text('Select Course'), findsOneWidget);
   });
 
   test(

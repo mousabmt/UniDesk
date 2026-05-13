@@ -14,7 +14,8 @@ class InstructorCoursesProvider extends ChangeNotifier {
   List<InstructorManagedCourse> _courses = const [];
   bool _isCoursesLoading = false;
   String? _coursesError;
-  String? _selectedCourseKey;
+  String? _selectedCourseGroupKey;
+  String? _selectedSectionId;
   InstructorCourseDetails? _currentCourseDetails;
   bool _isDetailsLoading = false;
   String? _detailsError;
@@ -25,10 +26,46 @@ class InstructorCoursesProvider extends ChangeNotifier {
   bool get isCoursesLoading => _isCoursesLoading;
   String? get coursesError => _coursesError;
   String? get selectedCourseId => selectedCourse?.id;
-  String? get selectedCourseKey => _selectedCourseKey;
+  String? get selectedCourseGroupKey => _selectedCourseGroupKey;
+  String? get selectedCourseKey => selectedCourse?.selectionKey;
+  String? get selectedSectionId => _selectedSectionId;
+  String? get selectedSectionSelectionKey => selectedCourse?.selectionKey;
+
+  List<InstructorManagedCourse> get availableCourses {
+    final seen = <String>{};
+    final unique = <InstructorManagedCourse>[];
+    for (final course in _courses) {
+      if (seen.add(_courseIdentityKey(course))) {
+        unique.add(course);
+      }
+    }
+    return unique;
+  }
+
+  List<InstructorManagedCourse> get availableSections {
+    final courseGroupKey = _selectedCourseGroupKey;
+    if (courseGroupKey == null || courseGroupKey.isEmpty) {
+      return const [];
+    }
+
+    final seen = <String>{};
+    final sections = <InstructorManagedCourse>[];
+    for (final course in _courses) {
+      if (_courseIdentityKey(course) == courseGroupKey &&
+          seen.add(course.selectionKey)) {
+        sections.add(course);
+      }
+    }
+    return sections;
+  }
+
   InstructorManagedCourse? get selectedCourse {
     for (final course in _courses) {
-      if (course.matchesSelection(_selectedCourseKey)) {
+      final scopeId = _scopeIdFor(course);
+      if (_courseIdentityKey(course) == _selectedCourseGroupKey &&
+          (_selectedSectionId == null ||
+              _selectedSectionId!.isEmpty ||
+              scopeId == _selectedSectionId)) {
         return course;
       }
     }
@@ -48,14 +85,18 @@ class InstructorCoursesProvider extends ChangeNotifier {
   Future<void> loadIfNeeded({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
   }) async {
     if (_courses.isNotEmpty) {
-      final preferredSelectionKey = _resolveSelectionKey(preferredCourseId);
-      if (preferredSelectionKey != null &&
-          preferredSelectionKey != _selectedCourseKey) {
+      final didApplySelection = _applyPreferredSelection(
+        preferredCourseId: preferredCourseId,
+        preferredSectionId: preferredSectionId,
+      );
+      if (didApplySelection) {
         await selectCourse(
           instructorId: instructorId,
-          courseId: preferredSelectionKey,
+          courseId: preferredCourseId ?? selectedCourseId ?? '',
+          sectionId: preferredSectionId,
         );
       } else if (_currentCourseDetails == null) {
         await _loadCourseDetails(instructorId: instructorId);
@@ -65,12 +106,14 @@ class InstructorCoursesProvider extends ChangeNotifier {
     await loadCourses(
       instructorId: instructorId,
       preferredCourseId: preferredCourseId,
+      preferredSectionId: preferredSectionId,
     );
   }
 
   Future<void> loadCourses({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
   }) async {
     if (_isCoursesLoading) {
       return;
@@ -82,16 +125,18 @@ class InstructorCoursesProvider extends ChangeNotifier {
     try {
       _courses = await _repository.getInstructorCourses(instructorId);
       if (_courses.isNotEmpty) {
-        _selectedCourseKey =
-            _resolveSelectionKey(preferredCourseId) ??
-            _resolveSelectionKey(_selectedCourseKey) ??
-            _courses.first.selectionKey;
+        _selectPreferredCourseAndSection(
+          preferredCourseId: preferredCourseId,
+          preferredSectionId: preferredSectionId,
+        );
       } else {
-        _selectedCourseKey = null;
+        _selectedCourseGroupKey = null;
+        _selectedSectionId = null;
       }
     } catch (e) {
       _courses = const [];
-      _selectedCourseKey = null;
+      _selectedCourseGroupKey = null;
+      _selectedSectionId = null;
       _coursesError = e.toString();
     } finally {
       _isCoursesLoading = false;
@@ -106,16 +151,54 @@ class InstructorCoursesProvider extends ChangeNotifier {
   Future<void> selectCourse({
     required String instructorId,
     required String courseId,
+    String? sectionId,
   }) async {
-    final nextSelectionKey = _resolveSelectionKey(courseId);
-    if (nextSelectionKey == null) {
+    final resolvedCourse =
+        _resolveCourse(courseId) ??
+        _resolveCourse(_resolveCourseId(courseId) ?? courseId);
+    if (resolvedCourse == null) {
       return;
     }
-    if (nextSelectionKey == _selectedCourseKey &&
+
+    final nextCourseGroupKey = _courseIdentityKey(resolvedCourse);
+    final nextSectionId = _resolveSectionForCourse(
+      nextCourseGroupKey,
+      preferredSectionId: sectionId,
+    );
+    if (nextCourseGroupKey == _selectedCourseGroupKey &&
+        nextSectionId == _selectedSectionId &&
         _currentCourseDetails != null) {
       return;
     }
-    _selectedCourseKey = nextSelectionKey;
+
+    _selectedCourseGroupKey = nextCourseGroupKey;
+    _selectedSectionId = nextSectionId;
+    _currentCourseDetails = null;
+    _detailsError = null;
+    notifyListeners();
+    await _loadCourseDetails(instructorId: instructorId);
+  }
+
+  Future<void> selectSection({
+    required String instructorId,
+    required String sectionId,
+  }) async {
+    final courseGroupKey = _selectedCourseGroupKey;
+    if (courseGroupKey == null || courseGroupKey.isEmpty) {
+      return;
+    }
+
+    final nextSectionId = _resolveSectionForCourse(
+      courseGroupKey,
+      preferredSectionId: sectionId,
+    );
+    if (nextSectionId == null ||
+        (nextSectionId == _selectedSectionId &&
+            _currentCourseDetails != null)) {
+      return;
+    }
+
+    _selectedSectionId = nextSectionId;
     _currentCourseDetails = null;
     _detailsError = null;
     notifyListeners();
@@ -125,12 +208,14 @@ class InstructorCoursesProvider extends ChangeNotifier {
   Future<void> refresh({
     required String instructorId,
     String? preferredCourseId,
+    String? preferredSectionId,
   }) async {
     _currentCourseDetails = null;
     _uploadError = null;
     await loadCourses(
       instructorId: instructorId,
-      preferredCourseId: preferredCourseId ?? _selectedCourseKey,
+      preferredCourseId: preferredCourseId ?? selectedCourseId,
+      preferredSectionId: preferredSectionId ?? _selectedSectionId,
     );
   }
 
@@ -201,15 +286,155 @@ class InstructorCoursesProvider extends ChangeNotifier {
     }
   }
 
-  String? _resolveSelectionKey(String? value) {
+  String? sectionLabelFor(InstructorManagedCourse course) {
+    if (course.sectionLabel.trim().isNotEmpty) {
+      return course.sectionLabel.trim();
+    }
+    if (course.sectionId.trim().isNotEmpty) {
+      return 'Section ${course.sectionId.trim()}';
+    }
+    if (course.lectureId.trim().isNotEmpty) {
+      return 'Section ${course.lectureId.trim()}';
+    }
+    return null;
+  }
+
+  String courseSelectionValueFor(InstructorManagedCourse course) {
+    return _courseIdentityKey(course);
+  }
+
+  void _selectPreferredCourseAndSection({
+    String? preferredCourseId,
+    String? preferredSectionId,
+  }) {
+    final resolvedCourseId =
+        _resolveCourseId(preferredCourseId) ??
+        _resolveCourseId(selectedCourse?.id) ??
+        _courses.first.id;
+    final resolvedCourse = _resolveCourse(resolvedCourseId) ?? _courses.first;
+    _selectedCourseGroupKey = _courseIdentityKey(resolvedCourse);
+    _selectedSectionId = _resolveSectionForCourse(
+      _selectedCourseGroupKey!,
+      preferredSectionId: preferredSectionId ?? _selectedSectionId,
+    );
+  }
+
+  bool _applyPreferredSelection({
+    String? preferredCourseId,
+    String? preferredSectionId,
+  }) {
+    final nextCourseId = _resolveCourseId(preferredCourseId);
+    final nextCourse = _resolveCourse(nextCourseId ?? preferredCourseId);
+    if (nextCourse == null) {
+      return false;
+    }
+
+    final nextCourseGroupKey = _courseIdentityKey(nextCourse);
+    final nextSectionId = _resolveSectionForCourse(
+      nextCourseGroupKey,
+      preferredSectionId: preferredSectionId,
+    );
+    if (nextCourseGroupKey == _selectedCourseGroupKey &&
+        nextSectionId == _selectedSectionId) {
+      return false;
+    }
+
+    _selectedCourseGroupKey = nextCourseGroupKey;
+    _selectedSectionId = nextSectionId;
+    _currentCourseDetails = null;
+    _detailsError = null;
+    notifyListeners();
+    return true;
+  }
+
+  String? _resolveCourseId(String? value) {
     if (value == null || value.isEmpty) {
       return null;
     }
     for (final course in _courses) {
-      if (course.matchesSelection(value)) {
-        return course.selectionKey;
+      if (course.matchesSelection(value) ||
+          _normalized(course.id) == _normalized(value) ||
+          _normalized(_courseIdentityKey(course)) == _normalized(value)) {
+        return course.id;
+      }
+    }
+    if (value.contains('::')) {
+      final parts = value.split('::');
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        return parts.first;
       }
     }
     return null;
+  }
+
+  InstructorManagedCourse? _resolveCourse(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    final normalizedValue = _normalized(value);
+    for (final course in _courses) {
+      if (course.matchesSelection(value) ||
+          _normalized(course.id) == normalizedValue ||
+          _normalized(_courseIdentityKey(course)) == normalizedValue) {
+        return course;
+      }
+    }
+    return null;
+  }
+
+  String? _resolveSectionForCourse(
+    String courseGroupKey, {
+    String? preferredSectionId,
+  }) {
+    final normalizedCourseGroupKey = _normalized(courseGroupKey);
+    final sections = _courses.where((course) {
+      return _normalized(_courseIdentityKey(course)) == normalizedCourseGroupKey;
+    }).toList();
+    if (sections.isEmpty) {
+      return null;
+    }
+
+    final preferred = preferredSectionId;
+    if (preferred != null && preferred.isNotEmpty) {
+      for (final course in sections) {
+        if (_scopeIdFor(course) == preferred || course.selectionKey == preferred) {
+          return _scopeIdFor(course);
+        }
+      }
+      if (preferred.contains('::')) {
+        final parts = preferred.split('::');
+        if (parts.length > 1) {
+          return _resolveSectionForCourse(
+            courseGroupKey,
+            preferredSectionId: parts[1],
+          );
+        }
+      }
+    }
+
+    return _scopeIdFor(sections.first);
+  }
+
+  String _scopeIdFor(InstructorManagedCourse course) {
+    if (course.sectionId.isNotEmpty) {
+      return course.sectionId;
+    }
+    if (course.lectureId.isNotEmpty) {
+      return course.lectureId;
+    }
+    return course.id;
+  }
+
+  String _courseIdentityKey(InstructorManagedCourse course) {
+    final code = _normalized(course.courseCode);
+    final name = _normalized(course.name);
+    final term = _normalized(course.term);
+    final semesterId = _normalized(course.semesterId);
+    final primary = code.isNotEmpty ? code : _normalized(course.id);
+    return '$primary::$name::$semesterId::$term';
+  }
+
+  String _normalized(String? value) {
+    return value?.trim().toLowerCase() ?? '';
   }
 }
