@@ -31,7 +31,7 @@ import 'package:unidesk/features/entities/instructor/pages/course_details.dart';
 import 'package:unidesk/features/entities/instructor/pages/home.dart';
 import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
 import 'package:unidesk/features/entities/student/pages/QRScannerRegister.dart';
-import 'package:unidesk/features/entities/student/pages/calenderEvents.dart';
+import 'package:unidesk/features/entities/student/pages/assignmentPage.dart';
 import 'package:unidesk/features/entities/student/pages/courses.dart';
 import 'package:unidesk/features/entities/student/pages/currentSemesterPage.dart';
 import 'package:unidesk/features/entities/student/pages/gradesPage.dart';
@@ -40,12 +40,14 @@ import 'package:unidesk/features/entities/student/pages/prevSemesters.dart';
 import 'package:unidesk/features/entities/student/pages/profile_page.dart'
     as student_profile;
 import 'package:unidesk/features/entities/student/pages/techinalSupportPage.dart';
-import 'package:unidesk/features/entities/student/providers_std/CalenderProvider.dart';
 import 'package:unidesk/features/entities/student/providers_std/annouc_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/currentSem_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/prevSemesters_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/profile_provider.dart';
+import 'package:unidesk/features/entities/student/assignments/data/api_student_assignments_data_source.dart';
+import 'package:unidesk/features/entities/student/assignments/data/student_assignments_repository.dart';
+import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 
@@ -69,7 +71,6 @@ void main() {
         ChangeNotifierProvider(create: (_) => AnnoucProvider()),
         ChangeNotifierProvider(create: (_) => PrevsemestersProvider()),
         ChangeNotifierProvider(create: (_) => CurrentSemesterProvider()),
-        ChangeNotifierProvider(create: (_) => CalenderProvider()),
         Provider(create: (_) => AttendanceRepository()),
         Provider<InstructorCoursesRepository>(
           create: (_) => const InstructorCoursesRepositoryImpl(
@@ -79,6 +80,11 @@ void main() {
         Provider<InstructorAssignmentsRepository>(
           create: (_) => const InstructorAssignmentsRepositoryImpl(
             ApiInstructorAssignmentsDataSource(),
+          ),
+        ),
+        Provider<StudentAssignmentsRepository>(
+          create: (_) => const StudentAssignmentsRepositoryImpl(
+            ApiStudentAssignmentsDataSource(),
           ),
         ),
         ChangeNotifierProvider(
@@ -102,6 +108,11 @@ void main() {
           create: (context) => InstructorAssignmentsProvider(
             context.read<InstructorAssignmentsRepository>(),
             context.read<InstructorCoursesRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => StudentAssignmentsProvider(
+            context.read<StudentAssignmentsRepository>(),
           ),
         ),
       ],
@@ -197,9 +208,10 @@ class _MyAppState extends State<MyApp> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: '/schedule',
-                  name: 'schedule',
-                  builder: (context, state) => const CalenderEvents(),
+                  path: '/assignments',
+                  name: 'assignments',
+                  builder: (context, state) => const AssignmentPage(),
+                
                 ),
               ],
             ),

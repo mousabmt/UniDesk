@@ -7,7 +7,6 @@ import '../../features/auth/authProvider.dart';
 import '../../features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import '../../features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
 import '../../features/entities/student/providers_std/annouc_provider.dart';
-import '../../features/entities/student/providers_std/CalenderProvider.dart';
 import '../../features/entities/student/providers_std/course_provider.dart';
 import '../../features/entities/student/providers_std/currentSem_provider.dart';
 import '../../features/entities/student/providers_std/prevSemesters_provider.dart';
@@ -38,7 +37,6 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
       }
       await context.read<PrevsemestersProvider>().refresh();
       await context.read<CurrentSemesterProvider>().refresh();
-      await context.read<CalenderProvider>().refresh();
     } else {
       // Refresh instructor providers
       if (userId != null) {
@@ -66,8 +64,8 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final filesLabel = context.select<LangProvider, String>(
       (lang) => lang.translate('files'),
     );
-    final scheduleLabel = context.select<LangProvider, String>(
-      (lang) => lang.translate('schedule'),
+    final assignmentsLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('assignments'),
     );
     final attendanceLabel = context.select<LangProvider, String>(
       (lang) => lang.translate('attendance'),
@@ -127,8 +125,8 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               case 'courses':
                 context.go(isStudent ? '/courses' : '/instructor/files');
                 break;
-              case 'schedule':
-                context.go(isStudent ? '/schedule' : '/instructor/attendance');
+              case 'assignments':
+                context.go(isStudent ? '/assignments' : '/instructor/attendance');
                 break;
               case 'profile':
                 context.go(isStudent ? '/profile' : '/instructor/profile');
@@ -151,7 +149,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
             ),
             PopupMenuItem(
               value: 'schedule',
-              child: Text(isStudent ? scheduleLabel : attendanceLabel),
+              child: Text(isStudent ? assignmentsLabel : attendanceLabel),
             ),
             PopupMenuItem(value: 'profile', child: Text(profileLabel)),
             PopupMenuItem(value: 'Refresh App', child: Text(refreshLabel)),

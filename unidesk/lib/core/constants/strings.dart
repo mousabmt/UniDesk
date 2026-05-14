@@ -71,6 +71,7 @@ class AppStrings {
       'thursday':'Thursday',
       'files':'Files',
       'attendance':'Attendance',
+      'assignments':'Assignments',
 
     },
     'ar': {
@@ -144,6 +145,7 @@ class AppStrings {
       'thursday':'الخميس',
       'files':'الملفات',
       'attendance':'الحضور',
+      'assignments':'الواجبات',
       
     },
   };

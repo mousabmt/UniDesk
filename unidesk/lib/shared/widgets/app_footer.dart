@@ -22,7 +22,7 @@ class AppFooter extends StatelessWidget {
     final studentRoutes = {
       0: '/',
       1: '/courses',
-      2: '/schedule',
+      2: '/assignments',
       3: '/profile',
     };
 
@@ -46,7 +46,7 @@ class AppFooter extends StatelessWidget {
     final isStudent = context.select<AuthProvider, bool>((auth) => auth.isStudent);
     final homeLabel = context.select<LangProvider, String>((lang) => lang.translate('home'));
     final coursesLabel = context.select<LangProvider, String>((lang) => lang.translate('courses'));
-    final scheduleLabel = context.select<LangProvider, String>((lang) => lang.translate('schedule'));
+    final scheduleLabel = context.select<LangProvider, String>((lang) => lang.translate('assignments'));
     final attendanceLabel =
         context.select<LangProvider, String>((lang) => lang.translate('attendance'));
     final assignmentsLabel =

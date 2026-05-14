@@ -688,6 +688,156 @@ class StudentApi {
     }).toList();
   }
 
+  // Student Assignments Endpoints
+  
+  static Future<List<Map<String, dynamic>>> getStudentAssignments({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/assignments'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load assignments',
+        ),
+      );
+    }
+
+    // Handle both array and wrapped response
+    final assignments = body is List
+        ? body
+        : body is Map<String, dynamic>
+        ? body['data'] ?? body['assignments'] ?? [body]
+        : [body];
+    
+    if (assignments is! List) {
+      throw Exception('Unexpected assignments response (${response.statusCode})');
+    }
+
+    return assignments.map<Map<String, dynamic>>((item) {
+      return Map<String, dynamic>.from(item as Map);
+    }).toList();
+  }
+
+  static Future<Map<String, dynamic>> getStudentAssignmentDetail({
+    required String assignmentId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/assignments/$assignmentId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load assignment details',
+        ),
+      );
+    }
+
+    if (body is! Map<String, dynamic>) {
+      throw Exception('Unexpected assignment detail response (${response.statusCode})');
+    }
+
+    return body;
+  }
+
+  static Future<Map<String, dynamic>> submitAssignment({
+    required String assignmentId,
+    required String fileName,
+    required String localPath,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final request = http.MultipartRequest(
+      'POST',
+      _uri('/student/assignments/$assignmentId/submit'),
+    );
+
+    request.headers.addAll(_headers(token: token, contentType: ''));
+
+    try {
+      request.files.add(
+        await http.MultipartFile.fromPath('file', localPath, filename: fileName),
+      );
+    } catch (e) {
+      throw Exception('Failed to read file: ${e.toString()}');
+    }
+
+    final response = await request.send();
+    final body = await _decode(await http.Response.fromStream(response));
+
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(
+          body,
+          fallback: 'Failed to submit assignment',
+        ),
+      );
+    }
+
+    // Extract data from response
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+    }
+
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+
+    throw Exception('Unexpected submit assignment response (${response.statusCode})');
+  }
+
+  static Future<List<Map<String, dynamic>>> getStudentSubmissions({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/submissions'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load submissions',
+        ),
+      );
+    }
+
+    // Extract submissions list from response
+    List<Map<String, dynamic>> submissions = [];
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is List) {
+        submissions = data.map<Map<String, dynamic>>((item) {
+          return Map<String, dynamic>.from(item as Map);
+        }).toList();
+      }
+    } else if (body is List) {
+      submissions = body.map<Map<String, dynamic>>((item) {
+        return Map<String, dynamic>.from(item as Map);
+      }).toList();
+    }
+
+    return submissions;
+  }
+
   static Future<Map<String, dynamic>> startAttendanceSession({
     required String courseId,
     required String lectureId,
