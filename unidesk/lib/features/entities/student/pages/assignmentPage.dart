@@ -511,10 +511,9 @@ class _SubmissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-final double ratio =
-    submission.scoreLabel != null && maxScore > 0
-        ? double.tryParse(submission.scoreLabel.toString())! / maxScore
-        : 0.0;
+    final score = submission.score;
+    final double ratio =
+        score != null && maxScore > 0 ? score / maxScore : 0.0;
     return Card(
       color: Colors.blue[50],
       child: Padding(

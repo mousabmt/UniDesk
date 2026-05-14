@@ -794,7 +794,11 @@ class _SubmissionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isBusy =
         provider.isGrading && provider.gradingSubmissionId == submission.id;
-    final double ratio = submission.score! / assignment.maxScore;
+    final score = submission.score;
+    final double ratio =
+        score != null && assignment.maxScore > 0
+            ? score / assignment.maxScore
+            : 0.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
