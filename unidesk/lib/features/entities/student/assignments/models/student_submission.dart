@@ -15,11 +15,12 @@ class StudentSubmission {
   final String assignmentId;
   final String studentId;
   final String fileUrl;
-  final int? score;
+  final double? score;
   final String? feedback;
   final String submittedAt;
 
   bool get isGraded => score != null;
+  String get scoreLabel => score == null ? '' : _formatScore(score!);
 
   String get submittedAtLabel {
     try {
@@ -35,8 +36,17 @@ class StudentSubmission {
       id: map['id']?.toString() ?? '',
       assignmentId: map['assignment_id']?.toString() ?? '',
       studentId: map['student_id']?.toString() ?? '',
-      fileUrl: map['file_url']?.toString() ?? '',
-      score: _toIntOrNull(map['score']),
+      fileUrl:
+          map['file_url']?.toString() ??
+          map['url']?.toString() ??
+          (map['file'] is Map
+              ? Map<String, dynamic>.from(map['file'] as Map)['url']
+                      ?.toString() ??
+                  Map<String, dynamic>.from(map['file'] as Map)['file_url']
+                      ?.toString() ??
+                  ''
+              : ''),
+      score: _toDoubleOrNull(map['score'] ?? map['grade']),
       feedback: map['feedback']?.toString(),
       submittedAt: map['submitted_at']?.toString() ?? '',
     );
@@ -54,10 +64,16 @@ class StudentSubmission {
     };
   }
 
-  static int? _toIntOrNull(dynamic value) {
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    if (value is String) return int.tryParse(value);
+  static String _formatScore(double value) {
+    return value == value.roundToDouble()
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(1);
+  }
+
+  static double? _toDoubleOrNull(dynamic value) {
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value);
     return null;
   }
 }

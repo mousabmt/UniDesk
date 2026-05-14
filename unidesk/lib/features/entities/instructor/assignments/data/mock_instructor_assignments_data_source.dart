@@ -64,4 +64,26 @@ class MockInstructorAssignmentsDataSource
       Map<String, dynamic>.from(response['data'] ?? const {}),
     );
   }
+
+  @override
+  Future<AssignmentSubmission> gradeSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  }) async {
+    final response = await MockApi.gradeAssignmentSubmission(
+      assignmentId: assignmentId,
+      submissionId: submissionId,
+      score: score,
+    );
+    if (response['success'] != true) {
+      throw InstructorAssignmentsRepositoryException(
+        response['message']?.toString() ?? 'Failed to grade submission',
+      );
+    }
+
+    return AssignmentSubmission.fromMap(
+      Map<String, dynamic>.from(response['data'] ?? const {}),
+    );
+  }
 }

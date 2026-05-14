@@ -47,4 +47,22 @@ class ApiInstructorAssignmentsDataSource
       throw InstructorAssignmentsRepositoryException(error.toString());
     }
   }
+
+  @override
+  Future<AssignmentSubmission> gradeSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  }) async {
+    try {
+      final response = await StudentApi.gradeAssignmentSubmission(
+        assignmentId: assignmentId,
+        submissionId: submissionId,
+        score: score,
+      );
+      return AssignmentSubmission.fromMap(response);
+    } catch (error) {
+      throw InstructorAssignmentsRepositoryException(error.toString());
+    }
+  }
 }

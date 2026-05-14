@@ -314,11 +314,12 @@ class _AssignmentsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sectionLabel =
-        context.select<InstructorAssignmentsProvider, String?>((provider) {
-          final course = provider.selectedCourse;
-          return course == null ? null : provider.sectionLabelFor(course);
-        });
+    final sectionLabel = context.select<InstructorAssignmentsProvider, String?>(
+      (provider) {
+        final course = provider.selectedCourse;
+        return course == null ? null : provider.sectionLabelFor(course);
+      },
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -760,6 +761,8 @@ class _SubmissionsPanel extends StatelessWidget {
         return Column(
           children: [
             _SubmissionTile(
+              assignment: selectedAssignment!,
+              provider: provider,
               submission: submission,
               onFileTap: submission.file != null
                   ? () => onSubmissionFileTap?.call(submission.file!)
@@ -776,18 +779,26 @@ class _SubmissionsPanel extends StatelessWidget {
 
 class _SubmissionTile extends StatelessWidget {
   const _SubmissionTile({
+    required this.assignment,
+    required this.provider,
     required this.submission,
     this.onFileTap,
   });
 
+  final Assignment assignment;
+  final InstructorAssignmentsProvider provider;
   final AssignmentSubmission submission;
   final VoidCallback? onFileTap;
 
   @override
   Widget build(BuildContext context) {
+    final isBusy =
+        provider.isGrading && provider.gradingSubmissionId == submission.id;
+    final double ratio = submission.score! / assignment.maxScore;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 22,
@@ -819,7 +830,7 @@ class _SubmissionTile extends StatelessWidget {
                       : 'Submitted on ${submission.submittedAtLabel}',
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                if (submission.file != null) ...[  
+                if (submission.file != null) ...[
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: submission.file!.canOpen ? onFileTap : null,
@@ -883,25 +894,306 @@ class _SubmissionTile extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: submission.isSubmitted
-                  ? const Color(0xff4caf50)
-                  : const Color(0xffe53935),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              submission.isSubmitted ? Icons.check : Icons.close,
-              color: Colors.white,
-              size: 16,
-            ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (submission.isGraded)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffeaf7ec),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${submission.score}/${assignment.maxScore}',
+                    style: TextStyle(
+                      color: ratio >= 0.6
+                          ? const Color(0xff237a44)
+                          : const Color(0xffe53935),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              if (submission.isGraded) const SizedBox(height: 8),
+              SizedBox(
+                height: 34,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => _showGradeSheet(context, assignment, submission),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _AssignmentsPageState.kTeal,
+                    side: const BorderSide(color: _AssignmentsPageState.kTeal),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: isBusy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(submission.isGraded ? 'Edit Grade' : 'Grade'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: submission.isSubmitted
+                      ? const Color(0xff4caf50)
+                      : const Color(0xffe53935),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  submission.isSubmitted ? Icons.check : Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showGradeSheet(
+    BuildContext context,
+    Assignment assignment,
+    AssignmentSubmission submission,
+  ) async {
+    provider.clearGradeError();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return ChangeNotifierProvider.value(
+          value: provider,
+          child: _GradeSubmissionSheet(
+            assignment: assignment,
+            submission: submission,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GradeSubmissionSheet extends StatefulWidget {
+  const _GradeSubmissionSheet({
+    required this.assignment,
+    required this.submission,
+  });
+
+  final Assignment assignment;
+  final AssignmentSubmission submission;
+
+  @override
+  State<_GradeSubmissionSheet> createState() => _GradeSubmissionSheetState();
+}
+
+class _GradeSubmissionSheetState extends State<_GradeSubmissionSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _scoreController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scoreController = TextEditingController(
+      text: widget.submission.scoreLabel == 'Ungraded'
+          ? ''
+          : widget.submission.scoreLabel,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scoreController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 20),
+      child: Consumer<InstructorAssignmentsProvider>(
+        builder: (context, provider, _) {
+          final isBusy =
+              provider.isGrading &&
+              provider.gradingSubmissionId == widget.submission.id;
+          return Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.submission.isGraded
+                      ? 'Edit Grade'
+                      : 'Grade Submission',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.submission.studentName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.assignment.title,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfff4f8fb),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Score must be between 0 and ${widget.assignment.maxScore} points.',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _scoreController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Grade',
+                    hintText: 'Enter score',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    final trimmed = (value ?? '').trim();
+                    if (trimmed.isEmpty) {
+                      return 'Please enter a grade.';
+                    }
+                    final score = double.tryParse(trimmed);
+                    if (score == null) {
+                      return 'Grade must be a valid number.';
+                    }
+                    if (score < 0) {
+                      return 'Grade cannot be negative.';
+                    }
+                    if (score > widget.assignment.maxScore) {
+                      return 'Grade cannot exceed ${widget.assignment.maxScore}.';
+                    }
+                    return null;
+                  },
+                ),
+                if (provider.gradeError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    provider.gradeError!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: isBusy ? null : () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isBusy
+                            ? null
+                            : () => _submit(context, provider),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _AssignmentsPageState.kTeal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Save Grade'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _submit(
+    BuildContext context,
+    InstructorAssignmentsProvider provider,
+  ) async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      return;
+    }
+
+    final score = double.parse(_scoreController.text.trim());
+    final success = await provider.gradeSubmission(
+      submissionId: widget.submission.id,
+      score: score,
+    );
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.submission.isGraded
+                ? 'Grade updated successfully.'
+                : 'Grade saved successfully.',
+          ),
+        ),
+      );
+    }
   }
 }
 

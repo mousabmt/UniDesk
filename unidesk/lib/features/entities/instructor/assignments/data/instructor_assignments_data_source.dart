@@ -8,4 +8,10 @@ abstract class InstructorAssignmentsDataSource {
   Future<List<AssignmentSubmission>> getAssignmentSubmissions(String assignmentId);
 
   Future<Assignment> createAssignment(CreateAssignmentRequest request);
+
+  Future<AssignmentSubmission> gradeSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  });
 }

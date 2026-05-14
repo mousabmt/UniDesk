@@ -212,7 +212,7 @@ class AssignmentCard extends StatelessWidget {
                     const SizedBox(width: 16),
                     if (assignment.isGraded)
                       Text(
-                        'Score: ${assignment.submission!.score}/${assignment.maxScore}',
+                        'Score: ${assignment.submission!.scoreLabel}/${assignment.maxScore}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.green[700],
                           fontWeight: FontWeight.w600,
@@ -385,7 +385,10 @@ void initState() {
 
                 // Submission Section
                 if (assignment.isSubmitted && assignment.submission != null)
-                  _SubmissionCard(submission: assignment.submission!)
+                  _SubmissionCard(
+                    submission: assignment.submission!,
+                    maxScore: assignment.maxScore,
+                  )
                 else
                   _SubmitAssignmentForm(assignmentId: assignment.id),
 
@@ -491,11 +494,16 @@ class _FileCard extends StatelessWidget {
 
 class _SubmissionCard extends StatelessWidget {
   final dynamic submission;
+  final int maxScore;
 
-  const _SubmissionCard({required this.submission});
+  const _SubmissionCard({required this.submission, required this.maxScore});
 
   @override
   Widget build(BuildContext context) {
+final double ratio =
+    submission.scoreLabel != null && maxScore > 0
+        ? double.tryParse(submission.scoreLabel.toString())! / maxScore
+        : 0.0;
     return Card(
       color: Colors.blue[50],
       child: Padding(
@@ -528,9 +536,7 @@ class _SubmissionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
+                  color: Colors.blue[50],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,9 +549,13 @@ class _SubmissionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${submission.score}/10',
+                      '${submission.scoreLabel}/$maxScore',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.green,
+                        color: ratio >= 0.9
+                            ? Colors.green[700]
+                            : ratio >= 0.75
+                                ? Colors.orange[700]
+                                : Colors.red[700],
                       ),
                     ),
                   ],

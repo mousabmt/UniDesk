@@ -863,6 +863,37 @@ class MockApi {
     return {'success': false, 'message': 'Assignment not found'};
   }
 
+  static Future<Map<String, dynamic>> gradeAssignmentSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  }) async {
+    final submissions = _assignmentSubmissions[assignmentId];
+    if (submissions == null) {
+      return {'success': false, 'message': 'Assignment not found'};
+    }
+
+    for (var index = 0; index < submissions.length; index++) {
+      final submission = submissions[index];
+      if (submission['id']?.toString() != submissionId) {
+        continue;
+      }
+
+      final updated = <String, dynamic>{
+        ...submission,
+        'grade': score,
+        'score': score,
+        'feedback': submission['feedback'],
+        'status': 'graded',
+      };
+      submissions[index] = updated;
+      _assignmentSubmissions[assignmentId] = submissions;
+      return {'success': true, 'data': _normalizeSubmission(updated)};
+    }
+
+    return {'success': false, 'message': 'Submission not found'};
+  }
+
   // POST https://api.unidesk.local/courses/{courseId}/assignments
   // body: {
   //   "title": "...",
@@ -1074,6 +1105,9 @@ class MockApi {
       'student_name': raw['studentName']?.toString() ?? '',
       'submitted_at': raw['submittedAt']?.toString() ?? '',
       'status': raw['status']?.toString() ?? 'submitted',
+      'score': raw['score'] ?? raw['grade'],
+      'grade': raw['grade'] ?? raw['score'],
+      'feedback': raw['feedback']?.toString(),
       if (raw['file'] is Map) 'file': Map<String, dynamic>.from(raw['file'] as Map),
     };
   }

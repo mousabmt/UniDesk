@@ -30,6 +30,9 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   List<AssignmentSubmission> _submissions = const [];
   bool _isSubmissionsLoading = false;
   String? _submissionsError;
+  bool _isGrading = false;
+  String? _gradingSubmissionId;
+  String? _gradeError;
 
   bool _isCreating = false;
   String? _createError;
@@ -48,6 +51,9 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
   List<AssignmentSubmission> get submissions => _submissions;
   bool get isSubmissionsLoading => _isSubmissionsLoading;
   String? get submissionsError => _submissionsError;
+  bool get isGrading => _isGrading;
+  String? get gradingSubmissionId => _gradingSubmissionId;
+  String? get gradeError => _gradeError;
   bool get isCreating => _isCreating;
   String? get createError => _createError;
 
@@ -315,6 +321,61 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       _isCreating = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> gradeSubmission({
+    required String submissionId,
+    required double score,
+  }) async {
+    final assignment = selectedAssignment;
+    if (_isGrading || assignment == null) {
+      return false;
+    }
+    if (score < 0 || score > assignment.maxScore) {
+      _gradeError =
+          'Score must be between 0 and ${assignment.maxScore} points.';
+      notifyListeners();
+      return false;
+    }
+
+    _isGrading = true;
+    _gradingSubmissionId = submissionId;
+    _gradeError = null;
+    notifyListeners();
+
+    try {
+      final graded = await _assignmentsRepository.gradeSubmission(
+        assignmentId: assignment.id,
+        submissionId: submissionId,
+        score: score,
+      );
+      _submissions = _submissions.map((submission) {
+        if (submission.id != submissionId) {
+          return submission;
+        }
+        return submission.copyWith(
+          status: graded.status,
+          score: graded.score,
+          feedback: graded.feedback,
+        );
+      }).toList(growable: false);
+      return true;
+    } catch (e) {
+      _gradeError = e.toString();
+      return false;
+    } finally {
+      _isGrading = false;
+      _gradingSubmissionId = null;
+      notifyListeners();
+    }
+  }
+
+  void clearGradeError() {
+    if (_gradeError == null) {
+      return;
+    }
+    _gradeError = null;
+    notifyListeners();
   }
 
   String? sectionLabelFor(InstructorManagedCourse course) {

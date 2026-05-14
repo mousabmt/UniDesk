@@ -688,6 +688,44 @@ class StudentApi {
     }).toList();
   }
 
+  static Future<Map<String, dynamic>> gradeAssignmentSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+    String? feedback,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final endpoint = '/assignments/submissions/$submissionId/grade';
+    final body = jsonEncode({
+      'score': score,
+      if (feedback != null && feedback.trim().isNotEmpty) 'feedback': feedback,
+    });
+    final response = await http.post(
+      _uri(endpoint),
+      headers: _headers(token: token),
+      body: body,
+    );
+    final decoded = await _decode(response);
+
+    if (!_isSuccessStatus(response.statusCode)) {
+      throw Exception(
+        _messageFromBody(decoded, fallback: 'Failed to grade submission'),
+      );
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'] ?? decoded['submission'] ?? decoded;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data as Map);
+      }
+    }
+
+    throw Exception(
+      'Unexpected grade submission response (${response.statusCode})',
+    );
+  }
+
   // Student Assignments Endpoints
   
   static Future<List<Map<String, dynamic>>> getStudentAssignments({

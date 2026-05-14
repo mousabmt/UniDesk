@@ -9,6 +9,12 @@ abstract class InstructorAssignmentsRepository {
   Future<List<AssignmentSubmission>> getAssignmentSubmissions(String assignmentId);
 
   Future<Assignment> createAssignment(CreateAssignmentRequest request);
+
+  Future<AssignmentSubmission> gradeSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  });
 }
 
 class InstructorAssignmentsRepositoryImpl
@@ -32,6 +38,19 @@ class InstructorAssignmentsRepositoryImpl
   @override
   Future<Assignment> createAssignment(CreateAssignmentRequest request) {
     return _dataSource.createAssignment(request);
+  }
+
+  @override
+  Future<AssignmentSubmission> gradeSubmission({
+    required String assignmentId,
+    required String submissionId,
+    required double score,
+  }) {
+    return _dataSource.gradeSubmission(
+      assignmentId: assignmentId,
+      submissionId: submissionId,
+      score: score,
+    );
   }
 }
 
