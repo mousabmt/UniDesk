@@ -143,7 +143,13 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 if (_selectedTab == _CourseDetailsTab.overview)
                   _OverviewTab(details: details, compact: compact)
                 else if (_selectedTab == _CourseDetailsTab.files)
-                  _FilesTab(files: details.files)
+                  _FilesTab(
+                    files: details.files.where((file) {
+                      return file.category ==
+                              InstructorCourseFileCategory.lecture ||
+                          file.category == InstructorCourseFileCategory.exam;
+                    }).toList(),
+                  )
                 else if (_selectedTab == _CourseDetailsTab.assignments)
                   _AssignmentsTab(
                     courseId: details.course.id,

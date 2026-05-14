@@ -49,6 +49,12 @@ class _AddFilesPageState extends State<AddFilesPage> {
           builder: (context, provider, _) {
             final selectedCourse = provider.selectedCourse;
             final files = provider.visibleFiles.where((file) {
+              final isDisplayableCategory =
+                  file.category == InstructorCourseFileCategory.lecture ||
+                  file.category == InstructorCourseFileCategory.exam;
+              if (!isDisplayableCategory) {
+                return false;
+              }
               if (_selectedCategory == null) {
                 return true;
               }

@@ -85,6 +85,28 @@ InstructorCourseDetails _buildCourseDetails(InstructorManagedCourse course) {
   );
 }
 
+InstructorCourseDetails _buildCourseDetailsWithFiles(
+  InstructorManagedCourse course,
+  List<InstructorCourseFile> files,
+) {
+  return InstructorCourseDetails(
+    course: course,
+    summary: InstructorCourseSummary(
+      averageAttendanceLabel: '90%',
+      assignmentsCount: 0,
+      filesCount: files.length,
+    ),
+    upcomingLecture: const InstructorUpcomingLecture(
+      title: 'Upcoming class',
+      dateLabel: 'May 13, 2026',
+      timeLabel: '10:00 AM',
+      locationLabel: 'Room 101',
+    ),
+    files: files,
+    students: const [],
+  );
+}
+
 void main() {
   const repository = InstructorCoursesRepositoryImpl(
     MockInstructorCoursesDataSource(),
@@ -329,6 +351,85 @@ void main() {
 
     expect(find.byType(DropdownButton<String>), findsNWidgets(2));
     expect(find.text('Select Course'), findsOneWidget);
+  });
+
+  testWidgets('add files page only shows lecture and exam files', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    const course = InstructorManagedCourse(
+      id: '120414',
+      name: 'Introduction to Programming',
+      credits: 3,
+      studentsEnrolled: 20,
+      lectureId: '1',
+      courseCode: 'CS101',
+      sectionId: '1',
+      term: 'Spring 2026',
+      sectionLabel: 'Section A',
+      semesterId: '2026S',
+    );
+    const lectureFile = InstructorCourseFile(
+      id: 'f-1',
+      courseId: '120414',
+      name: 'Lecture 1.pdf',
+      extensionLabel: 'PDF',
+      sizeLabel: '1 MB',
+      uploadedAtLabel: 'May 13, 2026',
+      category: InstructorCourseFileCategory.lecture,
+    );
+    const examFile = InstructorCourseFile(
+      id: 'f-2',
+      courseId: '120414',
+      name: 'Midterm Review.pdf',
+      extensionLabel: 'PDF',
+      sizeLabel: '1 MB',
+      uploadedAtLabel: 'May 13, 2026',
+      category: InstructorCourseFileCategory.exam,
+    );
+    const assignmentFile = InstructorCourseFile(
+      id: 'f-3',
+      courseId: '120414',
+      name: 'Assignment Sheet.pdf',
+      extensionLabel: 'PDF',
+      sizeLabel: '1 MB',
+      uploadedAtLabel: 'May 13, 2026',
+      category: InstructorCourseFileCategory.assignment,
+    );
+
+    final fakeRepository = _FakeInstructorCoursesRepository(
+      courses: const [course],
+      detailsBySelectionKey: {
+        course.selectionKey: _buildCourseDetailsWithFiles(course, const [
+          lectureFile,
+          examFile,
+          assignmentFile,
+        ]),
+      },
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          Provider<InstructorCoursesRepository>.value(value: fakeRepository),
+          ChangeNotifierProvider(
+            create: (_) => InstructorCoursesProvider(fakeRepository),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: AddFilesPage())),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.scrollUntilVisible(find.text('Recent Files'), 300);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lecture 1.pdf'), findsOneWidget);
+    expect(find.text('Midterm Review.pdf'), findsOneWidget);
+    expect(find.text('Assignment Sheet.pdf'), findsNothing);
   });
 
   test(

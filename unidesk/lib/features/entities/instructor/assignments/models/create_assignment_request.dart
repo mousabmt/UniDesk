@@ -37,7 +37,7 @@ Map<String, dynamic> toApiFields() {
 
   static String _formatApiDateTime(DateTime value) {
     final normalized = value.toLocal();
-    final twoDigits = (int number) => number.toString().padLeft(2, '0');
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
     return '${normalized.year}-'
         '${twoDigits(normalized.month)}-'
         '${twoDigits(normalized.day)} '
