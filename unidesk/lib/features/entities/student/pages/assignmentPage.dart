@@ -131,6 +131,13 @@ class AssignmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
     final statusLabel = assignment.statusLabel;
+final double score =
+    double.tryParse(assignment.submission?.scoreLabel ?? '0') ?? 0.0;
+
+final double ratio =
+    assignment.maxScore > 0
+        ? score / assignment.maxScore
+        : 0.0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -211,13 +218,17 @@ class AssignmentCard extends StatelessWidget {
                   if (assignment.isSubmitted && assignment.submission != null) ...[
                     const SizedBox(width: 16),
                     if (assignment.isGraded)
-                      Text(
-                        'Score: ${assignment.submission!.scoreLabel}/${assignment.maxScore}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )
+Text(
+  'Score: ${assignment.submission!.scoreLabel}/${assignment.maxScore}',
+  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+    color: ratio >= 0.9
+        ? Colors.green[700]
+        : ratio >= 0.75
+            ? Colors.orange[700]
+            : Colors.red[700],
+    fontWeight: FontWeight.w600,
+  ),
+)
                     else
                       Text(
                         'Pending Grade',
