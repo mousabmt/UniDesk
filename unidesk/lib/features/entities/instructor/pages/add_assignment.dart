@@ -124,10 +124,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                                   constraints.maxWidth < 560;
                               final courseDropdown =
                                   DropdownButtonFormField<String>(
-                                    key: ValueKey(
-                                      provider.selectedCourseGroupKey,
-                                    ),
-                                    initialValue:
+                                    value:
                                         provider.selectedCourseGroupKey,
                                     isExpanded: true,
                                     decoration: _inputDecoration(
@@ -183,10 +180,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                                   );
                               final sectionDropdown =
                                   DropdownButtonFormField<String>(
-                                    key: ValueKey(
-                                      '${provider.selectedCourseId}-${provider.selectedSectionSelectionKey}',
-                                    ),
-                                    initialValue:
+                                    value:
                                         provider.selectedSectionSelectionKey,
                                     isExpanded: true,
                                     decoration: _inputDecoration(
@@ -535,7 +529,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
       instructorId: instructorId,
       preferredCourseId: widget.initialCourseId,
       preferredSectionId: widget.initialSectionId,
-      lockCourseSelection: false,
+      lockCourseSelection: widget.lockCourseSelection,
     );
   }
 

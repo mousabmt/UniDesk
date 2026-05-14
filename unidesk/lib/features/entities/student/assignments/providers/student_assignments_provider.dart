@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:unidesk/features/entities/student/assignments/data/student_assignments_repository.dart';
 import 'package:unidesk/features/entities/student/assignments/models/student_assignment.dart';
@@ -82,7 +84,8 @@ class StudentAssignmentsProvider extends ChangeNotifier {
   Future<bool> submitAssignment({
     required String assignmentId,
     required String fileName,
-    required String localPath,
+    String? localPath,
+    Uint8List? fileBytes,
   }) async {
     _isSubmitting = true;
     _submitError = null;
@@ -94,6 +97,7 @@ class StudentAssignmentsProvider extends ChangeNotifier {
         assignmentId: assignmentId,
         fileName: fileName,
         localPath: localPath,
+        fileBytes: fileBytes,
       );
 
       _submitSuccess = 'Assignment submitted successfully!';

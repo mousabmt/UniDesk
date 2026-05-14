@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/entities/student/assignments/models/student_assignment.dart';
 import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
@@ -257,15 +258,18 @@ class AssignmentDetailSheet extends StatefulWidget {
 class _AssignmentDetailSheetState extends State<AssignmentDetailSheet> {
   late StudentAssignmentsProvider _provider;
 
-  @override
-  void initState() {
-    super.initState();
-    _provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
-    // Load detail if not already loaded
+@override
+void initState() {
+  super.initState();
+  _provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
+  
+  // Defer loading to avoid build-phase setState warning
+  WidgetsBinding.instance.addPostFrameCallback((_) {
     if (_provider.selectedAssignment?.id != widget.assignment.id) {
       _provider.loadAssignmentDetail(widget.assignment.id);
     }
-  }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -751,7 +755,7 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
-        withData: false,
+        withData: true,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -780,16 +784,37 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
     if (_selectedFile == null) return;
 
     final provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
+    final fileBytes = _selectedFile!.bytes;
+    final localPath = kIsWeb ? null : _selectedFile!.path;
+
+    if ((localPath == null || localPath.isEmpty) && fileBytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to read the selected file. Please choose it again.'),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Clear previous messages before submitting
+    provider.clearSubmitMessage();
+    
     final success = await provider.submitAssignment(
       assignmentId: widget.assignmentId,
       fileName: _selectedFile!.name,
-      localPath: _selectedFile!.path!,
+      localPath: localPath,
+      fileBytes: fileBytes,
     );
 
     if (success && mounted) {
-      provider.clearSubmitMessage();
+      // Wait for success message to be visible, then close
       Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          provider.clearSubmitMessage();
+          Navigator.pop(context);
+        }
       });
     }
   }

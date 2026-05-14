@@ -749,13 +749,19 @@ class StudentApi {
       throw Exception('Unexpected assignment detail response (${response.statusCode})');
     }
 
-    return body;
+    final assignment = body['data'] ?? body['assignment'] ?? body;
+    if (assignment is! Map) {
+      throw Exception('Unexpected assignment detail payload (${response.statusCode})');
+    }
+
+    return Map<String, dynamic>.from(assignment as Map);
   }
 
   static Future<Map<String, dynamic>> submitAssignment({
     required String assignmentId,
     required String fileName,
-    required String localPath,
+    String? localPath,
+    Uint8List? fileBytes,
     String? token,
   }) async {
     token ??= await _readToken();
@@ -767,9 +773,21 @@ class StudentApi {
     request.headers.addAll(_headers(token: token, contentType: ''));
 
     try {
-      request.files.add(
-        await http.MultipartFile.fromPath('file', localPath, filename: fileName),
-      );
+      if (fileBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+        );
+      } else if (localPath != null && localPath.isNotEmpty) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            localPath,
+            filename: fileName,
+          ),
+        );
+      } else {
+        throw Exception('No file data was provided for submission.');
+      }
     } catch (e) {
       throw Exception('Failed to read file: ${e.toString()}');
     }

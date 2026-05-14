@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:unidesk/core/services/student_api.dart';
 import 'package:unidesk/features/entities/student/assignments/data/student_assignments_data_source.dart';
 import 'package:unidesk/features/entities/student/assignments/models/student_assignment.dart';
@@ -32,13 +34,15 @@ class ApiStudentAssignmentsDataSource implements StudentAssignmentsDataSource {
   Future<StudentSubmission> submitAssignment({
     required String assignmentId,
     required String fileName,
-    required String localPath,
+    String? localPath,
+    Uint8List? fileBytes,
   }) async {
     try {
       final response = await StudentApi.submitAssignment(
         assignmentId: assignmentId,
         fileName: fileName,
         localPath: localPath,
+        fileBytes: fileBytes,
       );
       return StudentSubmission.fromMap(response);
     } catch (error) {

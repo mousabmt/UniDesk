@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:unidesk/features/entities/student/assignments/models/student_assignment.dart';
 import 'package:unidesk/features/entities/student/assignments/models/student_submission.dart';
 
@@ -9,7 +11,8 @@ abstract class StudentAssignmentsDataSource {
   Future<StudentSubmission> submitAssignment({
     required String assignmentId,
     required String fileName,
-    required String localPath,
+    String? localPath,
+    Uint8List? fileBytes,
   });
 
   Future<List<StudentSubmission>> getSubmissions();
