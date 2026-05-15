@@ -5,7 +5,7 @@ import 'package:unidesk/features/entities/student/assignments/models/student_ass
 import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import '../../../../features/language/langProvider.dart';
 class AssignmentPage extends StatefulWidget {
   const AssignmentPage({super.key});
 
@@ -26,10 +26,20 @@ class _AssignmentPageState extends State<AssignmentPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+Widget build(BuildContext context) {
+  final lang = context.watch<LangProvider>();
+  return Directionality(
+    textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+    child: Scaffold(
+      backgroundColor: const Color(0xfff9fbfc),
       appBar: AppBar(
-        title: const Text('Assignments'),
+        title: Text(
+          lang.translate('assignments'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         elevation: 0,
       ),
       body: Consumer<StudentAssignmentsProvider>(
@@ -69,8 +79,9 @@ class _AssignmentPageState extends State<AssignmentPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showAssignmentDetail(StudentAssignment assignment) {
     showModalBottomSheet(

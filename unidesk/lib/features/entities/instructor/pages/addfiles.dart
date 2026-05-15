@@ -49,12 +49,17 @@ class _AddFilesPageState extends State<AddFilesPage> {
           builder: (context, provider, _) {
             final selectedCourse = provider.selectedCourse;
             final files = provider.visibleFiles.where((file) {
-              final isDisplayableCategory =
-                  file.category == InstructorCourseFileCategory.lecture ||
-                  file.category == InstructorCourseFileCategory.exam;
-              if (!isDisplayableCategory) {
+              // Explicitly exclude assignment files from addfiles page
+              if (file.category == InstructorCourseFileCategory.assignment ||
+                  file.category == InstructorCourseFileCategory.other) {
                 return false;
               }
+              // Only show lecture and exam files
+              if (file.category != InstructorCourseFileCategory.lecture &&
+                  file.category != InstructorCourseFileCategory.exam) {
+                return false;
+              }
+              // Apply category filter if selected
               if (_selectedCategory == null) {
                 return true;
               }

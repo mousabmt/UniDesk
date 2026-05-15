@@ -33,7 +33,8 @@ void initState() {
       body: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
         child: Container(
-          color: const Color(0xFFEDF0EE),
+          color: const Color(0xfff9fbfc),
+          height: double.infinity,
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),

@@ -44,7 +44,15 @@ class ApiInstructorCoursesDataSource implements InstructorCoursesDataSource {
       final students = resolvedSectionId.isEmpty
           ? const <Map<String, dynamic>>[]
           : await StudentApi.getSectionStudents(sectionId: resolvedSectionId);
-      final files = await StudentApi.getCourseFiles(courseId: courseId);
+      
+      // Fetch both material and assignment files using new separated endpoints
+      final materialFiles = await StudentApi.getInstructorMaterialFilesByCourse(
+        courseId: courseId,
+      );
+      final assignmentFiles = await StudentApi.getInstructorAssignmentFilesByCourse(
+        courseId: courseId,
+      );
+      final files = [...materialFiles, ...assignmentFiles];
 
       final normalizedCourse = {
         ...matchingCourse,

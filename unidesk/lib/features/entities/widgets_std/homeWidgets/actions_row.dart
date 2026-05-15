@@ -24,6 +24,7 @@ class QuickActionsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
+    const spacing = 10.0;
 
     final actions = [
       QuickActionItem(
@@ -43,32 +44,13 @@ class QuickActionsRow extends StatelessWidget {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = ResponsiveLayout.isCompact(context);
-        final spacing = compact ? 10.0 : 12.0;
-        final columns = ResponsiveLayout.columnsForWidth(
-          constraints.maxWidth,
-          compact: 2,
-          medium: 3,
-          wide: 3,
-        );
-        final itemWidth =
-            (constraints.maxWidth - (spacing * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: actions
-              .map(
-                (action) => SizedBox(
-                  width: itemWidth,
-                  child: _QuickActionCard(item: action),
-                ),
-              )
-              .toList(),
-        );
-      },
+    return Row(
+      children: [
+        for (var i = 0; i < actions.length; i++) ...[
+          Expanded(child: _QuickActionCard(item: actions[i])),
+          if (i != actions.length - 1) const SizedBox(width: spacing),
+        ],
+      ],
     );
   }
 }

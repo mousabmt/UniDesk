@@ -645,6 +645,66 @@ void main() {
     },
   );
 
+  test(
+    'instructor assignments provider grades submissions within assignment max score',
+    () async {
+      final provider = InstructorAssignmentsProvider(
+        assignmentsRepository,
+        repository,
+      );
+
+      await provider.loadIfNeeded(
+        instructorId: 'D001',
+        preferredCourseId: '120414',
+        preferredSectionId: '1',
+      );
+      final assignment = provider.selectedAssignment!;
+      final submission = provider.submissions.first;
+
+      final success = await provider.gradeSubmission(
+        submissionId: submission.id,
+        score: assignment.maxScore.toDouble(),
+      );
+
+      expect(success, isTrue);
+      expect(provider.gradeError, isNull);
+      expect(provider.submissions.first.id, submission.id);
+      expect(provider.submissions.first.score, assignment.maxScore.toDouble());
+      expect(provider.submissions.first.isGraded, isTrue);
+    },
+  );
+
+  test(
+    'instructor assignments provider rejects grades above assignment max score',
+    () async {
+      final provider = InstructorAssignmentsProvider(
+        assignmentsRepository,
+        repository,
+      );
+
+      await provider.loadIfNeeded(
+        instructorId: 'D001',
+        preferredCourseId: '120414',
+        preferredSectionId: '1',
+      );
+      final assignment = provider.selectedAssignment!;
+      final submission = provider.submissions.first;
+      final previousScore = submission.score;
+
+      final success = await provider.gradeSubmission(
+        submissionId: submission.id,
+        score: assignment.maxScore + 1.0,
+      );
+
+      expect(success, isFalse);
+      expect(
+        provider.gradeError,
+        'Score must be between 0 and ${assignment.maxScore} points.',
+      );
+      expect(provider.submissions.first.score, previousScore);
+    },
+  );
+
   testWidgets('assignments page respects course-scoped entry point', (
     tester,
   ) async {

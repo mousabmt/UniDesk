@@ -516,6 +516,194 @@ class StudentApi {
     }).toList();
   }
 
+  // Student Material Files Endpoints
+  
+  static Future<List<Map<String, dynamic>>> getStudentMaterials({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/materials'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load material files'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getStudentMaterialsByCourse({
+    required String courseId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/materials/$courseId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load material files for course'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  // Student Assignment Files Endpoints
+  
+  static Future<List<Map<String, dynamic>>> getStudentAssignmentMaterials({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/assignment-materials'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignment files'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getStudentAssignmentMaterialsByCourse({
+    required String courseId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/student/assignment-materials/$courseId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignment files for course'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  // Instructor Material Files Endpoints
+  
+  static Future<List<Map<String, dynamic>>> getInstructorMaterialFiles({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/course-files/materials'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load material files'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getInstructorMaterialFilesByCourse({
+    required String courseId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/course-files/materials/$courseId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load material files for course'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  // Instructor Assignment Files Endpoints
+  
+  static Future<List<Map<String, dynamic>>> getInstructorAssignmentFiles({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/course-files/assignments'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignment files'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getInstructorAssignmentFilesByCourse({
+    required String courseId,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/course-files/assignments/$courseId'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) || body is! List) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load assignment files for course'),
+      );
+    }
+
+    return body.map<Map<String, dynamic>>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      return _normalizeCourseFile(map);
+    }).toList();
+  }
+
   static Future<Map<String, dynamic>> uploadCourseFile({
     required String courseId,
     required String fileName,

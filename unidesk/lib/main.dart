@@ -50,6 +50,7 @@ import 'package:unidesk/features/entities/student/assignments/data/student_assig
 import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> requestNotificationPermission() async {
   if (await Permission.notification.isDenied) {
@@ -57,10 +58,11 @@ Future<void> requestNotificationPermission() async {
   }
 }
 
-void main() {
+void main()async  {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-
+  await initializeDateFormatting('ar');
+  await initializeDateFormatting('en');
   runApp(
     MultiProvider(
       providers: [
@@ -378,6 +380,10 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+        supportedLocales: const [
+    Locale('en'),
+    Locale('ar'),
+  ],
       title: 'UniDesk',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,

@@ -673,7 +673,7 @@ class _AssignmentAttachmentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xfff9fbfc),
+        color: const Color.fromARGB(255, 134, 136, 137),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xffe6eef2)),
       ),

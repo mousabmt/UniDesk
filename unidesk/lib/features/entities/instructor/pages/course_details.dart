@@ -145,9 +145,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 else if (_selectedTab == _CourseDetailsTab.files)
                   _FilesTab(
                     files: details.files.where((file) {
-                      return file.category ==
-                              InstructorCourseFileCategory.lecture ||
-                          file.category == InstructorCourseFileCategory.exam;
+                      // Only show lecture and exam files, explicitly exclude assignments
+                      return (file.category == InstructorCourseFileCategory.lecture ||
+                              file.category == InstructorCourseFileCategory.exam) &&
+                          file.category != InstructorCourseFileCategory.assignment;
                     }).toList(),
                   )
                 else if (_selectedTab == _CourseDetailsTab.assignments)
