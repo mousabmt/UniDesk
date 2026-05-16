@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"unidesk-c5bfb","appId":"1:732438605479:android:cc51ceb50c3ddd4fa53582","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"unidesk-c5bfb","configurations":{"android":"1:732438605479:android:cc51ceb50c3ddd4fa53582","ios":"1:732438605479:ios:a12e83539230ffbca53582","macos":"1:732438605479:ios:a12e83539230ffbca53582","web":"1:732438605479:web:16e1e35a2d2de934a53582","windows":"1:732438605479:web:1e56f21d13d50693a53582"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "unidesk-c5bfb",
+                    "appId": "1:732438605479:android:cc51ceb50c3ddd4fa53582",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "unidesk-c5bfb",
+                    "configurations": {
+                        "android": "1:732438605479:android:cc51ceb50c3ddd4fa53582",
+                        "ios": "1:732438605479:ios:a12e83539230ffbca53582",
+                        "macos": "1:732438605479:ios:a12e83539230ffbca53582",
+                        "web": "1:732438605479:web:16e1e35a2d2de934a53582",
+                        "windows": "1:732438605479:web:1e56f21d13d50693a53582"
+                    }
+                }
+            }
+        }
+    }
+}

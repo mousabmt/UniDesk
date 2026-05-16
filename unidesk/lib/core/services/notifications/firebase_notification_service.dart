@@ -1,7 +1,9 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'local_notification_service.dart';
-    /// background message handler (called outside main context)
- @pragma('vm:entry-point')
+import 'package:unidesk/features/notifications/data/notification_token_repository.dart';
+
+/// background message handler (called outside main context)
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await LocalNotificationService.initialize();
   await LocalNotificationService.showNotification(
@@ -10,8 +12,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     payload: message.data,
   );
 }
-class FirebaseNotificationService {
 
+class FirebaseNotificationService {
+  static final NotificationTokenRepository _notificationTokenRepository =
+      NotificationTokenRepository();
 
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
@@ -67,10 +71,12 @@ class FirebaseNotificationService {
   /// Handle token refresh
   static void _handleTokenRefresh(String token) {
     print('FCM Token refreshed: $token');
-    // Save token to backend or database if needed
+    _notificationTokenRepository.registerDeviceToken(token).catchError((
+      Object error,
+    ) {
+      print('Error registering refreshed FCM token: $error');
+    });
   }
-
-
 
   /// Initialize Firebase Cloud Messaging
   static Future<void> initialize() async {
@@ -88,6 +94,13 @@ class FirebaseNotificationService {
       // Get initial token
       final token = await getFCMToken();
       print('Initial FCM Token: $token');
+      if (token != null && token.isNotEmpty) {
+        try {
+          await _notificationTokenRepository.registerDeviceToken(token);
+        } catch (error) {
+          print('Error registering initial FCM token: $error');
+        }
+      }
 
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);

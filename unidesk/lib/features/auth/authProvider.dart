@@ -3,8 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/features/notifications/data/notification_token_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final NotificationTokenRepository _notificationTokenRepository =
+      NotificationTokenRepository();
+
   String? _token;
   String? _userId;
   Map<String, dynamic>? _user;
@@ -37,6 +41,15 @@ class AuthProvider extends ChangeNotifier {
       final storedUser = prefs.getString('user');
       if (storedUser != null) {
         _user = jsonDecode(storedUser) as Map<String, dynamic>;
+      }
+      if (isValidToken) {
+        try {
+          await _notificationTokenRepository.registerCurrentDeviceToken(
+            authToken: _token,
+          );
+        } catch (e) {
+          print('Error syncing device token on startup: $e');
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -73,6 +86,14 @@ class AuthProvider extends ChangeNotifier {
           await prefs.setString('user', jsonEncode(_user ?? {}));
           if (_role != null) await prefs.setString('role', _role!);
 
+          try {
+            await _notificationTokenRepository.registerCurrentDeviceToken(
+              authToken: _token,
+            );
+          } catch (e) {
+            print('Error syncing device token after login: $e');
+          }
+
           _isLoading = false;
           notifyListeners();
           return true;
@@ -92,12 +113,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
-  // check is admin 
+
+  // check is admin
   bool get isAdmin => _resolvedRole == 'admin';
   // check is instructor
   bool get isInstructor => _resolvedRole == 'instructor';
   bool get isStudent => _resolvedRole == 'student';
   Future<void> logout() async {
+    try {
+      await _notificationTokenRepository.removeCurrentDeviceToken(
+        authToken: _token,
+      );
+    } catch (e) {
+      print('Error removing device token during logout: $e');
+    }
+
     try {
       await StudentApi.logout(token: _token);
     } catch (_) {

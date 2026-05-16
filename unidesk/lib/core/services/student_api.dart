@@ -204,6 +204,72 @@ class StudentApi {
     }
   }
 
+  static Future<Map<String, dynamic>> registerDeviceToken({
+    required String deviceToken,
+    required String deviceType,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/device-token'),
+      headers: _headers(token: token),
+      body: jsonEncode({
+        'device_token': deviceToken,
+        'device_type': deviceType,
+      }),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected device token registration response (${response.statusCode})',
+      );
+    }
+
+    return {
+      'success': _isSuccessStatus(response.statusCode),
+      'message': _messageFromBody(
+        body,
+        fallback: _isSuccessStatus(response.statusCode)
+            ? 'Device token registered successfully'
+            : 'Failed to register device token',
+      ),
+      'data': body['data'],
+      ...body,
+    };
+  }
+
+  static Future<Map<String, dynamic>> removeDeviceToken({
+    required String deviceToken,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.delete(
+      _uri('/device-token'),
+      headers: _headers(token: token),
+      body: jsonEncode({'device_token': deviceToken}),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected device token removal response (${response.statusCode})',
+      );
+    }
+
+    return {
+      'success': _isSuccessStatus(response.statusCode),
+      'message': _messageFromBody(
+        body,
+        fallback: _isSuccessStatus(response.statusCode)
+            ? 'Device token removed successfully'
+            : 'Failed to remove device token',
+      ),
+      'data': body['data'],
+      ...body,
+    };
+  }
+
   static Future<List<Map<String, dynamic>>> getCourses({String? token}) async {
     token ??= await _readToken();
     final response = await http.get(
@@ -517,7 +583,7 @@ class StudentApi {
   }
 
   // Student Material Files Endpoints
-  
+
   static Future<List<Map<String, dynamic>>> getStudentMaterials({
     String? token,
   }) async {
@@ -553,7 +619,10 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode) || body is! List) {
       throw Exception(
-        _messageFromBody(body, fallback: 'Failed to load material files for course'),
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load material files for course',
+        ),
       );
     }
 
@@ -564,7 +633,7 @@ class StudentApi {
   }
 
   // Student Assignment Files Endpoints
-  
+
   static Future<List<Map<String, dynamic>>> getStudentAssignmentMaterials({
     String? token,
   }) async {
@@ -587,7 +656,8 @@ class StudentApi {
     }).toList();
   }
 
-  static Future<List<Map<String, dynamic>>> getStudentAssignmentMaterialsByCourse({
+  static Future<List<Map<String, dynamic>>>
+  getStudentAssignmentMaterialsByCourse({
     required String courseId,
     String? token,
   }) async {
@@ -600,7 +670,10 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode) || body is! List) {
       throw Exception(
-        _messageFromBody(body, fallback: 'Failed to load assignment files for course'),
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load assignment files for course',
+        ),
       );
     }
 
@@ -611,7 +684,7 @@ class StudentApi {
   }
 
   // Instructor Material Files Endpoints
-  
+
   static Future<List<Map<String, dynamic>>> getInstructorMaterialFiles({
     String? token,
   }) async {
@@ -647,7 +720,10 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode) || body is! List) {
       throw Exception(
-        _messageFromBody(body, fallback: 'Failed to load material files for course'),
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load material files for course',
+        ),
       );
     }
 
@@ -658,7 +734,7 @@ class StudentApi {
   }
 
   // Instructor Assignment Files Endpoints
-  
+
   static Future<List<Map<String, dynamic>>> getInstructorAssignmentFiles({
     String? token,
   }) async {
@@ -681,7 +757,8 @@ class StudentApi {
     }).toList();
   }
 
-  static Future<List<Map<String, dynamic>>> getInstructorAssignmentFilesByCourse({
+  static Future<List<Map<String, dynamic>>>
+  getInstructorAssignmentFilesByCourse({
     required String courseId,
     String? token,
   }) async {
@@ -694,7 +771,10 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode) || body is! List) {
       throw Exception(
-        _messageFromBody(body, fallback: 'Failed to load assignment files for course'),
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load assignment files for course',
+        ),
       );
     }
 
@@ -915,7 +995,7 @@ class StudentApi {
   }
 
   // Student Assignments Endpoints
-  
+
   static Future<List<Map<String, dynamic>>> getStudentAssignments({
     String? token,
   }) async {
@@ -928,10 +1008,7 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode)) {
       throw Exception(
-        _messageFromBody(
-          body,
-          fallback: 'Failed to load assignments',
-        ),
+        _messageFromBody(body, fallback: 'Failed to load assignments'),
       );
     }
 
@@ -941,9 +1018,11 @@ class StudentApi {
         : body is Map<String, dynamic>
         ? body['data'] ?? body['assignments'] ?? [body]
         : [body];
-    
+
     if (assignments is! List) {
-      throw Exception('Unexpected assignments response (${response.statusCode})');
+      throw Exception(
+        'Unexpected assignments response (${response.statusCode})',
+      );
     }
 
     return assignments.map<Map<String, dynamic>>((item) {
@@ -964,20 +1043,21 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode)) {
       throw Exception(
-        _messageFromBody(
-          body,
-          fallback: 'Failed to load assignment details',
-        ),
+        _messageFromBody(body, fallback: 'Failed to load assignment details'),
       );
     }
 
     if (body is! Map<String, dynamic>) {
-      throw Exception('Unexpected assignment detail response (${response.statusCode})');
+      throw Exception(
+        'Unexpected assignment detail response (${response.statusCode})',
+      );
     }
 
     final assignment = body['data'] ?? body['assignment'] ?? body;
     if (assignment is! Map) {
-      throw Exception('Unexpected assignment detail payload (${response.statusCode})');
+      throw Exception(
+        'Unexpected assignment detail payload (${response.statusCode})',
+      );
     }
 
     return Map<String, dynamic>.from(assignment);
@@ -1023,10 +1103,7 @@ class StudentApi {
 
     if (!_isSuccessStatus(response.statusCode)) {
       throw Exception(
-        _messageFromBody(
-          body,
-          fallback: 'Failed to submit assignment',
-        ),
+        _messageFromBody(body, fallback: 'Failed to submit assignment'),
       );
     }
 
@@ -1042,7 +1119,9 @@ class StudentApi {
       return body;
     }
 
-    throw Exception('Unexpected submit assignment response (${response.statusCode})');
+    throw Exception(
+      'Unexpected submit assignment response (${response.statusCode})',
+    );
   }
 
   static Future<List<Map<String, dynamic>>> getStudentSubmissions({
@@ -1057,10 +1136,7 @@ class StudentApi {
     final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode)) {
       throw Exception(
-        _messageFromBody(
-          body,
-          fallback: 'Failed to load submissions',
-        ),
+        _messageFromBody(body, fallback: 'Failed to load submissions'),
       );
     }
 
