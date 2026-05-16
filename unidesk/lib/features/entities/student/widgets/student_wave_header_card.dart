@@ -62,7 +62,7 @@ class StudentWaveHeaderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (leadingCompact != null) leadingCompact!,
+                          ?leadingCompact,
                           if (leadingCompact != null)
                             const SizedBox(height: 12),
                           content,
@@ -72,7 +72,7 @@ class StudentWaveHeaderCard extends StatelessWidget {
 
                     return Row(
                       children: [
-                        if (leadingRegular != null) leadingRegular!,
+                        ?leadingRegular,
                         if (leadingRegular != null) const SizedBox(width: 12),
                         Expanded(child: content),
                       ],

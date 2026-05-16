@@ -124,7 +124,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                                   constraints.maxWidth < 560;
                               final courseDropdown =
                                   DropdownButtonFormField<String>(
-                                    value:
+                                    initialValue:
                                         provider.selectedCourseGroupKey,
                                     isExpanded: true,
                                     decoration: _inputDecoration(
@@ -180,7 +180,7 @@ class _AddAssignmentPageState extends State<AddAssignmentPage> {
                                   );
                               final sectionDropdown =
                                   DropdownButtonFormField<String>(
-                                    value:
+                                    initialValue:
                                         provider.selectedSectionSelectionKey,
                                     isExpanded: true,
                                     decoration: _inputDecoration(

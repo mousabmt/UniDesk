@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "732438605479",
+    "project_id": "unidesk-c5bfb",
+    "storage_bucket": "unidesk-c5bfb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732438605479:android:8fb0d716758285dca53582",
+        "android_client_info": {
+          "package_name": "com.example.flutter_ui"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDd4n0-twed2fdOQWRVt8JaCgAYZmuWOo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732438605479:android:cc51ceb50c3ddd4fa53582",
+        "android_client_info": {
+          "package_name": "com.example.unidesk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDd4n0-twed2fdOQWRVt8JaCgAYZmuWOo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

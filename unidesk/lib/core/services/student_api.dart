@@ -905,7 +905,7 @@ class StudentApi {
     if (decoded is Map<String, dynamic>) {
       final data = decoded['data'] ?? decoded['submission'] ?? decoded;
       if (data is Map) {
-        return Map<String, dynamic>.from(data as Map);
+        return Map<String, dynamic>.from(data);
       }
     }
 
@@ -980,7 +980,7 @@ class StudentApi {
       throw Exception('Unexpected assignment detail payload (${response.statusCode})');
     }
 
-    return Map<String, dynamic>.from(assignment as Map);
+    return Map<String, dynamic>.from(assignment);
   }
 
   static Future<Map<String, dynamic>> submitAssignment({

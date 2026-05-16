@@ -1,9 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:unidesk/core/services/notifications/firebase_notification_service.dart';
+
+
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
@@ -52,17 +56,33 @@ import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-Future<void> requestNotificationPermission() async {
-  if (await Permission.notification.isDenied) {
-    await Permission.notification.request();
-  }
-}
 
-void main()async  {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+void main() async {
+  /// Flutter binding
+  final widgetsBinding =
+      WidgetsFlutterBinding.ensureInitialized();
+
+  /// Preserve splash
+  FlutterNativeSplash.preserve(
+    widgetsBinding: widgetsBinding,
+  );
+
+  /// Firebase init
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  /// FCM background handler
+FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+
+  /// Notifications init
+  await FirebaseNotificationService.initialize();
+
+  /// Localization
   await initializeDateFormatting('ar');
   await initializeDateFormatting('en');
+
   runApp(
     MultiProvider(
       providers: [
@@ -154,7 +174,6 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     final auth = context.read<AuthProvider>();
     FlutterNativeSplash.remove();
-    unawaited(requestNotificationPermission());
 
     _router = GoRouter(
       initialLocation: '/login',
@@ -213,7 +232,6 @@ class _MyAppState extends State<MyApp> {
                   path: '/assignments',
                   name: 'assignments',
                   builder: (context, state) => const AssignmentPage(),
-                
                 ),
               ],
             ),
@@ -380,10 +398,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-        supportedLocales: const [
-    Locale('en'),
-    Locale('ar'),
-  ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
       title: 'UniDesk',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
