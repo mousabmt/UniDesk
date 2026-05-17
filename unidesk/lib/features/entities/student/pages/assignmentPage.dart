@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/entities/student/assignments/models/student_assignment.dart';
 import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
+import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../features/language/langProvider.dart';
+
 class AssignmentPage extends StatefulWidget {
   const AssignmentPage({super.key});
 
@@ -15,81 +17,99 @@ class AssignmentPage extends StatefulWidget {
 
 class _AssignmentPageState extends State<AssignmentPage> {
   late StudentAssignmentsProvider _provider;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
+      _provider = Provider.of<StudentAssignmentsProvider>(
+        context,
+        listen: false,
+      );
       _provider.loadAssignments();
     });
   }
 
+  Future<void> _refreshAssignments(StudentAssignmentsProvider provider) async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      await provider.loadAssignments();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
   @override
-Widget build(BuildContext context) {
-  final lang = context.watch<LangProvider>();
-  return Directionality(
-    textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-    child: Scaffold(
-      backgroundColor: const Color(0xfff9fbfc),
-      appBar: AppBar(
-        title: Text(
-          lang.translate('assignments'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final lang = context.watch<LangProvider>();
+    return Directionality(
+      textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color(0xfff9fbfc),
+        appBar: AppBar(
+          title: Text(
+            lang.translate('assignments'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
+          elevation: 0,
         ),
-        elevation: 0,
+        body: Consumer<StudentAssignmentsProvider>(
+          builder: (context, provider, _) {
+            if (provider.isLoadingAssignments) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (provider.assignmentsError != null) {
+              return _buildErrorWidget(
+                provider.assignmentsError!,
+                onRetry: () => provider.loadAssignments(),
+              );
+            }
+
+            if (provider.assignments.isEmpty) {
+              return const Center(child: Text('No assignments available'));
+            }
+
+            return RefreshIndicator(
+              onRefresh: () => _refreshAssignments(provider),
+              child: ListView.builder(
+                itemCount: provider.assignments.length + 1,
+                padding: const EdgeInsets.all(12),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return StudentRefreshStatus(
+                      isRefreshing: _isRefreshing,
+                      message: 'Refreshing assignments...',
+                      padding: EdgeInsets.zero,
+                    );
+                  }
+
+                  final assignment = provider.assignments[index - 1];
+                  return AssignmentCard(
+                    assignment: assignment,
+                    onTap: () => _showAssignmentDetail(assignment),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
-      body: Consumer<StudentAssignmentsProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoadingAssignments) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (provider.assignmentsError != null) {
-            return _buildErrorWidget(
-              provider.assignmentsError!,
-              onRetry: () => provider.loadAssignments(),
-            );
-          }
-
-          if (provider.assignments.isEmpty) {
-            return const Center(
-              child: Text('No assignments available'),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => provider.loadAssignments(),
-            child: ListView.builder(
-              itemCount: provider.assignments.length,
-              padding: const EdgeInsets.all(12),
-              itemBuilder: (context, index) {
-                final assignment = provider.assignments[index];
-                return AssignmentCard(
-                  assignment: assignment,
-                  onTap: () => _showAssignmentDetail(assignment),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    ),
-  );
-}
+    );
+  }
 
   void _showAssignmentDetail(StudentAssignment assignment) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => AssignmentDetailSheet(
-        assignment: assignment,
-      ),
+      builder: (context) => AssignmentDetailSheet(assignment: assignment),
     );
   }
 
@@ -110,17 +130,14 @@ Widget build(BuildContext context) {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ],
       ),
@@ -142,11 +159,10 @@ class AssignmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
     final statusLabel = assignment.statusLabel;
-final double score =
-    double.tryParse(assignment.submission?.scoreLabel ?? '0') ?? 0.0;
+    final double score =
+        double.tryParse(assignment.submission?.scoreLabel ?? '0') ?? 0.0;
 
-final double ratio =
-    assignment.maxScore > 0
+    final double ratio = assignment.maxScore > 0
         ? score / assignment.maxScore
         : 0.0;
 
@@ -175,9 +191,8 @@ final double ratio =
                         const SizedBox(height: 4),
                         Text(
                           assignment.course.courseName,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -209,9 +224,9 @@ final double ratio =
                   const SizedBox(width: 8),
                   Text(
                     'Due: ${assignment.dueDateLabel}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -222,24 +237,25 @@ final double ratio =
                   const SizedBox(width: 8),
                   Text(
                     'Max Score: ${assignment.maxScore}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
-                  if (assignment.isSubmitted && assignment.submission != null) ...[
+                  if (assignment.isSubmitted &&
+                      assignment.submission != null) ...[
                     const SizedBox(width: 16),
                     if (assignment.isGraded)
-Text(
-  'Score: ${assignment.submission!.scoreLabel}/${assignment.maxScore}',
-  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-    color: ratio >= 0.9
-        ? Colors.green[700]
-        : ratio >= 0.75
-            ? Colors.orange[700]
-            : Colors.red[700],
-    fontWeight: FontWeight.w600,
-  ),
-)
+                      Text(
+                        'Score: ${assignment.submission!.scoreLabel}/${assignment.maxScore}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: ratio >= 0.9
+                              ? Colors.green[700]
+                              : ratio >= 0.75
+                              ? Colors.orange[700]
+                              : Colors.red[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
                     else
                       Text(
                         'Pending Grade',
@@ -268,10 +284,7 @@ Text(
 class AssignmentDetailSheet extends StatefulWidget {
   final StudentAssignment assignment;
 
-  const AssignmentDetailSheet({
-    super.key,
-    required this.assignment,
-  });
+  const AssignmentDetailSheet({super.key, required this.assignment});
 
   @override
   State<AssignmentDetailSheet> createState() => _AssignmentDetailSheetState();
@@ -280,18 +293,18 @@ class AssignmentDetailSheet extends StatefulWidget {
 class _AssignmentDetailSheetState extends State<AssignmentDetailSheet> {
   late StudentAssignmentsProvider _provider;
 
-@override
-void initState() {
-  super.initState();
-  _provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
-  
-  // Defer loading to avoid build-phase setState warning
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (_provider.selectedAssignment?.id != widget.assignment.id) {
-      _provider.loadAssignmentDetail(widget.assignment.id);
-    }
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+    _provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
+
+    // Defer loading to avoid build-phase setState warning
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_provider.selectedAssignment?.id != widget.assignment.id) {
+        _provider.loadAssignmentDetail(widget.assignment.id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -323,9 +336,8 @@ void initState() {
                           const SizedBox(height: 4),
                           Text(
                             assignment.course.courseName,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                         ],
                       ),
@@ -452,18 +464,18 @@ class _DetailCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -502,14 +514,14 @@ class _FileCard extends StatelessWidget {
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open file')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open file')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 }
@@ -523,8 +535,7 @@ class _SubmissionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = submission.score;
-    final double ratio =
-        score != null && maxScore > 0 ? score / maxScore : 0.0;
+    final double ratio = score != null && maxScore > 0 ? score / maxScore : 0.0;
     return Card(
       color: Colors.blue[50],
       child: Padding(
@@ -556,33 +567,33 @@ class _SubmissionCard extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                ),
+                decoration: BoxDecoration(color: Colors.blue[50]),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Score',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${submission.scoreLabel}/$maxScore',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: ratio >= 0.9
-                            ? Colors.green[700]
-                            : ratio >= 0.75
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: ratio >= 0.9
+                                ? Colors.green[700]
+                                : ratio >= 0.75
                                 ? Colors.orange[700]
                                 : Colors.red[700],
-                      ),
+                          ),
                     ),
                   ],
                 ),
               ),
-              if (submission.feedback != null && submission.feedback.isNotEmpty) ...[
+              if (submission.feedback != null &&
+                  submission.feedback.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -699,7 +710,11 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.cloud_upload, size: 48, color: Colors.grey[400]),
+                      Icon(
+                        Icons.cloud_upload,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'Select File to Submit',
@@ -734,15 +749,13 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
                         children: [
                           Text(
                             'File Selected',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                           Text(
                             _selectedFile!.name,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -767,12 +780,14 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
                     : _submitAssignment,
                 icon: provider.isSubmitting
                     ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.send),
-                label: Text(provider.isSubmitting ? 'Submitting...' : 'Submit Assignment'),
+                label: Text(
+                  provider.isSubmitting ? 'Submitting...' : 'Submit Assignment',
+                ),
               ),
             ),
           ],
@@ -804,9 +819,9 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error selecting file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error selecting file: $e')));
       }
     }
   }
@@ -814,7 +829,10 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
   Future<void> _submitAssignment() async {
     if (_selectedFile == null) return;
 
-    final provider = Provider.of<StudentAssignmentsProvider>(context, listen: false);
+    final provider = Provider.of<StudentAssignmentsProvider>(
+      context,
+      listen: false,
+    );
     final fileBytes = _selectedFile!.bytes;
     final localPath = kIsWeb ? null : _selectedFile!.path;
 
@@ -822,16 +840,18 @@ class _SubmitAssignmentFormState extends State<_SubmitAssignmentForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Unable to read the selected file. Please choose it again.'),
+            content: Text(
+              'Unable to read the selected file. Please choose it again.',
+            ),
           ),
         );
       }
       return;
     }
-    
+
     // Clear previous messages before submitting
     provider.clearSubmitMessage();
-    
+
     final success = await provider.submitAssignment(
       assignmentId: widget.assignmentId,
       fileName: _selectedFile!.name,

@@ -131,9 +131,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final logoutLabel = context.select<LangProvider, String>(
       (lang) => lang.translate('logout'),
     );
-    final refreshLabel = context.select<LangProvider, String>(
-      (lang) => lang.translate('refresh_app'),
-    );
+
     final isStudent = context.select<AuthProvider, bool>(
       (auth) => auth.isStudent,
     );
@@ -209,7 +207,6 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
               child: Text(isStudent ? assignmentsLabel : attendanceLabel),
             ),
             PopupMenuItem(value: 'profile', child: Text(profileLabel)),
-            PopupMenuItem(value: 'Refresh App', child: Text(refreshLabel)),
             PopupMenuItem(value: 'logout', child: Text(logoutLabel)),
           ],
         ),

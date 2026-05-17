@@ -70,20 +70,25 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // ✅ context.read — language doesn't change mid-session
-    final lang = context.read<LangProvider>();
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+Widget build(BuildContext context) {
+  final lang = context.read<LangProvider>();
+  final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return AppLayout(
-      currentIndex: NavIndexes.home,
-      child: Directionality(
-        textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+  return AppLayout(
+    currentIndex: NavIndexes.home,
+    child: Directionality(
+      textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: RefreshIndicator(
+        // ✅ wrap ListView with RefreshIndicator
+        color: const Color(0xFF2A9D8F),
+        onRefresh: () async {
+          // add your refresh logic here when ready
+          await Future.delayed(const Duration(seconds: 1));
+        },
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(), // ✅ required for RefreshIndicator to work even when content doesn't scroll
           padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomPadding),
-
           children: [
-            // ✅ Page header
             const Text(
               'Technical Support',
               style: TextStyle(
@@ -110,8 +115,9 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 Widget _buildCategoryGrid() {
   return Column(
     children: [

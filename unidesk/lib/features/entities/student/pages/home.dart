@@ -12,6 +12,7 @@ import '../../../language/langProvider.dart';
 import '../providers_std/annouc_provider.dart';
 import '../providers_std/course_provider.dart';
 import '../providers_std/profile_provider.dart';
+import '../widgets/student_refresh_status.dart';
 import '../widgets/student_home_widgets.dart';
 import '../widgets/student_wave_header_card.dart';
 
@@ -23,6 +24,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,11 +45,22 @@ class _HomePageState extends State<HomePage> {
 
   // ✅ Pull-to-refresh forces all providers to reload
   Future<void> _onRefresh() async {
-    await Future.wait([
-      context.read<ProfileProvider>().refresh(),
-      context.read<CoursesProvider>().refresh(),
-      context.read<AnnoucProvider>().refresh(),
-    ]);
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      await Future.wait([
+        context.read<ProfileProvider>().refresh(),
+        context.read<CoursesProvider>().refresh(),
+        context.read<AnnoucProvider>().refresh(),
+      ]);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -56,16 +70,16 @@ class _HomePageState extends State<HomePage> {
     final compact = ResponsiveLayout.isCompact(context);
 
     // ✅ Single loading state — wait for all providers
-    final isLoading = context.select<ProfileProvider, bool>(
-          (p) => p.isLoading,
-        ) ||
+    final isLoading =
+        context.select<ProfileProvider, bool>((p) => p.isLoading) ||
         context.select<CoursesProvider, bool>((p) => p.isLoading) ||
         context.select<AnnoucProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
       body: Directionality(
-        textDirection:
-            lang.isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+        textDirection: lang.isArabic
+            ? ui.TextDirection.rtl
+            : ui.TextDirection.ltr,
         child: ColoredBox(
           color: const Color(0xfff0f4f8),
           child: SafeArea(
@@ -84,6 +98,11 @@ class _HomePageState extends State<HomePage> {
                         16 + bottomPadding, // ✅ proper bottom padding
                       ),
                       children: [
+                        StudentRefreshStatus(
+                          isRefreshing: _isRefreshing,
+                          message: 'Refreshing home data...',
+                          padding: EdgeInsets.zero,
+                        ),
                         // ✅ Consumer only rebuilds header section
                         Consumer<ProfileProvider>(
                           builder: (context, profile, _) {
@@ -102,7 +121,8 @@ class _HomePageState extends State<HomePage> {
                               child: StudentWaveHeaderCard(
                                 compact: compact,
                                 content: StudentHomeWelcomeText(
-                                  name: profile.profile!['name']?.toString() ??
+                                  name:
+                                      profile.profile!['name']?.toString() ??
                                       '',
                                   subtitle: lang.translate('welcome_back'),
                                   dateLabel: _formatDateLabel(lang.isArabic),
@@ -279,10 +299,7 @@ class _ErrorTile extends StatelessWidget {
               style: const TextStyle(color: Color(0xffd36b6b)),
             ),
           ),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

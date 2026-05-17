@@ -1,13 +1,19 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unidesk/core/services/student_api.dart';
 import 'package:unidesk/features/notifications/data/notification_token_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final NotificationTokenRepository _notificationTokenRepository =
-      NotificationTokenRepository();
+  final NotificationTokenRepository _notificationTokenRepository;
+
+  static const _secureStorage = FlutterSecureStorage();
+  static const _tokenKey = 'token';
+
+  late final SharedPreferences _prefs;
 
   String? _token;
   String? _userId;
@@ -28,32 +34,87 @@ class AuthProvider extends ChangeNotifier {
   String? get _resolvedRole =>
       (_role ?? _user?['role'])?.toString().toLowerCase();
 
-  AuthProvider() {
+  bool get isAdmin => _resolvedRole == 'admin';
+  bool get isInstructor => _resolvedRole == 'instructor';
+  bool get isStudent => _resolvedRole == 'student';
+
+  AuthProvider({
+    NotificationTokenRepository? notificationTokenRepository,
+  }) : _notificationTokenRepository =
+            notificationTokenRepository ?? NotificationTokenRepository() {
     loadToken();
+  }
+
+  // ── Secure-storage abstraction (web ↔ native) ──────────────────────────────
+
+  /// Reads the token from the appropriate storage for the current platform.
+  Future<String?> _readToken() async {
+    if (kIsWeb) {
+      return _prefs.getString(_tokenKey);
+    }
+    return _secureStorage.read(key: _tokenKey);
+  }
+
+  /// Writes the token to the appropriate storage for the current platform.
+  Future<void> _writeToken(String value) async {
+    if (kIsWeb) {
+      await _prefs.setString(_tokenKey, value);
+    } else {
+      await _secureStorage.write(key: _tokenKey, value: value);
+    }
+  }
+
+  /// Deletes the token from the appropriate storage for the current platform.
+  Future<void> _deleteToken() async {
+    if (kIsWeb) {
+      await _prefs.remove(_tokenKey);
+    } else {
+      await _secureStorage.delete(key: _tokenKey);
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+
+  Future<void> _syncDeviceToken() async {
+    try {
+      await _notificationTokenRepository.registerCurrentDeviceToken(
+        authToken: _token,
+      );
+    } catch (e) {
+      debugPrint('Error syncing device token: $e');
+    }
   }
 
   Future<void> loadToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _token = prefs.getString('token');
-      _userId = prefs.getString('userId');
-      _role = prefs.getString('role');
-      final storedUser = prefs.getString('user');
+      _prefs = await SharedPreferences.getInstance();
+
+      // Must init _prefs before calling _readToken()
+      _token = await _readToken();
+
+      _userId = _prefs.getString('userId');
+      _role = _prefs.getString('role');
+
+      final storedUser = _prefs.getString('user');
       if (storedUser != null) {
-        _user = jsonDecode(storedUser) as Map<String, dynamic>;
-      }
-      if (isValidToken) {
         try {
-          await _notificationTokenRepository.registerCurrentDeviceToken(
-            authToken: _token,
-          );
+          final decoded = jsonDecode(storedUser);
+          if (decoded is Map<String, dynamic>) {
+            _user = decoded;
+          }
         } catch (e) {
-          print('Error syncing device token on startup: $e');
+          debugPrint('Corrupt user JSON in prefs, clearing: $e');
+          await _prefs.remove('user');
         }
       }
-      notifyListeners();
+
+      if (isValidToken) {
+        await _syncDeviceToken();
+      }
     } catch (e) {
-      print('Error loading token: $e');
+      debugPrint('Error loading token: $e');
+    } finally {
+      notifyListeners();
     }
   }
 
@@ -70,38 +131,35 @@ class AuthProvider extends ChangeNotifier {
         final token = (result['token'] ?? '') as String;
         final responseUser = Map<String, dynamic>.from(result['user'] ?? {});
         _role = result['role']?.toString() ?? responseUser['role']?.toString();
+
         if (token.isEmpty) {
           _errorMessage = 'Login succeeded but no token returned.';
-        } else {
-          _token = token;
-          _userId = responseUser['id']?.toString() ?? userId;
-          _user = responseUser;
-          if (_role != null) {
-            _user!['role'] = _role;
-          }
-
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', _token!);
-          if (_userId != null) await prefs.setString('userId', _userId!);
-          await prefs.setString('user', jsonEncode(_user ?? {}));
-          if (_role != null) await prefs.setString('role', _role!);
-
-          try {
-            await _notificationTokenRepository.registerCurrentDeviceToken(
-              authToken: _token,
-            );
-          } catch (e) {
-            print('Error syncing device token after login: $e');
-          }
-
           _isLoading = false;
           notifyListeners();
-          return true;
+          return false;
         }
+
+        _token = token;
+        _userId = responseUser['id']?.toString() ?? userId;
+        _user = responseUser;
+        if (_role != null) _user!['role'] = _role;
+
+        await _writeToken(_token!);
+
+        if (_userId != null) await _prefs.setString('userId', _userId!);
+        await _prefs.setString('user', jsonEncode(_user ?? {}));
+        if (_role != null) await _prefs.setString('role', _role!);
+
+        await _syncDeviceToken();
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
       } else {
         _errorMessage = (result['message'] ?? 'Login failed').toString();
       }
     } catch (e) {
+      debugPrint('Login error: $e');
       _errorMessage = 'Unable to login. Please try again.';
     }
 
@@ -114,36 +172,31 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  // check is admin
-  bool get isAdmin => _resolvedRole == 'admin';
-  // check is instructor
-  bool get isInstructor => _resolvedRole == 'instructor';
-  bool get isStudent => _resolvedRole == 'student';
   Future<void> logout() async {
     try {
       await _notificationTokenRepository.removeCurrentDeviceToken(
         authToken: _token,
       );
     } catch (e) {
-      print('Error removing device token during logout: $e');
+      debugPrint('Error removing device token during logout: $e');
     }
 
     try {
       await StudentApi.logout(token: _token);
-    } catch (_) {
-      // Local cleanup still happens even if the backend logout call fails.
-    }
+    } catch (_) {}
 
     _token = null;
     _userId = null;
     _user = null;
     _role = null;
     _errorMessage = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('userId');
-    await prefs.remove('user');
-    await prefs.remove('role');
+
+    await _deleteToken();
+
+    await _prefs.remove('userId');
+    await _prefs.remove('user');
+    await _prefs.remove('role');
+
     notifyListeners();
   }
 }

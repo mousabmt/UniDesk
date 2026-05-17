@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import 'package:unidesk/shared/widgets/custom_tealIcon.dart';
@@ -15,12 +17,30 @@ class GradesPage extends StatefulWidget {
 }
 
 class _GradesPageState extends State<GradesPage> {
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CoursesProvider>().loadIfNeeded();
     });
+  }
+
+  Future<void> _refreshGrades() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      final token = context.read<AuthProvider>().token;
+      await context.read<CoursesProvider>().refresh(token: token);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -49,9 +69,7 @@ class _GradesPageState extends State<GradesPage> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
-                      onPressed: () async {
-                        await context.read<CoursesProvider>().refresh();
-                      },
+                      onPressed: _refreshGrades,
                       child: Text(lang.translate('retry')),
                     ),
                   ],
@@ -65,15 +83,21 @@ class _GradesPageState extends State<GradesPage> {
             }
 
             return RefreshIndicator(
-              onRefresh: () async {
-                await context.read<CoursesProvider>().refresh();
-              },
+              onRefresh: _refreshGrades,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: grades.length,
+                itemCount: grades.length + 1,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, i) {
-                  final course = grades[i];
+                  if (i == 0) {
+                    return StudentRefreshStatus(
+                      isRefreshing: _isRefreshing,
+                      message: 'Refreshing grades...',
+                      padding: EdgeInsets.zero,
+                    );
+                  }
+
+                  final course = grades[i - 1];
 
                   return Container(
                     padding: const EdgeInsets.all(14),

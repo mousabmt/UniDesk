@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
+import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 
@@ -14,12 +15,29 @@ class Prevsemesters extends StatefulWidget {
 }
 
 class _PrevsemestersState extends State<Prevsemesters> {
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PrevsemestersProvider>().loadIfNeeded();
     });
+  }
+
+  Future<void> _refreshSemesters() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      await context.read<PrevsemestersProvider>().refresh();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -48,8 +66,7 @@ class _PrevsemestersState extends State<Prevsemesters> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
-                      onPressed: () =>
-                          context.read<PrevsemestersProvider>().refresh(),
+                      onPressed: _refreshSemesters,
                       child: const Text('Retry'),
                     ),
                   ],
@@ -58,26 +75,32 @@ class _PrevsemestersState extends State<Prevsemesters> {
             }
 
             final semesters =
-                provider.completedCourses?['completed_courses'] as List<dynamic>? ??
-                    const [];
+                provider.completedCourses?['completed_courses']
+                    as List<dynamic>? ??
+                const [];
 
             if (semesters.isEmpty) {
               return Center(child: Text(lang.translate('no_courses')));
             }
 
             return RefreshIndicator(
-              onRefresh: () =>
-                  context.read<PrevsemestersProvider>().refresh(),
+              onRefresh: _refreshSemesters,
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: semesters.length,
+                itemCount: semesters.length + 1,
                 itemBuilder: (context, i) {
-                  final semester = semesters[i] as Map<String, dynamic>;
-                  final courses = semester['courses'] as List<dynamic>? ?? const [];
-                  return _SemesterSection(
-                    semester: semester,
-                    courses: courses,
-                  );
+                  if (i == 0) {
+                    return StudentRefreshStatus(
+                      isRefreshing: _isRefreshing,
+                      message: 'Refreshing semesters...',
+                      padding: EdgeInsets.zero,
+                    );
+                  }
+
+                  final semester = semesters[i - 1] as Map<String, dynamic>;
+                  final courses =
+                      semester['courses'] as List<dynamic>? ?? const [];
+                  return _SemesterSection(semester: semester, courses: courses);
                 },
               ),
             );
@@ -89,10 +112,7 @@ class _PrevsemestersState extends State<Prevsemesters> {
 }
 
 class _SemesterSection extends StatelessWidget {
-  const _SemesterSection({
-    required this.semester,
-    required this.courses,
-  });
+  const _SemesterSection({required this.semester, required this.courses});
 
   final Map<String, dynamic> semester;
   final List<dynamic> courses;

@@ -6,6 +6,7 @@ import 'package:unidesk/features/entities/student/materials/models/student_mater
 import 'package:unidesk/features/entities/student/materials/models/student_course_material.dart';
 import 'package:unidesk/features/entities/student/materials/providers/student_materials_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
+import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,6 +20,8 @@ class StudentCourseMaterialsPage extends StatefulWidget {
 
 class _StudentCourseMaterialsPageState
     extends State<StudentCourseMaterialsPage> {
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +142,25 @@ class _StudentCourseMaterialsPageState
     );
   }
 
+  Future<void> _refreshMaterials({
+    required List<StudentMaterialCourseOption> courseOptions,
+  }) async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      await context.read<StudentMaterialsProvider>().refresh(
+        courseOptions: courseOptions,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
   Widget _buildBody({
     required BuildContext context,
     required StudentMaterialsProvider provider,
@@ -150,10 +172,15 @@ class _StudentCourseMaterialsPageState
 
     if (provider.error != null && provider.materials.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () => provider.refresh(courseOptions: courseOptions),
+        onRefresh: () => _refreshMaterials(courseOptions: courseOptions),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            StudentRefreshStatus(
+              isRefreshing: _isRefreshing,
+              message: 'Refreshing materials...',
+              padding: EdgeInsets.zero,
+            ),
             SizedBox(
               height: 420,
               child: _CenteredState(
@@ -171,11 +198,16 @@ class _StudentCourseMaterialsPageState
 
     if (provider.materials.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () => provider.refresh(courseOptions: courseOptions),
+        onRefresh: () => _refreshMaterials(courseOptions: courseOptions),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(
+          children: [
+            StudentRefreshStatus(
+              isRefreshing: _isRefreshing,
+              message: 'Refreshing materials...',
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(
               height: 420,
               child: _CenteredState(
                 icon: Icons.folder_open_outlined,
@@ -189,13 +221,21 @@ class _StudentCourseMaterialsPageState
     }
 
     return RefreshIndicator(
-      onRefresh: () => provider.refresh(courseOptions: courseOptions),
+      onRefresh: () => _refreshMaterials(courseOptions: courseOptions),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: provider.materials.length,
+        itemCount: provider.materials.length + 1,
         separatorBuilder: (_, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          final material = provider.materials[index];
+          if (index == 0) {
+            return StudentRefreshStatus(
+              isRefreshing: _isRefreshing,
+              message: 'Refreshing materials...',
+              padding: EdgeInsets.zero,
+            );
+          }
+
+          final material = provider.materials[index - 1];
           return _MaterialListItem(
             material: material,
             onTap: () => _openMaterial(context, material),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
+import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import '../providers_std/currentSem_provider.dart';
@@ -13,12 +14,29 @@ class CurrentSemesterPage extends StatefulWidget {
 }
 
 class _CurrentSemesterPageState extends State<CurrentSemesterPage> {
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CurrentSemesterProvider>().loadIfNeeded();
     });
+  }
+
+  Future<void> _refreshSchedule() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      await context.read<CurrentSemesterProvider>().refresh();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -30,54 +48,61 @@ class _CurrentSemesterPageState extends State<CurrentSemesterPage> {
       currentIndex: NavIndexes.home,
       child: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child:Builder(builder: (_) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        child: Builder(
+          builder: (_) {
+            if (provider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (provider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(provider.error!,
-                      style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await context.read<CurrentSemesterProvider>().refresh();
-                    },
-                    child: Text(lang.translate('retry')),
-                  ),
-                ],
+            if (provider.error != null) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      provider.error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await _refreshSchedule();
+                      },
+                      child: Text(lang.translate('retry')),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final schedule = provider.schdule ?? [];
+
+            if (schedule.isEmpty) {
+              return Center(child: Text(lang.translate('no_schedule')));
+            }
+
+            return RefreshIndicator(
+              onRefresh: _refreshSchedule,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: schedule.length + 1,
+                itemBuilder: (context, i) {
+                  if (i == 0) {
+                    return StudentRefreshStatus(
+                      isRefreshing: _isRefreshing,
+                      message: 'Refreshing schedule...',
+                      padding: EdgeInsets.zero,
+                    );
+                  }
+
+                  final day = schedule[i - 1];
+                  final courses = day['courses'] as List<dynamic>? ?? [];
+                  return _DaySection(day: day['day'], courses: courses);
+                },
               ),
             );
-          }
-
-          final schedule = provider.schdule ?? [];
-
-          if (schedule.isEmpty) {
-            return Center(child: Text(lang.translate('no_schedule')));
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await context.read<CurrentSemesterProvider>().refresh();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: schedule.length,
-              itemBuilder: (context, i) {
-                final day = schedule[i];
-                final courses = day['courses'] as List<dynamic>? ?? [];
-                return _DaySection(
-                  day:day['day'],
-                  courses: courses,
-                );
-              },
-            ),
-          );
-        }),
+          },
+        ),
       ),
     );
   }
@@ -91,7 +116,7 @@ class _DaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final lang = context.watch<LangProvider>();
+    final lang = context.watch<LangProvider>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,7 +127,7 @@ class _DaySection extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                 lang.translate(day.toLowerCase()),
+                lang.translate(day.toLowerCase()),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -137,7 +162,6 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -199,8 +223,11 @@ class _CourseCard extends StatelessWidget {
                   // Time
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_rounded,
-                          size: 13, color: Color(0xFF0D6E6E)),
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 13,
+                        color: Color(0xFF0D6E6E),
+                      ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
@@ -220,8 +247,11 @@ class _CourseCard extends StatelessWidget {
                   // Room
                   Row(
                     children: [
-                      const Icon(Icons.location_on_rounded,
-                          size: 13, color: Color(0xFF0D6E6E)),
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 13,
+                        color: Color(0xFF0D6E6E),
+                      ),
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
@@ -237,30 +267,31 @@ class _CourseCard extends StatelessWidget {
                     ],
                   ),
                   // Instructor
-Row(
-  children: [
-    const Icon(Icons.person_rounded,
-        size: 13, color: Color(0xFF0D6E6E)),
-    const SizedBox(width: 5),
-    Expanded(
-      child: Text(
-        course['instructor'],
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Color(0xFF4B5563),
-        ),
-      ),
-    ),
-  ],
-),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person_rounded,
+                        size: 13,
+                        color: Color(0xFF0D6E6E),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          course['instructor'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4B5563),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
-
-          
         ],
       ),
     );
