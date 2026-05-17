@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:unidesk/core/constants/constants.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
-import 'package:unidesk/shared/widgets/responsive_layout.dart';
 
 class TechnicalSupportPage extends StatefulWidget {
   const TechnicalSupportPage({super.key});
@@ -13,11 +12,7 @@ class TechnicalSupportPage extends StatefulWidget {
 }
 
 class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
-  final TextEditingController _searchController = TextEditingController();
-  final String _searchQuery = '';
   int? _expandedFaqIndex;
-
-  // ── Data ────────────────────────────────────────────────────────────────────
 
   static const _categories = [
     _SupportCategory(
@@ -65,28 +60,46 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
     ),
   ];
 
-
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _showComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This feature is coming soon.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
-
-  // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final lang = context.watch<LangProvider>();
+    // ✅ context.read — language doesn't change mid-session
+    final lang = context.read<LangProvider>();
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return AppLayout(
       currentIndex: NavIndexes.home,
       child: Directionality(
         textDirection: lang.isArabic ? TextDirection.rtl : TextDirection.ltr,
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomPadding),
+
           children: [
-            // _buildSearchBar(),
+            // ✅ Page header
+            const Text(
+              'Technical Support',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'How can we help you today?',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+              ),
+            ),
             const SizedBox(height: 20),
             _buildCategoryGrid(),
             const SizedBox(height: 20),
@@ -99,214 +112,146 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
       ),
     );
   }
-
-  // ── Search bar ───────────────────────────────────────────────────────────────
-
-  // Widget _buildSearchBar() => Container(
-  //       decoration: BoxDecoration(
-  //         color: Colors.white,
-  //         borderRadius: BorderRadius.circular(14),
-  //         boxShadow: [
-  //           BoxShadow(
-  //             color: Colors.black.withValues(alpha: 0.07),
-  //             blurRadius: 10,
-  //             offset: const Offset(0, 2),
-  //           ),
-  //         ],
-  //       ),
-  //       child: TextField(
-  //         controller: _searchController,
-  //         onChanged: (v) => setState(() => _searchQuery = v),
-  //         decoration: InputDecoration(
-  //           hintText: 'Search your issue ...',
-  //           hintStyle: const TextStyle(
-  //             color: Color(0xFF9CA3AF),
-  //             fontSize: 14,
-  //           ),
-  //           prefixIcon: const Icon(Icons.search_rounded,
-  //               color: Color(0xFF6B7280), size: 22),
-  //           suffixIcon: _searchQuery.isNotEmpty
-  //               ? IconButton(
-  //                   icon: const Icon(Icons.close_rounded,
-  //                       color: Color(0xFF6B7280), size: 20),
-  //                   onPressed: () {
-  //                     _searchController.clear();
-  //                     setState(() => _searchQuery = '');
-  //                   },
-  //                 )
-  //               : const Icon(Icons.search_rounded,
-  //                   color: Color(0xFF6B7280), size: 22),
-  //           border: InputBorder.none,
-  //           contentPadding:
-  //               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-  //         ),
-  //       ),
-  //     );
-
-  // // ── Category grid ────────────────────────────────────────────────────────────
-
-  Widget _buildCategoryGrid() => LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = ResponsiveLayout.isCompact(context);
-          final crossAxisCount = constraints.maxWidth < 420 ? 1 : 2;
-
-          return GridView.count(
-            crossAxisCount: crossAxisCount,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: compact ? 1.9 : 1.5,
-            children: _categories.map(_buildCategoryCard).toList(),
-          );
-        },
+Widget _buildCategoryGrid() {
+  return Column(
+    children: [
+      Row(
+        children: [
+          Expanded(child: _buildCategoryCard(_categories[0])),
+          const SizedBox(width: 12),
+          Expanded(child: _buildCategoryCard(_categories[1])),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(child: _buildCategoryCard(_categories[2])),
+          const SizedBox(width: 12),
+          Expanded(child: _buildCategoryCard(_categories[3])),
+        ],
+      ),
+    ],
+  );
+}
+  Widget _buildCategoryCard(_SupportCategory cat) => Material(
+        color: const Color(0xFF2A9D8F),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          // ✅ ripple feedback
+          onTap: _showComingSoon,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(cat.icon, color: Colors.white, size: 20),
+                const SizedBox(height: 8),
+                Text(
+                  cat.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  cat.subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 
-  Widget _buildCategoryCard(_SupportCategory cat) => GestureDetector(
-        onTap: () {},
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A9D8F),
-            borderRadius: BorderRadius.circular(16),
+Widget _buildContactSection() => Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD9EEEC),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Contact Support',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A1A1A),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Icon(cat.icon, color: Colors.white, size: 20),
-              const SizedBox(height: 8),
-              Text(
-                cat.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+              _buildContactButton(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: 'Start Chat',
+                onTap: _showComingSoon,
               ),
-              const SizedBox(height: 3),
-              Text(
-                cat.subtitle,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+              _buildContactButton(
+                icon: Icons.email_outlined,
+                label: 'Send Email',
+                onTap: _showComingSoon,
+              ),
+              _buildContactButton(
+                icon: Icons.call_rounded,
+                label: 'Call Us',
+                onTap: _showComingSoon,
               ),
             ],
           ),
-        ),
-      );
+        ],
+      ),
+    );
 
-  // ── Contact section ──────────────────────────────────────────────────────────
-
-  Widget _buildContactSection() => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD9EEEC),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Contact Support',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
+Widget _buildContactButton({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) =>
+    SizedBox(
+      width: 72, // ✅ constrained — prevents overflow
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: const Color(0xFF2A9D8F),
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: 54,
+                height: 54,
+                child: Icon(icon, color: Colors.white, size: 24), // ✅ uses actual icon param
               ),
             ),
-            const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 420;
-                if (compact) {
-                  return Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      _buildContactButton(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        label: 'Start Chat',
-                        onTap: () {},
-                      ),
-                      _buildContactButton(
-                        icon: Icons.email_outlined,
-                        label: 'Send Email',
-                        onTap: () {},
-                      ),
-                      _buildContactButton(
-                        icon: Icons.call_rounded,
-                        label: 'Call Us',
-                        onTap: () {},
-                      ),
-                    ],
-                  );
-                }
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildContactButton(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      label: 'Start Chat',
-                      onTap: () {},
-                    ),
-                    _buildContactButton(
-                      icon: Icons.email_outlined,
-                      label: 'Send Email',
-                      onTap: () {},
-                    ),
-                    _buildContactButton(
-                      icon: Icons.call_rounded,
-                      label: 'Call Us',
-                      onTap: () {},
-                    ),
-                  ],
-                );
-              },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
             ),
-          ],
-        ),
-      );
-
-  Widget _buildContactButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: const BoxDecoration(
-                color: Color(0xFF2A9D8F),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 24),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-          ],
-        ),
-      );
-
-  // ── FAQ section ───────────────────────────────────────────────────────────────
-
+          ),
+        ],
+      ),
+    );
   Widget _buildFaqSection() => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -325,81 +270,94 @@ class _TechnicalSupportPageState extends State<TechnicalSupportPage> {
               ),
             ),
             const SizedBox(height: 12),
+            ...List.generate(_faqs.length, (i) {
+              final faq = _faqs[i];
+              final isExpanded = _expandedFaqIndex == i;
 
-              ...List.generate(_faqs.length, (i) {
-                final faq = _faqs[i];
-                final isExpanded = _expandedFaqIndex == i;
-
-                return GestureDetector(
-                  onTap: () => setState(
-                    () => _expandedFaqIndex = isExpanded ? null : i,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 13),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: isExpanded
+                      ? const Color(0xFFEDF7F6) // ✅ visual expanded feedback
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    // ✅ ripple on FAQ items
+                    onTap: () => setState(
+                      () => _expandedFaqIndex = isExpanded ? null : i,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                faq.question,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 13,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  faq.question,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isExpanded
+                                        ? const Color(0xFF2A9D8F) // ✅
+                                        : const Color(0xFF1A1A1A),
+                                  ),
                                 ),
                               ),
-                            ),
-                            AnimatedRotation(
-                              turns: isExpanded ? 0.25 : 0,
-                              duration: const Duration(milliseconds: 200),
-                              child: const Icon(
-                                Icons.chevron_right_rounded,
-                                size: 20,
-                                color: Color(0xFF2A9D8F),
+                              AnimatedRotation(
+                                turns: isExpanded ? 0.25 : 0,
+                                duration: const Duration(milliseconds: 250),
+                                child: const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: Color(0xFF2A9D8F),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        if (isExpanded) ...[
-                          const SizedBox(height: 8),
-                          const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                          const SizedBox(height: 8),
-                          Text(
-                            faq.answer,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                              height: 1.5,
-                            ),
+                            ],
+                          ),
+                          // ✅ AnimatedSize for smooth expand/collapse
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: isExpanded
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 8),
+                                      const Divider(
+                                        height: 1,
+                                        color: Color(0xFFE5E7EB),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        faq.answer,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6B7280),
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                );
-              }),
+                ),
+              );
+            }),
           ],
         ),
       );
 }
-
-// ── Data classes ──────────────────────────────────────────────────────────────
 
 class _SupportCategory {
   final IconData icon;

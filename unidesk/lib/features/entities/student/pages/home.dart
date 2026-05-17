@@ -27,81 +27,155 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileProvider>().loadIfNeeded();
-      context.read<CoursesProvider>().loadIfNeeded();
-      context.read<AnnoucProvider>().loadIfNeeded();
+      _loadAll();
     });
+  }
+
+  // ✅ Single load method for all providers
+  Future<void> _loadAll() async {
+    await Future.wait([
+      context.read<ProfileProvider>().loadIfNeeded(),
+      context.read<CoursesProvider>().loadIfNeeded(),
+      context.read<AnnoucProvider>().loadIfNeeded(),
+    ]);
+  }
+
+  // ✅ Pull-to-refresh forces all providers to reload
+  Future<void> _onRefresh() async {
+    await Future.wait([
+      context.read<ProfileProvider>().refresh(),
+      context.read<CoursesProvider>().refresh(),
+      context.read<AnnoucProvider>().refresh(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LangProvider>();
-    final profile = context.watch<ProfileProvider>();
-    final courses = context.watch<CoursesProvider>();
-    final ads = context.watch<AnnoucProvider>();
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final compact = ResponsiveLayout.isCompact(context);
+
+    // ✅ Single loading state — wait for all providers
+    final isLoading = context.select<ProfileProvider, bool>(
+          (p) => p.isLoading,
+        ) ||
+        context.select<CoursesProvider, bool>((p) => p.isLoading) ||
+        context.select<AnnoucProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
       body: Directionality(
-        textDirection: lang.isArabic
-            ? ui.TextDirection.rtl
-            : ui.TextDirection.ltr,
+        textDirection:
+            lang.isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
         child: ColoredBox(
           color: const Color(0xfff0f4f8),
           child: SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (profile.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (profile.error != null)
-                  const Text('Error loading data, please try again later.')
-                else if (profile.profile != null)
-                  SizedBox(
-                    width: double.infinity,
-                    child: StudentWaveHeaderCard(
-                      compact: compact,
-                      content: StudentHomeWelcomeText(
-                        name: profile.profile!['name']?.toString() ?? '',
-                        subtitle: lang.translate('welcome_back'),
-                        dateLabel: _formatDateLabel(lang.isArabic),
+            bottom: true, // ✅ respect gesture nav bar
+            child: isLoading
+                ? const _HomeSkeleton() // ✅ skeleton instead of spinners
+                : RefreshIndicator(
+                    // ✅ pull-to-refresh
+                    onRefresh: _onRefresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        16,
+                        16,
+                        16 + bottomPadding, // ✅ proper bottom padding
                       ),
-                      leadingCompact: _StudentAvatar(
-                        initials: _extractInitials(
-                          profile.profile!['name']?.toString() ?? '',
+                      children: [
+                        // ✅ Consumer only rebuilds header section
+                        Consumer<ProfileProvider>(
+                          builder: (context, profile, _) {
+                            if (profile.error != null) {
+                              return _ErrorTile(
+                                message: profile.error!,
+                                onRetry: () =>
+                                    context.read<ProfileProvider>().refresh(),
+                              );
+                            }
+                            if (profile.profile == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return SizedBox(
+                              width: double.infinity,
+                              child: StudentWaveHeaderCard(
+                                compact: compact,
+                                content: StudentHomeWelcomeText(
+                                  name: profile.profile!['name']?.toString() ??
+                                      '',
+                                  subtitle: lang.translate('welcome_back'),
+                                  dateLabel: _formatDateLabel(lang.isArabic),
+                                ),
+                                leadingCompact: _StudentAvatar(
+                                  initials: _extractInitials(
+                                    profile.profile!['name']?.toString() ?? '',
+                                  ),
+                                  radius: 36,
+                                ),
+                                leadingRegular: _StudentAvatar(
+                                  initials: _extractInitials(
+                                    profile.profile!['name']?.toString() ?? '',
+                                  ),
+                                  radius: 40,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        radius: 36,
-                      ),
-                      leadingRegular: _StudentAvatar(
-                        initials: _extractInitials(
-                          profile.profile!['name']?.toString() ?? '',
+
+                        const SizedBox(height: 16),
+
+                        // ✅ Consumer only rebuilds actions section
+                        Consumer<CoursesProvider>(
+                          builder: (context, courses, _) {
+                            if (courses.error != null) {
+                              return _ErrorTile(
+                                message: courses.error!,
+                                onRetry: () =>
+                                    context.read<CoursesProvider>().refresh(),
+                              );
+                            }
+                            if (courses.courses == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return const QuickActionsRow();
+                          },
                         ),
-                        radius: 40,
-                      ),
+
+                        const SizedBox(height: 16),
+
+                        // ✅ Consumer only rebuilds stats section
+                        Consumer<ProfileProvider>(
+                          builder: (context, profile, _) {
+                            if (profile.profile == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return StatsRow(profile: profile.profile!);
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ✅ Consumer only rebuilds ads section
+                        Consumer<AnnoucProvider>(
+                          builder: (context, ads, _) {
+                            if (ads.error != null) {
+                              return _ErrorTile(
+                                message: ads.error!,
+                                onRetry: () =>
+                                    context.read<AnnoucProvider>().refresh(),
+                              );
+                            }
+                            if (ads.ads == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return AdvertisementsSection(ads: ads.ads!);
+                          },
+                        ),
+                      ],
                     ),
                   ),
-
-                const SizedBox(height: 16),
-
-                if (courses.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (courses.courses != null)
-                  const QuickActionsRow(),
-
-                const SizedBox(height: 16),
-
-                if (profile.profile != null)
-                  StatsRow(profile: profile.profile!),
-
-                const SizedBox(height: 16),
-
-                if (ads.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (ads.ads != null)
-                  AdvertisementsSection(ads: ads.ads!),
-              ],
-            ),
           ),
         ),
       ),
@@ -117,6 +191,101 @@ class _HomePageState extends State<HomePage> {
     final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
     final initials = parts.take(2).map((part) => part[0]).join();
     return initials.isEmpty ? 'ST' : initials.toUpperCase();
+  }
+}
+
+// ✅ Skeleton loader — shows while all providers load
+class _HomeSkeleton extends StatelessWidget {
+  const _HomeSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _SkeletonBox(height: 140, borderRadius: 20),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(
+            4,
+            (_) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _SkeletonBox(height: 72, borderRadius: 14),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(
+            3,
+            (_) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _SkeletonBox(height: 80, borderRadius: 14),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _SkeletonBox(height: 160, borderRadius: 20),
+      ],
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({required this.height, required this.borderRadius});
+
+  final double height;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+    );
+  }
+}
+
+// ✅ Reusable error tile with retry
+class _ErrorTile extends StatelessWidget {
+  const _ErrorTile({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xfffff0f0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xffFFCDD2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xffd36b6b)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xffd36b6b)),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

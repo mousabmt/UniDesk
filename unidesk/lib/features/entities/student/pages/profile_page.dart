@@ -46,10 +46,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             lang.translate('failed_to_load_profile'),
                             style: const TextStyle(color: Colors.red),
                           ),
-                          TextButton(
-                            onPressed: profileProvider.refresh,
-                            child: Text(lang.translate('refresh')),
-                          ),
                         ],
                       ),
                     )
@@ -70,11 +66,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
                                       ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.refresh),
-                                      onPressed: profileProvider.refresh,
-                                      tooltip: lang.translate('refresh'),
                                     ),
                                   ],
                                 ),

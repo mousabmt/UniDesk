@@ -49,7 +49,7 @@ class AppStrings {
       'credits_completed': 'Credits Completed',
       'total_hours': 'Total Hours',
       'student_information': 'Student Information',
-      'personal_information': "Student's Personal Information",
+      'personal_information': "Personal Information",
       'permanent_address': 'Permanent Address',
       'phone_number_1': 'Phone Number 1',
       'phone_number_2': 'Phone Number 2',
@@ -72,6 +72,9 @@ class AppStrings {
       'files':'Files',
       'attendance':'Attendance',
       'assignments':'Assignments',
+      'phone_number':'Phone Number',
+      'phone':'Phone',
+      'instructor_info':'Instructor Info',
 
     },
     'ar': {
@@ -123,7 +126,7 @@ class AppStrings {
       'credits_completed': 'الساعات المكتملة',
       'total_hours': 'إجمالي الساعات',
       'student_information': 'بيانات الطالب',
-      'personal_information': 'المعلومات الشخصية للطالب',
+      'personal_information': 'المعلومات الشخصية',
       'permanent_address': 'العنوان الدائم',
       'phone_number_1': 'رقم الهاتف 1',
       'phone_number_2': 'رقم الهاتف 2',
@@ -146,6 +149,9 @@ class AppStrings {
       'files':'الملفات',
       'attendance':'الحضور',
       'assignments':'الواجبات',
+      'phone_number':'رقم الهاتف',
+      'phone':'رقم الهاتف',
+      'instructor_info':'معلومات المدرس',
       
     },
   };

@@ -1,244 +1,329 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/entities/instructor/providers/instructor_profile_provider.dart';
+import 'package:unidesk/features/language/langProvider.dart';
+import '../../widgets_std/profileWidgets/custom_info.dart';
+import '../../widgets_std/profileWidgets/custom_tile.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  static const Color kTeal = Color(0xFF2E9C9C);
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
 
-  final List<Map<String, dynamic>> _menuItems = const [
-    {'icon': Icons.person_outline, 'label': 'Personal Information'},
-    {'icon': Icons.lock_outline, 'label': 'Change Password'},
-    {'icon': Icons.notifications_outlined, 'label': 'Notification Settings'},
-    {'icon': Icons.privacy_tip_outlined, 'label': 'Privacy'},
-    {'icon': Icons.help_outline, 'label': 'Help & Support'},
-  ];
+class _ProfilePageState extends State<ProfilePage> {
+  late final InstructorProfileProvider _profileProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileProvider = InstructorProfileProvider(
+      fetchProfile: _fetchProfileData,
+      saveProfile: _saveProfileData,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _profileProvider.loadIfNeeded();
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileProvider.dispose();
+    super.dispose();
+  }
+
+  Future<Map<String, dynamic>> _fetchProfileData() async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user ?? <String, dynamic>{};
+
+    // TODO: replace this with a dedicated instructor profile API call.
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    return {
+      'name': user['name']?.toString() ?? 'Dr. Ahmad',
+      'department':
+          user['department']?.toString() ?? 'Computer Science Department',
+      'email': user['email']?.toString() ?? 'ahmad@university.edu',
+      'id': (user['id'] ?? auth.userId ?? '4').toString(),
+      'faculty': user['faculty']?.toString() ?? 'Computer Science',
+      'office': user['office']?.toString() ?? 'Building 1, Room 203',
+      'phone': user['phone']?.toString() ?? '+962 7 1234 5678',
+      'specialization':
+          user['specialization']?.toString() ?? 'Software Engineering',
+      'address': user['address']?.toString() ?? 'Al al-Bayt University Campus',
+      'personal_email':
+          user['personal_email']?.toString() ?? user['email']?.toString() ?? '',
+      'identifiers': List<String>.from(
+        (user['identifiers'] as List?) ??
+            [user['phone']?.toString() ?? '+962 7 1234 5678'],
+      ),
+    };
+  }
+
+  Future<void> _saveProfileData(Map<String, dynamic> profile) async {
+    // TODO: replace this with a dedicated instructor profile update API call.
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF0F0),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Profile Card
-                  _buildProfileCard(),
-                  const SizedBox(height: 16),
-
-                  // Menu Items
-                  _buildMenuCard(),
-                  const SizedBox(height: 16),
-
-                  // Log Out
-                  _buildLogOutButton(),
-                  const SizedBox(height: 8),
-                ],
+    return ChangeNotifierProvider<InstructorProfileProvider>.value(
+      value: _profileProvider,
+      child: Consumer2<LangProvider, InstructorProfileProvider>(
+        builder: (context, lang, profileProvider, _) {
+          return Directionality(
+            textDirection: lang.isArabic
+                ? TextDirection.rtl
+                : TextDirection.ltr,
+            child: Container(
+              color: const Color(0xFFF5F5F5),
+              child: SafeArea(
+                child: RefreshIndicator(
+                  onRefresh: profileProvider.refresh,
+                  child: _buildBody(context, lang, profileProvider),
+                ),
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  // ── Header ────────────────────────────────────────────────────
+  Widget _buildBody(
+    BuildContext context,
+    LangProvider lang,
+    InstructorProfileProvider profileProvider,
+  ) {
+    if (profileProvider.isLoading) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
 
-  // ── Profile Card ──────────────────────────────────────────────
-  Widget _buildProfileCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Avatar + Info
-          Row(
+    if (profileProvider.error != null) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Column(
             children: [
-              // Avatar
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: const Color(0xFFE8F4F4),
-                backgroundImage: const NetworkImage(
-                  'https://i.pravatar.cc/150?img=51',
-                ),
+              const SizedBox(height: 120),
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                lang.translate('failed_to_load_profile'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, color: Colors.red),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(height: 8),
+              Text(
+                profileProvider.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: profileProvider.refresh,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6B2737),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(lang.translate('retry')),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-              // Name / Dept / Email
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Dr. Ahmad',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
-                      ),
+    final profile = profileProvider.profile;
+    if (profile == null) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Center(child: Text(lang.translate('no_profile_data'))),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              lang.translate('profile'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: profileProvider.isRefreshing
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      key: const ValueKey('refresh-indicator'),
+                      children: [
+                        Row(
+                          children: const [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Refreshing profile...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Computer Science Department',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'ahmad@university.edu',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          Column(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFF2D9BF),
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Edit Profile Button
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kTeal,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                child: const Icon(
+                  Icons.person,
+                  size: 52,
+                  color: Color(0xFFB07040),
                 ),
               ),
-              child: const Text(
-                'Edit Profile',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Menu Card ─────────────────────────────────────────────────
-  Widget _buildMenuCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: _menuItems.asMap().entries.map((e) {
-          final i = e.key;
-          final item = e.value;
-          return Column(
-            children: [
-              _buildMenuItem(item),
-              if (i < _menuItems.length - 1)
-                Divider(height: 1, indent: 56, color: Colors.grey.shade100),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(Map<String, dynamic> item) {
-    return GestureDetector(
-      onTap: () {},
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            // Icon
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                item['icon'] as IconData,
-                color: const Color(0xFF555555),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Label
-            Expanded(
-              child: Text(
-                item['label'] as String,
+              const SizedBox(height: 12),
+              Text(
+                profile['name']?.toString() ?? '-',
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF222222),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-
-            // Arrow
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Log Out Button ────────────────────────────────────────────
-  Widget _buildLogOutButton() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+              const SizedBox(height: 4),
+              const Text(
+                'Al al-Bayt University',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                profile['department']?.toString() ?? '',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Instructor Information',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              InfoTile(
+                icon: Icons.badge_outlined,
+                label: 'Instructor ID',
+                value: profile['id']?.toString() ?? '-',
+              ),
+              InfoTile(
+                icon: Icons.email_outlined,
+                label: lang.translate('email'),
+                value: profile['email'] ?? '-',
+              ),
+              InfoTile(
+                icon: Icons.apartment_outlined,
+                label: 'Department',
+                value: profile['department'] ?? '-',
+              ),
+              InfoTile(
+                icon: Icons.location_on_outlined,
+                label: 'Office',
+                value: profile['office'] ?? '-',
+              ),
+              InfoTile(
+                icon: Icons.phone_outlined,
+                label: 'Phone',
+                value: profile['phone'] ?? '-',
+              ),
+              if (profileProvider.isSaving)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: LinearProgressIndicator(
+                    minHeight: 3,
+                    borderRadius: BorderRadius.all(Radius.circular(99)),
+                  ),
+                ),
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ElevatedButton(
+                  onPressed: profileProvider.isSaving
+                      ? null
+                      : () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => PersonalInfoSheet(
+                            profile: Map<String, dynamic>.from(profile),
+                            lang: lang,
+                            onSave: (updates) =>
+                                profileProvider.savePersonalInfo(updates),
+                          ),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6B2737),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    lang.translate('personal_information'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ],
-      ),
-      child: TextButton(
-        onPressed: () {},
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: const Text(
-          'Log Out',
-          style: TextStyle(
-            color: Color(0xFFE53935),
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
     );
   }

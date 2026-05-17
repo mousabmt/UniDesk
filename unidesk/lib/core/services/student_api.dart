@@ -396,7 +396,7 @@ class StudentApi {
   static Future<Map<String, dynamic>> getProfile({String? token}) async {
     token ??= await _readToken();
     final response = await http.get(
-      _uri('/profile'),
+      _uri('/student/profile'),
       headers: _headers(token: token, contentType: null),
     );
 

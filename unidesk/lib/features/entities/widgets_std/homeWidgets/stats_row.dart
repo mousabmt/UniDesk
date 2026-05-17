@@ -15,21 +15,25 @@ class StatItem {
 class StatsRow extends StatelessWidget {
   final Map<String, dynamic> profile;
 
-  const StatsRow({
-    super.key,
-    required this.profile,
-  });
+  const StatsRow({super.key, required this.profile});
 
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LangProvider>(context);
-    final credits =
-        (profile['credits'] ?? profile['creditsEarned'] ?? 0).toString();
+    final credits = (profile['credits'] ?? profile['creditsEarned'] ?? 0)
+        .toString();
 
-    final totalHours = profile['totalHours'] ?? profile['totalCredits'] ?? 0;
-    final completionPercent = profile['completionPercentage'] ??
-        (totalHours != 0 ? (profile['credits'] ?? 0) / totalHours * 100 : 0);
-    final gpa = (profile['gpa'] ?? profile['cumulativeGpa'] ?? 0).toString();
+    final totalHours = _asDouble(
+      profile['totalHours'] ?? profile['totalCredits'],
+    );
+    final completedCredits =
+        _asDouble(profile['credits'] ?? profile['creditsEarned']) ?? 0;
+    final completionPercent =
+        profile['completionPercentage'] ??
+        (totalHours != null && totalHours != 0
+            ? (completedCredits / totalHours) * 100
+            : 0);
+    final gpa = _formatGpa(profile['gpa'] ?? profile['cumulativeGpa']);
 
     final stats = [
       StatItem(
@@ -69,21 +73,32 @@ class StatsRow extends StatelessWidget {
       },
     );
   }
+
+  double? _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
+  }
+
+  String _formatGpa(dynamic value) {
+    final parsed = _asDouble(value);
+    if (parsed == null) return '0.00';
+    return parsed.toStringAsFixed(2);
+  }
 }
 
 class _StatCard extends StatelessWidget {
   final StatItem stat;
   final bool compact;
 
-  const _StatCard({
-    required this.stat,
-    required this.compact,
-  });
+  const _StatCard({required this.stat, required this.compact});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16, horizontal: 12),
+      padding: EdgeInsets.symmetric(
+        vertical: compact ? 14 : 16,
+        horizontal: 12,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primaryBlue,
         borderRadius: BorderRadius.circular(AppSizes.borderRadius),

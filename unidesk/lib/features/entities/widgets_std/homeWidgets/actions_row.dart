@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../language/langProvider.dart';
 
 class QuickActionItem {
@@ -18,19 +17,22 @@ class QuickActionItem {
   });
 }
 
+
 class QuickActionsRow extends StatelessWidget {
   const QuickActionsRow({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final lang = Provider.of<LangProvider>(context);
+    final lang = context.watch<LangProvider>(); // ✅
     const spacing = 10.0;
 
     final actions = [
       QuickActionItem(
         icon: Icons.payment_outlined,
         label: lang.translate('electronic_payment'),
-        onTap: () {},
+        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Coming soon')),
+        ),
       ),
       QuickActionItem(
         icon: Icons.headset_mic_outlined,
@@ -54,44 +56,59 @@ class QuickActionsRow extends StatelessWidget {
     );
   }
 }
-
 class _QuickActionCard extends StatelessWidget {
-  final QuickActionItem item;
-
   const _QuickActionCard({required this.item});
+
+  final QuickActionItem item;
 
   @override
   Widget build(BuildContext context) {
-    final compact = ResponsiveLayout.isCompact(context);
-
-    return GestureDetector(
-      onTap: item.onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          vertical: compact ? 12 : AppSizes.spacingSmall,
-          horizontal: AppSizes.spacingSmall,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.primaryBlue,
-          borderRadius: BorderRadius.circular(AppSizes.borderRadius),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(item.icon, color: Colors.white, size: compact ? 22 : 25),
-            const SizedBox(height: 6),
-            Text(
-              item.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: compact ? 12 : 13,
-                fontWeight: FontWeight.w900,
-              ),
+    return Semantics(
+      button: true,
+      label: item.label,
+      child: Material(
+        color: AppColors.primaryBlue,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: item.onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 90, // ✅ fixed height — consistent across devices
+            padding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 8,
             ),
-          ],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8), // ✅ icon background
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    item.icon,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11, // ✅ slightly smaller to avoid wrapping
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

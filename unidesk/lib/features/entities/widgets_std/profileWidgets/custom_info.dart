@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:unidesk/features/language/langProvider.dart';
-import 'custom_field.dart'; 
+import 'custom_field.dart';
+
 class PersonalInfoSheet extends StatefulWidget {
   final Map<String, dynamic> profile;
   final LangProvider lang;
+  final Future<void> Function(Map<String, dynamic> updates)? onSave;
 
   const PersonalInfoSheet({
     super.key,
     required this.profile,
     required this.lang,
+    this.onSave,
   });
 
   @override
@@ -26,7 +29,9 @@ class _PersonalInfoSheetState extends State<PersonalInfoSheet> {
     super.initState();
     final ids = (widget.profile['identifiers'] as List?) ?? [];
     _addressCtrl = TextEditingController(text: widget.profile['address'] ?? '');
-    _emailCtrl = TextEditingController(text: widget.profile['personal_email'] ?? '');
+    _emailCtrl = TextEditingController(
+      text: widget.profile['personal_email'] ?? '',
+    );
     _phone1Ctrl = TextEditingController(text: ids.isNotEmpty ? ids[0] : '');
     _phone2Ctrl = TextEditingController(text: ids.length > 1 ? ids[1] : '');
   }
@@ -39,11 +44,50 @@ class _PersonalInfoSheetState extends State<PersonalInfoSheet> {
     super.dispose();
   }
 
-  void _saveInfo() {
-    widget.profile['personal_email'] = _emailCtrl.text;
-    widget.profile['identifier_1'] = _phone1Ctrl.text;
-    widget.profile['identifier_2'] = _phone2Ctrl.text;
-    widget.profile['address'] = _addressCtrl.text;
+  bool _isSaving = false;
+
+  Map<String, dynamic> _buildUpdates() {
+    return {
+      'personal_email': _emailCtrl.text.trim(),
+      'identifier_1': _phone1Ctrl.text.trim(),
+      'identifier_2': _phone2Ctrl.text.trim(),
+      'address': _addressCtrl.text.trim(),
+      'identifiers': [
+        _phone1Ctrl.text.trim(),
+        _phone2Ctrl.text.trim(),
+      ].where((value) => value.isNotEmpty).toList(),
+    };
+  }
+
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final updates = _buildUpdates();
+
+    try {
+      widget.profile.addAll(updates);
+      await widget.onSave?.call(updates);
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.lang.translate('changes_saved'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to save changes right now.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -151,16 +195,7 @@ class _PersonalInfoSheetState extends State<PersonalInfoSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            _saveInfo();
-                            // TODO: hook up to save API
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(lang.translate('changes_saved')),
-                              ),
-                            );
-                          },
+                          onPressed: _isSaving ? null : _handleSave,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF6B2737),
                             foregroundColor: Colors.white,
@@ -170,7 +205,16 @@ class _PersonalInfoSheetState extends State<PersonalInfoSheet> {
                             ),
                             elevation: 0,
                           ),
-                          child: Text(lang.translate('save_changes')),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(lang.translate('save_changes')),
                         ),
                       ),
                     ],
