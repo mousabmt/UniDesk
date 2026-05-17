@@ -10,20 +10,17 @@ class AppFooter extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onTap;
 
-  const AppFooter({
-    super.key,
-    required this.currentIndex,
-    this.onTap,
-  });
+  const AppFooter({super.key, required this.currentIndex, this.onTap});
 
   void _onTabTapped(BuildContext context, int index, bool isStudent) {
     if (index == currentIndex) return;
 
     final studentRoutes = {
       0: '/',
-      1: '/courses',
-      2: '/assignments',
-      3: '/profile',
+      1: '/courses-files',
+      2: '/courses',
+      3: '/assignments',
+      4: '/profile',
     };
 
     final instructorRoutes = {
@@ -43,16 +40,30 @@ class AppFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isStudent = context.select<AuthProvider, bool>((auth) => auth.isStudent);
-    final homeLabel = context.select<LangProvider, String>((lang) => lang.translate('home'));
-    final coursesLabel = context.select<LangProvider, String>((lang) => lang.translate('courses'));
-    final scheduleLabel = context.select<LangProvider, String>((lang) => lang.translate('assignments'));
-    final attendanceLabel =
-        context.select<LangProvider, String>((lang) => lang.translate('attendance'));
-    final assignmentsLabel =
-        context.select<LangProvider, String>((lang) => lang.translate('assignments'));
-    final profileLabel = context.select<LangProvider, String>((lang) => lang.translate('profile'));
-    final moreLabel = context.select<LangProvider, String>((lang) => lang.translate('more'));
+    final isStudent = context.select<AuthProvider, bool>(
+      (auth) => auth.isStudent,
+    );
+    final homeLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('home'),
+    );
+    final filesLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('files'),
+    );
+    final coursesLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('courses'),
+    );
+    final assignmentsLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('assignments'),
+    );
+    final attendanceLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('attendance'),
+    );
+    final profileLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('profile'),
+    );
+    final moreLabel = context.select<LangProvider, String>(
+      (lang) => lang.translate('more'),
+    );
     final items = isStudent
         ? [
             BottomNavigationBarItem(
@@ -63,12 +74,17 @@ class AppFooter extends StatelessWidget {
             BottomNavigationBarItem(
               icon: const Icon(Icons.book_outlined),
               activeIcon: const Icon(Icons.book),
+              label: filesLabel,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.menu_book_outlined),
+              activeIcon: const Icon(Icons.menu_book),
               label: coursesLabel,
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.calendar_today_outlined),
-              activeIcon: const Icon(Icons.calendar_today),
-              label: scheduleLabel,
+              icon: const Icon(Icons.assignment_outlined),
+              activeIcon: const Icon(Icons.assignment),
+              label: assignmentsLabel,
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.person_outline),
@@ -103,8 +119,9 @@ class AppFooter extends StatelessWidget {
               label: moreLabel,
             ),
           ];
-    final safeIndex =
-        currentIndex >= 0 && currentIndex < items.length ? currentIndex : 0;
+    final safeIndex = currentIndex >= 0 && currentIndex < items.length
+        ? currentIndex
+        : 0;
 
     return BottomNavigationBar(
       currentIndex: safeIndex,

@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:unidesk/core/services/notifications/firebase_notification_service.dart';
 
-
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +35,7 @@ import 'package:unidesk/features/entities/instructor/pages/home.dart';
 import 'package:unidesk/features/entities/instructor/pages/instructorLayout.dart';
 import 'package:unidesk/features/entities/student/pages/QRScannerRegister.dart';
 import 'package:unidesk/features/entities/student/pages/assignmentPage.dart';
+import 'package:unidesk/features/entities/student/pages/course_materials_page.dart';
 import 'package:unidesk/features/entities/student/pages/courses.dart';
 import 'package:unidesk/features/entities/student/pages/currentSemesterPage.dart';
 import 'package:unidesk/features/entities/student/pages/gradesPage.dart';
@@ -52,29 +52,25 @@ import 'package:unidesk/features/entities/student/providers_std/profile_provider
 import 'package:unidesk/features/entities/student/assignments/data/api_student_assignments_data_source.dart';
 import 'package:unidesk/features/entities/student/assignments/data/student_assignments_repository.dart';
 import 'package:unidesk/features/entities/student/assignments/providers/student_assignments_provider.dart';
+import 'package:unidesk/features/entities/student/materials/data/api_student_materials_data_source.dart';
+import 'package:unidesk/features/entities/student/materials/data/student_materials_repository.dart';
+import 'package:unidesk/features/entities/student/materials/providers/student_materials_provider.dart';
 import 'package:unidesk/features/language/langProvider.dart';
 import 'package:unidesk/shared/widgets/app_layout.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-
 void main() async {
   /// Flutter binding
-  final widgetsBinding =
-      WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
   /// Preserve splash
-  FlutterNativeSplash.preserve(
-    widgetsBinding: widgetsBinding,
-  );
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   /// Firebase init
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   /// FCM background handler
-FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   /// Notifications init
   await FirebaseNotificationService.initialize();
@@ -109,6 +105,11 @@ FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
             ApiStudentAssignmentsDataSource(),
           ),
         ),
+        Provider<StudentMaterialsRepository>(
+          create: (_) => const StudentMaterialsRepositoryImpl(
+            ApiStudentMaterialsDataSource(),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (context) =>
               AttendanceCoursesProvider(context.read<AttendanceRepository>()),
@@ -135,6 +136,11 @@ FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
         ChangeNotifierProvider(
           create: (context) => StudentAssignmentsProvider(
             context.read<StudentAssignmentsRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => StudentMaterialsProvider(
+            context.read<StudentMaterialsRepository>(),
           ),
         ),
       ],
@@ -214,6 +220,16 @@ class _MyAppState extends State<MyApp> {
                   path: '/',
                   name: 'home',
                   builder: (context, state) => const HomePage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/courses-files',
+                  name: 'course-files',
+                  builder: (context, state) =>
+                      const StudentCourseMaterialsPage(),
                 ),
               ],
             ),

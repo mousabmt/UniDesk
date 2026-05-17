@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -19,6 +21,7 @@ enum _AttendanceTab { attendance, reports }
 
 class _AttendancePageState extends State<AttendancePage> {
   _AttendanceTab _selectedTab = _AttendanceTab.attendance;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -40,11 +43,24 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _refreshStudentsForSelectedCourse();
+    });
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
   Future<void> _onCourseSelected(String? courseId) async {
     final coursesProvider = context.read<AttendanceCoursesProvider>();
     final studentsProvider = context.read<AttendanceStudentsProvider>();
     final sessionProvider = context.read<AttendanceSessionProvider>();
 
+    _stopPolling();
     coursesProvider.selectCourse(courseId);
     sessionProvider.reset();
     await studentsProvider.loadForCourse(coursesProvider.selectedCourse);
@@ -60,6 +76,7 @@ class _AttendancePageState extends State<AttendancePage> {
     }
 
     if (sessionProvider.hasActiveSession) {
+      _stopPolling();
       await sessionProvider.closeCurrentSession();
       await _refreshStudentsForSelectedCourse();
       return;
@@ -67,6 +84,15 @@ class _AttendancePageState extends State<AttendancePage> {
 
     await sessionProvider.startForCourse(selectedCourse);
     await _refreshStudentsForSelectedCourse();
+    if (sessionProvider.hasActiveSession) {
+      _startPolling();
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
   }
 
   @override

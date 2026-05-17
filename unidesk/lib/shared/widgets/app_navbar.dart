@@ -6,6 +6,8 @@ import '../../core/constants/constants.dart';
 import '../../features/auth/authProvider.dart';
 import '../../features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import '../../features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
+import '../../features/entities/student/materials/models/student_material_course_option.dart';
+import '../../features/entities/student/materials/providers/student_materials_provider.dart';
 import '../../features/entities/student/providers_std/annouc_provider.dart';
 import '../../features/entities/student/providers_std/course_provider.dart';
 import '../../features/entities/student/providers_std/currentSem_provider.dart';
@@ -27,27 +29,80 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final isStudent = auth.isStudent;
     final token = auth.token;
     final userId = auth.userId;
+    final profileProvider = context.read<ProfileProvider>();
+    final coursesProvider = context.read<CoursesProvider>();
+    final announcementsProvider = context.read<AnnoucProvider>();
+    final studentMaterialsProvider = context.read<StudentMaterialsProvider>();
+    final prevSemestersProvider = context.read<PrevsemestersProvider>();
+    final currentSemesterProvider = context.read<CurrentSemesterProvider>();
+    final instructorCoursesProvider = context.read<InstructorCoursesProvider>();
+    final instructorAssignmentsProvider = context
+        .read<InstructorAssignmentsProvider>();
 
     if (isStudent) {
       // Refresh student providers
-      await context.read<ProfileProvider>().refresh();
+      await profileProvider.refresh();
       if (token != null) {
-        await context.read<CoursesProvider>().refresh(token: token);
-        await context.read<AnnoucProvider>().refresh(token: token);
+        await coursesProvider.refresh(token: token);
+        await announcementsProvider.refresh(token: token);
       }
-      await context.read<PrevsemestersProvider>().refresh();
-      await context.read<CurrentSemesterProvider>().refresh();
+      await studentMaterialsProvider.refresh(
+        courseOptions: _buildStudentMaterialCourseOptions(
+          coursesProvider.courses ?? const [],
+        ),
+      );
+      await prevSemestersProvider.refresh();
+      await currentSemesterProvider.refresh();
     } else {
       // Refresh instructor providers
       if (userId != null) {
-        await context.read<InstructorCoursesProvider>().refresh(
-          instructorId: userId,
-        );
-        await context.read<InstructorAssignmentsProvider>().refresh(
-          instructorId: userId,
-        );
+        await instructorCoursesProvider.refresh(instructorId: userId);
+        await instructorAssignmentsProvider.refresh(instructorId: userId);
       }
     }
+  }
+
+  List<StudentMaterialCourseOption> _buildStudentMaterialCourseOptions(
+    List<Map<String, dynamic>> courses,
+  ) {
+    final grouped = <String, StudentMaterialCourseOption>{};
+
+    for (final course in courses) {
+      final materialsCourseId =
+          course['courseId']?.toString() ??
+          course['rawCourseId']?.toString() ??
+          '';
+      final courseCode =
+          course['courseCode']?.toString() ?? course['id']?.toString() ?? '';
+      final courseName = course['name']?.toString() ?? '';
+      final fallbackKey = [
+        course['id']?.toString() ?? '',
+        course['courseCode']?.toString() ?? '',
+        course['name']?.toString() ?? '',
+      ].join('|');
+
+      final selectionValue = materialsCourseId.isNotEmpty
+          ? materialsCourseId
+          : fallbackKey;
+      if (selectionValue.isEmpty) {
+        continue;
+      }
+
+      final displayLabel = courseName.isNotEmpty
+          ? '${courseCode.isNotEmpty ? courseCode : selectionValue} - $courseName'
+          : (courseCode.isNotEmpty ? courseCode : selectionValue);
+
+      grouped.putIfAbsent(
+        selectionValue,
+        () => StudentMaterialCourseOption(
+          selectionValue: selectionValue,
+          materialsCourseId: materialsCourseId,
+          displayLabel: displayLabel,
+        ),
+      );
+    }
+
+    return grouped.values.toList();
   }
 
   @override
@@ -126,7 +181,9 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
                 context.go(isStudent ? '/courses' : '/instructor/files');
                 break;
               case 'assignments':
-                context.go(isStudent ? '/assignments' : '/instructor/attendance');
+                context.go(
+                  isStudent ? '/assignments' : '/instructor/attendance',
+                );
                 break;
               case 'profile':
                 context.go(isStudent ? '/profile' : '/instructor/profile');
