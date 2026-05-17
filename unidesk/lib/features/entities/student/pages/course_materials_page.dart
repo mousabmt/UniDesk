@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/widgets/instructor_file_item.dart';
-import 'package:unidesk/features/entities/student/materials/models/student_material_course_option.dart';
 import 'package:unidesk/features/entities/student/materials/models/student_course_material.dart';
+import 'package:unidesk/features/entities/student/materials/models/student_material_course_option.dart';
 import 'package:unidesk/features/entities/student/materials/providers/student_materials_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/student/widgets/student_refresh_status.dart';
@@ -21,6 +21,7 @@ class StudentCourseMaterialsPage extends StatefulWidget {
 class _StudentCourseMaterialsPageState
     extends State<StudentCourseMaterialsPage> {
   bool _isRefreshing = false;
+  _StudentMaterialFilter _selectedCategory = _StudentMaterialFilter.all;
 
   @override
   void initState() {
@@ -166,6 +167,17 @@ class _StudentCourseMaterialsPageState
     required StudentMaterialsProvider provider,
     required List<StudentMaterialCourseOption> courseOptions,
   }) {
+    final filteredMaterials = provider.materials.where((material) {
+      switch (_selectedCategory) {
+        case _StudentMaterialFilter.all:
+          return material.isExam || material.isMaterial;
+        case _StudentMaterialFilter.material:
+          return material.isMaterial;
+        case _StudentMaterialFilter.exam:
+          return material.isExam;
+      }
+    }).toList();
+
     if (provider.isLoading && provider.materials.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -220,22 +232,86 @@ class _StudentCourseMaterialsPageState
       );
     }
 
+    if (filteredMaterials.isEmpty) {
+      final categoryLabel = switch (_selectedCategory) {
+        _StudentMaterialFilter.all => 'files',
+        _StudentMaterialFilter.material => 'materials',
+        _StudentMaterialFilter.exam => 'exams',
+      };
+
+      return RefreshIndicator(
+        onRefresh: () => _refreshMaterials(courseOptions: courseOptions),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            StudentRefreshStatus(
+              isRefreshing: _isRefreshing,
+              message: 'Refreshing materials...',
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 12),
+            _StudentCategoryRow(
+              selectedCategory: _selectedCategory,
+              onCategorySelected: (category) {
+                setState(() {
+                  _selectedCategory = category;
+                });
+              },
+            ),
+            SizedBox(
+              height: 408,
+              child: _CenteredState(
+                icon: Icons.folder_open_outlined,
+                title: 'No $categoryLabel found',
+                message: 'Try another category or refresh to check for updates.',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () => _refreshMaterials(courseOptions: courseOptions),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: provider.materials.length + 1,
+        itemCount: filteredMaterials.length + 1,
         separatorBuilder: (_, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           if (index == 0) {
-            return StudentRefreshStatus(
-              isRefreshing: _isRefreshing,
-              message: 'Refreshing materials...',
-              padding: EdgeInsets.zero,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StudentRefreshStatus(
+                  isRefreshing: _isRefreshing,
+                  message: 'Refreshing materials...',
+                  padding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'File Category',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                _StudentCategoryRow(
+                  selectedCategory: _selectedCategory,
+                  onCategorySelected: (category) {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                  },
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Recent Files',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+              ],
             );
           }
 
-          final material = provider.materials[index - 1];
+          final material = filteredMaterials[index - 1];
           return _MaterialListItem(
             material: material,
             onTap: () => _openMaterial(context, material),
@@ -412,11 +488,69 @@ class _MaterialListItem extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            'Uploaded by $uploadedBy${material.fileType.isNotEmpty ? ' • ${material.fileType}' : ''}',
+            'Uploaded by $uploadedBy${material.fileType.isNotEmpty ? ' - ${material.fileType}' : ''}',
             style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
         ),
       ],
+    );
+  }
+}
+
+enum _StudentMaterialFilter { all, material, exam }
+
+class _StudentCategoryRow extends StatelessWidget {
+  const _StudentCategoryRow({
+    required this.selectedCategory,
+    required this.onCategorySelected,
+  });
+
+  final _StudentMaterialFilter selectedCategory;
+  final ValueChanged<_StudentMaterialFilter> onCategorySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = <MapEntry<String, _StudentMaterialFilter>>[
+      const MapEntry('All', _StudentMaterialFilter.all),
+      const MapEntry('Material', _StudentMaterialFilter.material),
+      const MapEntry('Exam', _StudentMaterialFilter.exam),
+    ];
+
+    return Row(
+      children: List.generate(categories.length, (index) {
+        final item = categories[index];
+        final isSelected = item.value == selectedCategory;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onCategorySelected(item.value),
+            child: Container(
+              margin: EdgeInsets.only(
+                right: index < categories.length - 1 ? 8 : 0,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xff0bb4b1) : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x12000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                item.key,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

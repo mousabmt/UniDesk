@@ -11,6 +11,7 @@ class StudentCourseMaterial {
     required this.uploadedAtLabel,
     required this.uploadedBy,
     required this.downloadUrl,
+    required this.category,
     this.description,
   });
 
@@ -23,9 +24,12 @@ class StudentCourseMaterial {
   final String uploadedAtLabel;
   final String uploadedBy;
   final String downloadUrl;
+  final String category;
   final String? description;
 
   bool get hasDownloadUrl => downloadUrl.isNotEmpty;
+  bool get isExam => category == 'exam';
+  bool get isMaterial => category == 'material' || category == 'lecture material';
 
   Color get badgeColor {
     switch (extensionLabel.toUpperCase()) {
@@ -56,6 +60,7 @@ class StudentCourseMaterial {
           map['download_url']?.toString() ??
           map['file_url']?.toString() ??
           '',
+      category: map['category']?.toString().trim().toLowerCase() ?? '',
       description: map['description']?.toString(),
     );
   }
