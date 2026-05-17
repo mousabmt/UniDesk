@@ -420,6 +420,26 @@ class StudentApi {
     };
   }
 
+  static Future<Map<String, dynamic>> getInstructorProfile({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/instructor/profile'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load instructor profile'),
+      );
+    }
+
+    return Map<String, dynamic>.from(body);
+  }
+
   static Future<List<Map<String, dynamic>>> getAds() async {
     final response = await http.get(
       _uri('/announcements'),
@@ -619,7 +639,7 @@ class StudentApi {
     String? token,
   }) async {
     token ??= await _readToken();
-    
+
     // Try with the provided courseId first (could be numeric ID or course code)
     var response = await http.get(
       _uri('/student/materials/$courseId'),
@@ -627,16 +647,18 @@ class StudentApi {
     );
 
     var body = await _decode(response);
-    
+
     // If it fails and courseId looks like a course_code, try fetching all materials
     // and filtering by course_code
     if (!_isSuccessStatus(response.statusCode) && courseId.isNotEmpty) {
       final allMaterials = await getStudentMaterials(token: token);
       return allMaterials
-          .where((item) => 
-              item['courseId']?.toString() == courseId || 
-              item['course_id']?.toString() == courseId ||
-              item['course_code']?.toString() == courseId)
+          .where(
+            (item) =>
+                item['courseId']?.toString() == courseId ||
+                item['course_id']?.toString() == courseId ||
+                item['course_code']?.toString() == courseId,
+          )
           .toList();
     }
 
@@ -685,7 +707,7 @@ class StudentApi {
     String? token,
   }) async {
     token ??= await _readToken();
-    
+
     // Try with the provided courseId first (could be numeric ID or course code)
     var response = await http.get(
       _uri('/student/assignment-materials/$courseId'),
@@ -693,16 +715,18 @@ class StudentApi {
     );
 
     var body = await _decode(response);
-    
+
     // If it fails and courseId looks like a course_code, try fetching all materials
     // and filtering by course_code
     if (!_isSuccessStatus(response.statusCode) && courseId.isNotEmpty) {
       final allMaterials = await getStudentAssignmentMaterials(token: token);
       return allMaterials
-          .where((item) => 
-              item['courseId']?.toString() == courseId || 
-              item['course_id']?.toString() == courseId ||
-              item['course_code']?.toString() == courseId)
+          .where(
+            (item) =>
+                item['courseId']?.toString() == courseId ||
+                item['course_id']?.toString() == courseId ||
+                item['course_code']?.toString() == courseId,
+          )
           .toList();
     }
 
@@ -750,7 +774,7 @@ class StudentApi {
     String? token,
   }) async {
     token ??= await _readToken();
-    
+
     // Try with the provided courseId first (could be numeric ID or course code)
     var response = await http.get(
       _uri('/instructor/course-files/materials/$courseId'),
@@ -758,16 +782,18 @@ class StudentApi {
     );
 
     var body = await _decode(response);
-    
+
     // If it fails and courseId looks like a course_code, try fetching all materials
     // and filtering by course_code
     if (!_isSuccessStatus(response.statusCode) && courseId.isNotEmpty) {
       final allMaterials = await getInstructorMaterialFiles(token: token);
       return allMaterials
-          .where((item) => 
-              item['courseId']?.toString() == courseId || 
-              item['course_id']?.toString() == courseId ||
-              item['course_code']?.toString() == courseId)
+          .where(
+            (item) =>
+                item['courseId']?.toString() == courseId ||
+                item['course_id']?.toString() == courseId ||
+                item['course_code']?.toString() == courseId,
+          )
           .toList();
     }
 

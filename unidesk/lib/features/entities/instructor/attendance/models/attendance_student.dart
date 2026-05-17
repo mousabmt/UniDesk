@@ -1,5 +1,5 @@
 class AttendanceStudent {
-  const AttendanceStudent({
+  AttendanceStudent({
     required this.id,
     required this.name,
     required this.email,
@@ -16,6 +16,19 @@ class AttendanceStudent {
   final String status;
   final bool isPresent;
   final String userId;
+
+  // Computed once on first access — avoids running a regex split inside
+  // build() on every poll-driven list refresh.
+  late final String initials = _computeInitials(name);
+
+  static String _computeInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1 || parts.last.isEmpty) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
 
   factory AttendanceStudent.fromMap(Map<String, dynamic> map) {
     final attendanceStatus = map['attendance_status']?.toString() ?? '';
@@ -34,4 +47,17 @@ class AttendanceStudent {
   }
 
   bool get isAtRisk => absences >= 3;
+
+  // == and hashCode let Flutter skip rebuilding a StudentAttendanceCard whose
+  // data hasn't changed between poll ticks (works together with ValueKey).
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AttendanceStudent &&
+          id == other.id &&
+          isPresent == other.isPresent &&
+          absences == other.absences;
+
+  @override
+  int get hashCode => Object.hash(id, isPresent, absences);
 }

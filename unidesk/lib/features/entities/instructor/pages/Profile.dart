@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:unidesk/core/services/student_api.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/providers/instructor_profile_provider.dart';
 import 'package:unidesk/features/language/langProvider.dart';
@@ -36,28 +37,40 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<Map<String, dynamic>> _fetchProfileData() async {
     final auth = context.read<AuthProvider>();
-    final user = auth.user ?? <String, dynamic>{};
-
-    // TODO: replace this with a dedicated instructor profile API call.
-    await Future.delayed(const Duration(milliseconds: 200));
+    final response = await StudentApi.getInstructorProfile(token: auth.token);
+    final instructor = response['instructor'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(
+            response['instructor'] as Map<String, dynamic>,
+          )
+        : <String, dynamic>{};
+    final currentSemester = response['current_semester'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(
+            response['current_semester'] as Map<String, dynamic>,
+          )
+        : <String, dynamic>{};
 
     return {
-      'name': user['name']?.toString() ?? 'Dr. Ahmad',
-      'department':
-          user['department']?.toString() ?? 'Computer Science Department',
-      'email': user['email']?.toString() ?? 'ahmad@university.edu',
-      'id': (user['id'] ?? auth.userId ?? '4').toString(),
-      'faculty': user['faculty']?.toString() ?? 'Computer Science',
-      'office': user['office']?.toString() ?? 'Building 1, Room 203',
-      'phone': user['phone']?.toString() ?? '+962 7 1234 5678',
-      'specialization':
-          user['specialization']?.toString() ?? 'Software Engineering',
-      'address': user['address']?.toString() ?? 'Al al-Bayt University Campus',
+      ...response,
+      ...instructor,
+      'id': (instructor['id'] ?? auth.userId ?? '-').toString(),
+      'name': instructor['name']?.toString() ?? '-',
+      'department': instructor['department']?.toString() ?? '-',
+      'email': instructor['email']?.toString() ?? '-',
+      'phone': instructor['phone']?.toString() ?? '-',
+      'office': instructor['office']?.toString() ?? '-',
+      'faculty': currentSemester['name']?.toString() ?? '-',
+      'specialization': instructor['specialization']?.toString() ?? '-',
+      'address': instructor['address']?.toString() ?? '-',
       'personal_email':
-          user['personal_email']?.toString() ?? user['email']?.toString() ?? '',
+          instructor['personal_email']?.toString() ??
+          instructor['email']?.toString() ??
+          '',
       'identifiers': List<String>.from(
-        (user['identifiers'] as List?) ??
-            [user['phone']?.toString() ?? '+962 7 1234 5678'],
+        (instructor['identifiers'] as List?) ??
+            [
+              if ((instructor['phone']?.toString() ?? '').isNotEmpty)
+                instructor['phone'].toString(),
+            ],
       ),
     };
   }
@@ -305,7 +318,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6B2737),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 20,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
