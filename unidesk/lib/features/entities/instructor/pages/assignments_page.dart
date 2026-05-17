@@ -77,184 +77,169 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
             final selectedCourse = provider.selectedCourse;
             final selectedAssignment = provider.selectedAssignment;
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                InstructorWaveHeaderCard(
-                  compact: compact,
-                  minHeightCompact: 165,
-                  minHeightRegular: 130,
-                  leadingCompact: _InitialsAvatar(
-                    name: instructorName,
-                    radius: 36,
-                  ),
-                  leadingRegular: _InitialsAvatar(
-                    name: instructorName,
-                    radius: 40,
-                  ),
-                  content: _AssignmentsHeader(
-                    courseLabel:
-                        selectedCourse?.displayLabel ?? 'Choose a course',
-                    assignmentCount: provider.assignments.length,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (provider.isCoursesLoading && provider.courses.isEmpty)
-                  const Center(child: CircularProgressIndicator())
-                else if (provider.coursesError != null &&
-                    provider.courses.isEmpty)
-                  _PageStateMessage(
-                    message: provider.coursesError!,
-                    actionLabel: 'Retry',
-                    onRetry: () => provider.refresh(
-                      instructorId:
-                          context.read<AuthProvider>().userId ?? 'D001',
-                      preferredCourseId: widget.initialCourseId,
-                      preferredSectionId: widget.initialSectionId,
-                      lockCourseSelection: false,
+            return RefreshIndicator(
+              onRefresh: _refreshPage,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  InstructorWaveHeaderCard(
+                    compact: compact,
+                    minHeightCompact: 165,
+                    minHeightRegular: 130,
+                    leadingCompact: _InitialsAvatar(
+                      name: instructorName,
+                      radius: 36,
                     ),
-                  )
-                else ...[
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final useStackedHeader = constraints.maxWidth < 720;
-                      final selector = _CourseSectionSelector(
-                        provider: provider,
-                        onCourseChanged: (courseId) async {
-                          if (courseId == null) {
-                            return;
-                          }
-                          final instructorId =
-                              context.read<AuthProvider>().userId ?? 'D001';
-                          await provider.selectCourse(
-                            instructorId: instructorId,
-                            courseId: courseId,
-                          );
-                        },
-                        onSectionChanged: (sectionId) async {
-                          if (sectionId == null) {
-                            return;
-                          }
-                          final instructorId =
-                              context.read<AuthProvider>().userId ?? 'D001';
-                          await provider.selectSection(
-                            instructorId: instructorId,
-                            sectionId: sectionId,
-                          );
-                        },
-                      );
-                      final addButton = ElevatedButton.icon(
-                        onPressed: selectedCourse == null
-                            ? null
-                            : () => context.pushNamed(
-                                'instructor-add-assignment',
-                                queryParameters: <String, String>{
-                                  'courseId': selectedCourse.id,
-                                  'sectionId': provider.selectedSectionId ?? '',
-                                },
-                              ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kTeal,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
+                    leadingRegular: _InitialsAvatar(
+                      name: instructorName,
+                      radius: 40,
+                    ),
+                    content: _AssignmentsHeader(
+                      courseLabel:
+                          selectedCourse?.displayLabel ?? 'Choose a course',
+                      assignmentCount: provider.assignments.length,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (provider.isCoursesLoading && provider.courses.isEmpty)
+                    const Center(child: CircularProgressIndicator())
+                  else if (provider.coursesError != null &&
+                      provider.courses.isEmpty)
+                    _PageStateMessage(
+                      message: provider.coursesError!,
+                      actionLabel: 'Retry',
+                      onRetry: _refreshPage,
+                    )
+                  else ...[
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useStackedHeader = constraints.maxWidth < 720;
+                        final selector = _CourseSectionSelector(
+                          provider: provider,
+                          onCourseChanged: (courseId) async {
+                            if (courseId == null) {
+                              return;
+                            }
+                            final instructorId =
+                                context.read<AuthProvider>().userId ?? 'D001';
+                            await provider.selectCourse(
+                              instructorId: instructorId,
+                              courseId: courseId,
+                            );
+                          },
+                          onSectionChanged: (sectionId) async {
+                            if (sectionId == null) {
+                              return;
+                            }
+                            final instructorId =
+                                context.read<AuthProvider>().userId ?? 'D001';
+                            await provider.selectSection(
+                              instructorId: instructorId,
+                              sectionId: sectionId,
+                            );
+                          },
+                        );
+                        final addButton = ElevatedButton.icon(
+                          onPressed: selectedCourse == null
+                              ? null
+                              : () => context.pushNamed(
+                                  'instructor-add-assignment',
+                                  queryParameters: <String, String>{
+                                    'courseId': selectedCourse.id,
+                                    'sectionId':
+                                        provider.selectedSectionId ?? '',
+                                  },
+                                ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kTeal,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Add'),
-                      );
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add'),
+                        );
 
-                      if (useStackedHeader) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                        if (useStackedHeader) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              selector,
+                              const SizedBox(height: 12),
+                              addButton,
+                            ],
+                          );
+                        }
+
+                        return Row(
                           children: [
-                            selector,
-                            const SizedBox(height: 12),
+                            Expanded(child: selector),
+                            const SizedBox(width: 12),
                             addButton,
                           ],
                         );
-                      }
-
-                      return Row(
-                        children: [
-                          Expanded(child: selector),
-                          const SizedBox(width: 12),
-                          addButton,
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final useSingleColumn = constraints.maxWidth < 760;
-                      if (useSingleColumn) {
-                        return Column(
-                          children: [
-                            _AssignmentsListCard(
-                              provider: provider,
-                              onRetry: () => provider.refresh(
-                                instructorId:
-                                    context.read<AuthProvider>().userId ??
-                                    'D001',
-                                preferredCourseId: provider.selectedCourseId,
-                                preferredSectionId: provider.selectedSectionId,
-                                lockCourseSelection: false,
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useSingleColumn = constraints.maxWidth < 760;
+                        if (useSingleColumn) {
+                          return Column(
+                            children: [
+                              _AssignmentsListCard(
+                                provider: provider,
+                                onRetry: _refreshPage,
+                                onAttachmentTap: (attachment) =>
+                                    _handleAttachmentTap(context, attachment),
                               ),
-                              onAttachmentTap: (attachment) =>
-                                  _handleAttachmentTap(context, attachment),
+                              const SizedBox(height: 20),
+                              _SubmissionsPanel(
+                                provider: provider,
+                                selectedAssignment: selectedAssignment,
+                                onSubmissionFileTap: (attachment) =>
+                                    _handleAttachmentTap(context, attachment),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: _AssignmentsListCard(
+                                provider: provider,
+                                onRetry: _refreshPage,
+                                onAttachmentTap: (attachment) =>
+                                    _handleAttachmentTap(context, attachment),
+                              ),
                             ),
-                            const SizedBox(height: 20),
-                            _SubmissionsPanel(
-                              provider: provider,
-                              selectedAssignment: selectedAssignment,
-                              onSubmissionFileTap: (attachment) =>
-                                  _handleAttachmentTap(context, attachment),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              flex: 5,
+                              child: _SubmissionsPanel(
+                                provider: provider,
+                                selectedAssignment: selectedAssignment,
+                                onSubmissionFileTap: (attachment) =>
+                                    _handleAttachmentTap(context, attachment),
+                              ),
                             ),
                           ],
                         );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: _AssignmentsListCard(
-                              provider: provider,
-                              onRetry: () => provider.refresh(
-                                instructorId:
-                                    context.read<AuthProvider>().userId ??
-                                    'D001',
-                                preferredCourseId: provider.selectedCourseId,
-                                preferredSectionId: provider.selectedSectionId,
-                                lockCourseSelection: false,
-                              ),
-                              onAttachmentTap: (attachment) =>
-                                  _handleAttachmentTap(context, attachment),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            flex: 5,
-                            child: _SubmissionsPanel(
-                              provider: provider,
-                              selectedAssignment: selectedAssignment,
-                              onSubmissionFileTap: (attachment) =>
-                                  _handleAttachmentTap(context, attachment),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 30),
                 ],
-                const SizedBox(height: 30),
-              ],
+              ),
             );
           },
         ),
@@ -286,6 +271,22 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
       lockCourseSelection: false,
     );
     _showSuccessMessageIfNeeded();
+  }
+
+  Future<void> _refreshPage() async {
+    if (!mounted) {
+      return;
+    }
+
+    final instructorId = context.read<AuthProvider>().userId ?? 'D001';
+    final provider = context.read<InstructorAssignmentsProvider>();
+    await provider.refresh(
+      instructorId: instructorId,
+      preferredCourseId: provider.selectedCourseId ?? widget.initialCourseId,
+      preferredSectionId:
+          provider.selectedSectionId ?? widget.initialSectionId,
+      lockCourseSelection: provider.isCourseLocked || widget.lockCourseSelection,
+    );
   }
 
   Future<void> _handleAttachmentTap(

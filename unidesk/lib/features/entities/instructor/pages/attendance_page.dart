@@ -310,7 +310,7 @@ class _CourseDropdown extends StatelessWidget {
 // Uses lectureId — a required field on AttendanceCourse.
 // ---------------------------------------------------------------------------
 class _LectureBox extends StatelessWidget {
-  const _LectureBox({super.key});
+  const _LectureBox();
 
   @override
   Widget build(BuildContext context) {

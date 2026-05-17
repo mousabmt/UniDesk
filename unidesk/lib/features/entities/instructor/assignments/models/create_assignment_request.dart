@@ -31,7 +31,7 @@ Map<String, dynamic> toApiFields() {
     'description': description,
     'due_date': _formatApiDateTime(dueDate),
     'max_score': maxScore,
-    'category_id': category_id ?? 3,
+    'category_id': category_id ?? 1,
   };
 }
 

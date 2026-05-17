@@ -66,252 +66,256 @@ class _AddFilesPageState extends State<AddFilesPage> {
               return file.category == _selectedCategory;
             }).toList();
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                InstructorWaveHeaderCard(
-                  compact: MediaQuery.sizeOf(context).width < 600,
-                  compactBreakpoint: 360,
-                  minHeightCompact: 150,
-                  minHeightRegular: 120,
-                  waveWidthCompact: 110,
-                  waveWidthRegular: 120,
-                  leadingCompact: _InstructorInitialsAvatar(
-                    name: instructorName,
-                    radius: 36,
-                  ),
-                  leadingRegular: _InstructorInitialsAvatar(
-                    name: instructorName,
-                    radius: 40,
-                  ),
-                  content: _FilesGreetingText(
-                    instructorName: instructorName,
-                    selectedCourseLabel:
-                        selectedCourse?.displayLabel ?? 'Choose a course',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (provider.isCoursesLoading && provider.courses.isEmpty)
-                  Column(
-                    children: [
-                      const Center(child: CircularProgressIndicator()),
-                      const SizedBox(height: 16),
-                      _CategoryRow(
-                        selectedCategory: _selectedCategory,
-                        onCategorySelected: (category) {
-                          setState(() => _selectedCategory = category);
-                        },
-                      ),
-                    ],
-                  )
-                else if (provider.coursesError != null &&
-                    provider.courses.isEmpty)
-                  Column(
-                    children: [
-                      _InlineError(message: provider.coursesError!),
-                      const SizedBox(height: 16),
-                      _CategoryRow(
-                        selectedCategory: _selectedCategory,
-                        onCategorySelected: (category) {
-                          setState(() => _selectedCategory = category);
-                        },
-                      ),
-                    ],
-                  )
-                else ...[
-                  const Text(
-                    'Select Course',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final useStackedSelectors = constraints.maxWidth < 560;
-                      final courseSelector = _SelectorCard(
-                        value: provider.selectedCourseGroupKey,
-                        hint: 'Choose a course',
-                        items: provider.availableCourses
-                            .map(
-                              (course) => DropdownMenuItem<String>(
-                                value: provider.courseSelectionValueFor(course),
-                                child: Text(
-                                  course.displayLabel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        selectedLabels: provider.availableCourses
-                            .map((course) => course.displayLabel)
-                            .toList(),
-                        onChanged: (value) async {
-                          if (value == null) {
-                            return;
-                          }
-                          final instructorId =
-                              context.read<AuthProvider>().userId ?? 'D001';
-                          await provider.selectCourse(
-                            instructorId: instructorId,
-                            courseId: value,
-                          );
-                        },
-                      );
-                      final sectionSelector = _SelectorCard(
-                        value: provider.selectedSectionSelectionKey,
-                        hint: 'Choose a section',
-                        items: provider.availableSections
-                            .map(
-                              (course) => DropdownMenuItem<String>(
-                                value: course.selectionKey,
-                                child: Text(
-                                  provider.sectionLabelFor(course) ??
-                                      _fallbackSectionLabel(course),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        selectedLabels: provider.availableSections
-                            .map(
-                              (course) =>
-                                  provider.sectionLabelFor(course) ??
-                                  _fallbackSectionLabel(course),
-                            )
-                            .toList(),
-                        onChanged: (value) async {
-                          if (value == null) {
-                            return;
-                          }
-                          final instructorId =
-                              context.read<AuthProvider>().userId ?? 'D001';
-                          await provider.selectSection(
-                            instructorId: instructorId,
-                            sectionId: value,
-                          );
-                        },
-                      );
-
-                      if (useStackedSelectors) {
-                        return Column(
-                          children: [
-                            courseSelector,
-                            const SizedBox(height: 12),
-                            sectionSelector,
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        children: [
-                          Expanded(flex: 3, child: courseSelector),
-                          const SizedBox(width: 12),
-                          Expanded(flex: 2, child: sectionSelector),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  if (selectedCourse != null)
-                    _CourseMetaCard(
-                      term: selectedCourse.term,
-                      sectionLabel: selectedCourse.sectionLabel,
-                      studentsEnrolled: selectedCourse.studentsEnrolled,
+            return RefreshIndicator(
+              onRefresh: () async {
+                final instructorId = context.read<AuthProvider>().userId ?? 'D001';
+                await provider.refresh(instructorId: instructorId);
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  InstructorWaveHeaderCard(
+                    compact: MediaQuery.sizeOf(context).width < 600,
+                    compactBreakpoint: 360,
+                    minHeightCompact: 150,
+                    minHeightRegular: 120,
+                    waveWidthCompact: 110,
+                    waveWidthRegular: 120,
+                    leadingCompact: _InstructorInitialsAvatar(
+                      name: instructorName,
+                      radius: 36,
                     ),
+                    leadingRegular: _InstructorInitialsAvatar(
+                      name: instructorName,
+                      radius: 40,
+                    ),
+                    content: _FilesGreetingText(
+                      instructorName: instructorName,
+                      selectedCourseLabel:
+                          selectedCourse?.displayLabel ?? 'Choose a course',
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                 
-                  const SizedBox(height: 20),
-                  _UploadDropzone(
-                    isUploading: provider.isUploading,
-                    onUploadPressed: selectedCourse == null
-                        ? null
-                        : () => _pickAndUploadFile(
-                            context,
-                            instructorId:
-                                context.read<AuthProvider>().userId ?? 'D001',
-                            provider: provider,
-                          ),
-                  ),
-                  const SizedBox(height: 10),
-                   const Text(
-                    'File Category',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 10),
-
-                  _CategoryRow(
-                    selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
-                  ),
-
-                  if (provider.uploadError != null) ...[
-                    const SizedBox(height: 12),
-                    _InlineError(message: provider.uploadError!),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Recent Files',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  if (provider.isCoursesLoading && provider.courses.isEmpty)
+                    Column(
+                      children: [
+                        const Center(child: CircularProgressIndicator()),
+                        const SizedBox(height: 16),
+                        _CategoryRow(
+                          selectedCategory: _selectedCategory,
+                          onCategorySelected: (category) {
+                            setState(() => _selectedCategory = category);
+                          },
                         ),
-                      ),
-                      TextButton(
-                        onPressed: selectedCourse == null
-                            ? null
-                            : () => context.push(
-                                '/instructor/course-details?courseId=${selectedCourse.selectionKey}',
-                              ),
-                        child: const Text(
-                          'View Details',
-                          style: TextStyle(color: Color(0xff0bb4b1)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (provider.isDetailsLoading &&
-                      provider.currentCourseDetails == null)
-                    const Center(child: CircularProgressIndicator())
-                  else if (provider.detailsError != null &&
-                      provider.currentCourseDetails == null)
-                    _InlineError(message: provider.detailsError!)
-                  else if (files.isEmpty)
-                    const InstructorSurfaceCard(
-                      child: Text(
-                        'No files match the selected category yet.',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      ],
                     )
-                  else
-                    InstructorSurfaceCard(
-                      padding: EdgeInsets.zero,
-                      child: Column(
-                        children: List.generate(files.length, (index) {
-                          final file = files[index];
+                  else if (provider.coursesError != null &&
+                      provider.courses.isEmpty)
+                    Column(
+                      children: [
+                        _InlineError(message: provider.coursesError!),
+                        const SizedBox(height: 16),
+                        _CategoryRow(
+                          selectedCategory: _selectedCategory,
+                          onCategorySelected: (category) {
+                            setState(() => _selectedCategory = category);
+                          },
+                        ),
+                      ],
+                    )
+                  else ...[
+                    const Text(
+                      'Select Course',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useStackedSelectors = constraints.maxWidth < 560;
+                        final courseSelector = _SelectorCard(
+                          value: provider.selectedCourseGroupKey,
+                          hint: 'Choose a course',
+                          items: provider.availableCourses
+                              .map(
+                                (course) => DropdownMenuItem<String>(
+                                  value: provider.courseSelectionValueFor(course),
+                                  child: Text(
+                                    course.displayLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          selectedLabels: provider.availableCourses
+                              .map((course) => course.displayLabel)
+                              .toList(),
+                          onChanged: (value) async {
+                            if (value == null) {
+                              return;
+                            }
+                            final instructorId =
+                                context.read<AuthProvider>().userId ?? 'D001';
+                            await provider.selectCourse(
+                              instructorId: instructorId,
+                              courseId: value,
+                            );
+                          },
+                        );
+                        final sectionSelector = _SelectorCard(
+                          value: provider.selectedSectionSelectionKey,
+                          hint: 'Choose a section',
+                          items: provider.availableSections
+                              .map(
+                                (course) => DropdownMenuItem<String>(
+                                  value: course.selectionKey,
+                                  child: Text(
+                                    provider.sectionLabelFor(course) ??
+                                        _fallbackSectionLabel(course),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          selectedLabels: provider.availableSections
+                              .map(
+                                (course) =>
+                                    provider.sectionLabelFor(course) ??
+                                    _fallbackSectionLabel(course),
+                              )
+                              .toList(),
+                          onChanged: (value) async {
+                            if (value == null) {
+                              return;
+                            }
+                            final instructorId =
+                                context.read<AuthProvider>().userId ?? 'D001';
+                            await provider.selectSection(
+                              instructorId: instructorId,
+                              sectionId: value,
+                            );
+                          },
+                        );
+
+                        if (useStackedSelectors) {
                           return Column(
                             children: [
-                              CourseFileListItem(file: file),
-                              if (index < files.length - 1)
-                                const Divider(
-                                  height: 1,
-                                  indent: 16,
-                                  endIndent: 16,
-                                ),
+                              courseSelector,
+                              const SizedBox(height: 12),
+                              sectionSelector,
                             ],
                           );
-                        }),
-                      ),
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(flex: 3, child: courseSelector),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 2, child: sectionSelector),
+                          ],
+                        );
+                      },
                     ),
+                    const SizedBox(height: 12),
+                    if (selectedCourse != null)
+                      _CourseMetaCard(
+                        term: selectedCourse.term,
+                        sectionLabel: selectedCourse.sectionLabel,
+                        studentsEnrolled: selectedCourse.studentsEnrolled,
+                      ),
+                    const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                    _UploadDropzone(
+                      isUploading: provider.isUploading,
+                      onUploadPressed: selectedCourse == null
+                          ? null
+                          : () => _pickAndUploadFile(
+                              context,
+                              instructorId:
+                                  context.read<AuthProvider>().userId ?? 'D001',
+                              provider: provider,
+                            ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'File Category',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    _CategoryRow(
+                      selectedCategory: _selectedCategory,
+                      onCategorySelected: (category) {
+                        setState(() => _selectedCategory = category);
+                      },
+                    ),
+                    if (provider.uploadError != null) ...[
+                      const SizedBox(height: 12),
+                      _InlineError(message: provider.uploadError!),
+                    ],
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recent Files',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: selectedCourse == null
+                              ? null
+                              : () => context.push(
+                                  '/instructor/course-details?courseId=${selectedCourse.selectionKey}',
+                                ),
+                          child: const Text(
+                            'View Details',
+                            style: TextStyle(color: Color(0xff0bb4b1)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (provider.isDetailsLoading &&
+                        provider.currentCourseDetails == null)
+                      const Center(child: CircularProgressIndicator())
+                    else if (provider.detailsError != null &&
+                        provider.currentCourseDetails == null)
+                      _InlineError(message: provider.detailsError!)
+                    else if (files.isEmpty)
+                      const InstructorSurfaceCard(
+                        child: Text(
+                          'No files match the selected category yet.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    else
+                      InstructorSurfaceCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: List.generate(files.length, (index) {
+                            final file = files[index];
+                            return Column(
+                              children: [
+                                CourseFileListItem(file: file),
+                                if (index < files.length - 1)
+                                  const Divider(
+                                    height: 1,
+                                    indent: 16,
+                                    endIndent: 16,
+                                  ),
+                              ],
+                            );
+                          }),
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: 30),
                 ],
-                const SizedBox(height: 30),
-              ],
+              ),
             );
           },
         ),

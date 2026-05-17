@@ -272,9 +272,10 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     String? preferredSectionId,
     bool? lockCourseSelection,
   }) async {
+    final currentAssignmentId = _selectedAssignmentId;
     _allAssignments = const [];
     _submissions = const [];
-    _selectedAssignmentId = null;
+    _selectedAssignmentId = currentAssignmentId;
     await loadCourses(
       instructorId: instructorId,
       preferredCourseId: preferredCourseId ?? _selectedCourseGroupKey,

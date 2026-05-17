@@ -774,29 +774,12 @@ class StudentApi {
     String? token,
   }) async {
     token ??= await _readToken();
-
-    // Try with the provided courseId first (could be numeric ID or course code)
-    var response = await http.get(
+    final response = await http.get(
       _uri('/instructor/course-files/materials/$courseId'),
       headers: _headers(token: token, contentType: null),
     );
 
-    var body = await _decode(response);
-
-    // If it fails and courseId looks like a course_code, try fetching all materials
-    // and filtering by course_code
-    if (!_isSuccessStatus(response.statusCode) && courseId.isNotEmpty) {
-      final allMaterials = await getInstructorMaterialFiles(token: token);
-      return allMaterials
-          .where(
-            (item) =>
-                item['courseId']?.toString() == courseId ||
-                item['course_id']?.toString() == courseId ||
-                item['course_code']?.toString() == courseId,
-          )
-          .toList();
-    }
-
+    final body = await _decode(response);
     if (!_isSuccessStatus(response.statusCode) || body is! List) {
       throw Exception(
         _messageFromBody(
@@ -1360,11 +1343,17 @@ class StudentApi {
     String fileName,
   ) {
     final raw = map['category']?.toString().trim().toLowerCase();
-    if (raw == 'assignment' || raw == 'exam' || raw == 'material') {
+    if (raw == 'assignment' ||
+        raw == 'exam' ||
+        raw == 'material' ||
+        raw == 'lecture material') {
       return raw!;
     }
     if (raw == 'lecture') {
       return 'material';
+    }
+    if (raw == 'reference') {
+      return 'other';
     }
     return _inferFileCategory(fileName);
   }

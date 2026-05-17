@@ -79,11 +79,12 @@ class AttendanceRepository {
       final merged = students.map((student) {
         final userId = student['userId']?.toString() ?? student['user_id']?.toString() ?? '';
         final record = attendanceByUserId[userId];
+        final attendanceStatus = record?['status']?.toString() ?? '';
         return {
           ...student,
-          'isPresent': record != null,
-          'attendance_status': record?['status']?.toString(),
-          'status': record?['status']?.toString() ?? student['status'],
+          'isPresent': _isPresentAttendanceStatus(attendanceStatus),
+          'attendance_status': attendanceStatus,
+          'status': attendanceStatus.isNotEmpty ? attendanceStatus : student['status'],
         };
       }).toList();
 
@@ -257,6 +258,16 @@ class AttendanceRepository {
       throw AttendanceRepositoryException(
         response['message']?.toString() ?? 'Failed to register attendance',
       );
+    }
+  }
+
+  bool _isPresentAttendanceStatus(String rawStatus) {
+    switch (rawStatus.trim().toLowerCase()) {
+      case 'present':
+      case 'late':
+        return true;
+      default:
+        return false;
     }
   }
 }

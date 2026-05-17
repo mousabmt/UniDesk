@@ -110,6 +110,7 @@ class InstructorCourseFile {
     switch (raw?.toLowerCase()) {
       case 'lecture':
       case 'material':
+      case 'lecture material':
         return InstructorCourseFileCategory.lecture;
       case 'assignment':
         return InstructorCourseFileCategory.assignment;

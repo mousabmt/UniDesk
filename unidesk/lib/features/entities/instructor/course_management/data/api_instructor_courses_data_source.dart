@@ -45,14 +45,11 @@ class ApiInstructorCoursesDataSource implements InstructorCoursesDataSource {
           ? const <Map<String, dynamic>>[]
           : await StudentApi.getSectionStudents(sectionId: resolvedSectionId);
       
-      // Fetch both material and assignment files using new separated endpoints
+      // AddFilesPage only needs instructor material files.
       final materialFiles = await StudentApi.getInstructorMaterialFilesByCourse(
         courseId: courseId,
       );
-      final assignmentFiles = await StudentApi.getInstructorAssignmentFilesByCourse(
-        courseId: courseId,
-      );
-      final files = [...materialFiles, ...assignmentFiles];
+      final files = materialFiles;
 
       final normalizedCourse = {
         ...matchingCourse,

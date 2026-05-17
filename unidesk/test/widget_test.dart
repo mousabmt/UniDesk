@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/data/attendance_repository.dart';
+import 'package:unidesk/features/entities/instructor/attendance/models/attendance_student.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_session_provider.dart';
 import 'package:unidesk/features/entities/instructor/attendance/providers/attendance_students_provider.dart';
@@ -154,5 +155,25 @@ void main() {
       ),
       throwsA(isA<AttendanceRepositoryException>()),
     );
+  });
+
+  test('attendance student treats absent status as not present', () {
+    final absentStudent = AttendanceStudent.fromMap({
+      'id': 31,
+      'name': 'mousa',
+      'email': 'mousa@example.com',
+      'absences': 3,
+      'attendance_status': 'absent',
+    });
+    final lateStudent = AttendanceStudent.fromMap({
+      'id': 32,
+      'name': 'late student',
+      'email': 'late@example.com',
+      'absences': 0,
+      'attendance_status': 'late',
+    });
+
+    expect(absentStudent.isPresent, isFalse);
+    expect(lateStudent.isPresent, isTrue);
   });
 }

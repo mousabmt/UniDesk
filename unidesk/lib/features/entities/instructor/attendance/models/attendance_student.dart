@@ -41,9 +41,20 @@ class AttendanceStudent {
       email: map['email']?.toString() ?? 'No email available',
       absences: (map['absences'] as num?)?.toInt() ?? 0,
       status: map['status']?.toString() ?? 'unknown',
-      isPresent: map['isPresent'] as bool? ?? attendanceStatus.isNotEmpty,
+      isPresent:
+          map['isPresent'] as bool? ?? _isPresentStatus(attendanceStatus),
       userId: map['userId']?.toString() ?? map['user_id']?.toString() ?? '',
     );
+  }
+
+  static bool _isPresentStatus(String rawStatus) {
+    switch (rawStatus.trim().toLowerCase()) {
+      case 'present':
+      case 'late':
+        return true;
+      default:
+        return false;
+    }
   }
 
   bool get isAtRisk => absences >= 3;
