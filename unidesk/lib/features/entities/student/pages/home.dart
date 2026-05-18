@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/entities/widgets_std/homeWidgets/actions_row.dart';
-import 'package:unidesk/features/entities/widgets_std/homeWidgets/ads.dart';
 import 'package:unidesk/features/entities/widgets_std/homeWidgets/stats_row.dart';
 import 'package:unidesk/shared/widgets/responsive_layout.dart';
 
+import '../announcements/widgets/student_announcements_section.dart';
 import '../../../language/langProvider.dart';
 import '../providers_std/annouc_provider.dart';
 import '../providers_std/course_provider.dart';
@@ -33,8 +33,6 @@ class _HomePageState extends State<HomePage> {
       _loadAll();
     });
   }
-
-  // ✅ Single load method for all providers
   Future<void> _loadAll() async {
     await Future.wait([
       context.read<ProfileProvider>().loadIfNeeded(),
@@ -43,7 +41,6 @@ class _HomePageState extends State<HomePage> {
     ]);
   }
 
-  // ✅ Pull-to-refresh forces all providers to reload
   Future<void> _onRefresh() async {
     setState(() {
       _isRefreshing = true;
@@ -69,7 +66,6 @@ class _HomePageState extends State<HomePage> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final compact = ResponsiveLayout.isCompact(context);
 
-    // ✅ Single loading state — wait for all providers
     final isLoading =
         context.select<ProfileProvider, bool>((p) => p.isLoading) ||
         context.select<CoursesProvider, bool>((p) => p.isLoading) ||
@@ -83,11 +79,10 @@ class _HomePageState extends State<HomePage> {
         child: ColoredBox(
           color: const Color(0xfff0f4f8),
           child: SafeArea(
-            bottom: true, // ✅ respect gesture nav bar
+            bottom: true,
             child: isLoading
-                ? const _HomeSkeleton() // ✅ skeleton instead of spinners
+                ? const _HomeSkeleton()
                 : RefreshIndicator(
-                    // ✅ pull-to-refresh
                     onRefresh: _onRefresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -95,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                         16,
                         16,
                         16,
-                        16 + bottomPadding, // ✅ proper bottom padding
+                        16 + bottomPadding, 
                       ),
                       children: [
                         StudentRefreshStatus(
@@ -103,7 +98,6 @@ class _HomePageState extends State<HomePage> {
                           message: 'Refreshing home data...',
                           padding: EdgeInsets.zero,
                         ),
-                        // ✅ Consumer only rebuilds header section
                         Consumer<ProfileProvider>(
                           builder: (context, profile, _) {
                             if (profile.error != null) {
@@ -146,7 +140,6 @@ class _HomePageState extends State<HomePage> {
 
                         const SizedBox(height: 16),
 
-                        // ✅ Consumer only rebuilds actions section
                         Consumer<CoursesProvider>(
                           builder: (context, courses, _) {
                             if (courses.error != null) {
@@ -165,7 +158,6 @@ class _HomePageState extends State<HomePage> {
 
                         const SizedBox(height: 16),
 
-                        // ✅ Consumer only rebuilds stats section
                         Consumer<ProfileProvider>(
                           builder: (context, profile, _) {
                             if (profile.profile == null) {
@@ -177,7 +169,6 @@ class _HomePageState extends State<HomePage> {
 
                         const SizedBox(height: 16),
 
-                        // ✅ Consumer only rebuilds ads section
                         Consumer<AnnoucProvider>(
                           builder: (context, ads, _) {
                             if (ads.error != null) {
@@ -187,10 +178,12 @@ class _HomePageState extends State<HomePage> {
                                     context.read<AnnoucProvider>().refresh(),
                               );
                             }
-                            if (ads.ads == null) {
+                            if (!ads.hasAnnouncements) {
                               return const SizedBox.shrink();
                             }
-                            return AdvertisementsSection(ads: ads.ads!);
+                            return StudentAnnouncementsSection(
+                              announcements: ads.announcements,
+                            );
                           },
                         ),
                       ],
@@ -214,7 +207,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ✅ Skeleton loader — shows while all providers load
 class _HomeSkeleton extends StatelessWidget {
   const _HomeSkeleton();
 
@@ -273,7 +265,6 @@ class _SkeletonBox extends StatelessWidget {
   }
 }
 
-// ✅ Reusable error tile with retry
 class _ErrorTile extends StatelessWidget {
   const _ErrorTile({required this.message, required this.onRetry});
 

@@ -1,34 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:unidesk/core/services/student_api.dart';
+import 'package:unidesk/features/entities/student/announcements/data/student_announcements_repository.dart';
+import 'package:unidesk/features/entities/student/announcements/providers/student_announcements_provider.dart';
 
-class AnnoucProvider extends ChangeNotifier {
-  List<Map<String, dynamic>>? _annouc;
-  bool _isLoading = false;
-  String? _error;
-
-  List<Map<String, dynamic>>? get ads => _annouc;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
-  Future<void> loadIfNeeded({String? token}) async {
-    if (_annouc != null) return;
-
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _annouc = await StudentApi.getAds();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> refresh({String? token}) async {
-    _annouc = null;
-    await loadIfNeeded(token: token);
-  }
+class AnnoucProvider extends StudentAnnouncementsProvider {
+  AnnoucProvider(super.repository);
 }

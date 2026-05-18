@@ -44,6 +44,8 @@ import 'package:unidesk/features/entities/student/pages/prevSemesters.dart';
 import 'package:unidesk/features/entities/student/pages/profile_page.dart'
     as student_profile;
 import 'package:unidesk/features/entities/student/pages/techinalSupportPage.dart';
+import 'package:unidesk/features/entities/student/announcements/data/api_student_announcements_data_source.dart';
+import 'package:unidesk/features/entities/student/announcements/data/student_announcements_repository.dart';
 import 'package:unidesk/features/entities/student/providers_std/annouc_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/currentSem_provider.dart';
@@ -86,7 +88,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => CoursesProvider()),
-        ChangeNotifierProvider(create: (_) => AnnoucProvider()),
         ChangeNotifierProvider(create: (_) => PrevsemestersProvider()),
         ChangeNotifierProvider(create: (_) => CurrentSemesterProvider()),
         Provider(create: (_) => AttendanceRepository()),
@@ -108,6 +109,11 @@ void main() async {
         Provider<StudentMaterialsRepository>(
           create: (_) => const StudentMaterialsRepositoryImpl(
             ApiStudentMaterialsDataSource(),
+          ),
+        ),
+        Provider<StudentAnnouncementsRepository>(
+          create: (_) => const StudentAnnouncementsRepositoryImpl(
+            ApiStudentAnnouncementsDataSource(),
           ),
         ),
         ChangeNotifierProvider(
@@ -142,6 +148,10 @@ void main() async {
           create: (context) => StudentMaterialsProvider(
             context.read<StudentMaterialsRepository>(),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AnnoucProvider(context.read<StudentAnnouncementsRepository>()),
         ),
       ],
       builder: (_, _) => const MyApp(),

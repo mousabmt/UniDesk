@@ -440,10 +440,11 @@ class StudentApi {
     return Map<String, dynamic>.from(body);
   }
 
-  static Future<List<Map<String, dynamic>>> getAds() async {
+  static Future<List<Map<String, dynamic>>> getAds({String? token}) async {
+    token ??= await _readToken();
     final response = await http.get(
       _uri('/announcements'),
-      headers: _headers(contentType: null),
+      headers: _headers(token: token, contentType: null),
     );
     final body = await _decode(response);
 
