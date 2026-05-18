@@ -44,6 +44,8 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   flutter_secure_storage: ^9.2.2
   logger: ^2.4.0
+  shimmer: ^3.0.0
+
   flutter:
     sdk: flutter
   go_router: ^17.1.0

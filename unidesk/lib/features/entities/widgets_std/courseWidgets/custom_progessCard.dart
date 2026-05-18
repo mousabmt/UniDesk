@@ -10,11 +10,12 @@ class AcademicProgressCard extends StatelessWidget {
     super.key,
     required this.progress,
     required this.completedCourses,
+    required this.showComingSoon,
   });
 
   final Map<String, dynamic> progress;
   final List<Map<String, dynamic>> completedCourses;
-
+final VoidCallback showComingSoon;
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LangProvider>();
@@ -33,7 +34,7 @@ class AcademicProgressCard extends StatelessWidget {
       _ProgressItem(
         icon: Icons.show_chart_rounded,
         label: lang.translate('gpa_calc'),
-        onTap: () {},
+        onTap: showComingSoon,
       ),
     ];
 
