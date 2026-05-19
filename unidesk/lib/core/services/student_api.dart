@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -207,6 +206,29 @@ class StudentApi {
 
     return lastFailure ??
         {'success': false, 'message': 'Unable to login. Please try again.'};
+  }
+
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await http.post(
+      _uri('/forgot-password'),
+      headers: _headers(),
+      body: jsonEncode({'email': email}),
+    );
+
+    final body = await _decode(response);
+    final success = _isSuccessStatus(response.statusCode);
+    final normalized = <String, dynamic>{
+      if (body is Map<String, dynamic>) ...body,
+      'success': success,
+      'message': _messageFromBody(
+        body,
+        fallback: success
+            ? 'Password reset instructions sent.'
+            : 'Unable to send reset instructions.',
+      ),
+    };
+
+    return normalized;
   }
 
   static Future<void> logout({String? token}) async {

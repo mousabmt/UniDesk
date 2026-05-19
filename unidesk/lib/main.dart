@@ -9,6 +9,10 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
+import 'package:unidesk/features/auth/forgot_password/data/api_forgot_password_data_source.dart';
+import 'package:unidesk/features/auth/forgot_password/data/forgot_password_repository.dart';
+import 'package:unidesk/features/auth/forgot_password/pages/forgot_password_page.dart';
+import 'package:unidesk/features/auth/forgot_password/providers/forgot_password_provider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
 import 'package:unidesk/features/entities/instructor/announcements/data/api_instructor_announcements_data_source.dart';
 import 'package:unidesk/features/entities/instructor/announcements/data/instructor_announcements_repository.dart';
@@ -134,10 +138,17 @@ void main() async {
             const ApiNotificationHistoryDataSource(),
           ),
         ),
+        Provider<ForgotPasswordRepository>(
+          create: (_) =>
+              const ForgotPasswordRepositoryImpl(ApiForgotPasswordDataSource()),
+        ),
         ChangeNotifierProvider(
-          create: (context) => NotificationProvider(
-            context.read<NotificationRepository>(),
-          ),
+          create: (context) =>
+              NotificationProvider(context.read<NotificationRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              ForgotPasswordProvider(context.read<ForgotPasswordRepository>()),
         ),
         ChangeNotifierProvider(
           create: (context) =>
@@ -227,12 +238,14 @@ class _MyAppState extends State<MyApp> {
       refreshListenable: auth,
       redirect: (context, state) {
         final isLoggedIn = auth.isLoggedIn;
-        final isOnLogin = state.matchedLocation == '/login';
+        final isPublicAuthRoute =
+            state.matchedLocation == '/login' ||
+            state.matchedLocation == '/forgot-password';
 
-        if (!isLoggedIn && !isOnLogin) {
+        if (!isLoggedIn && !isPublicAuthRoute) {
           return '/login';
         }
-        if (isLoggedIn && isOnLogin) {
+        if (isLoggedIn && isPublicAuthRoute) {
           if (auth.isInstructor) {
             return '/instructor/home';
           }
@@ -248,6 +261,11 @@ class _MyAppState extends State<MyApp> {
           path: '/login',
           name: 'login',
           builder: (context, state) => const LoginPage(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          name: 'forgot-password',
+          builder: (context, state) => const ForgotPasswordPage(),
         ),
         GoRoute(path: '/instructor', redirect: (_, _) => '/instructor/home'),
         StatefulShellRoute.indexedStack(

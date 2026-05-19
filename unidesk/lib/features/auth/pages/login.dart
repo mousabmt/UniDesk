@@ -52,8 +52,10 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final success =
-        await context.read<AuthProvider>().login(enteredUser, enteredPass);
+    final success = await context.read<AuthProvider>().login(
+      enteredUser,
+      enteredPass,
+    );
 
     if (!mounted) return;
 
@@ -72,11 +74,12 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (!success) {
-      final error = context.read<AuthProvider>().errorMessage ??
+      final error =
+          context.read<AuthProvider>().errorMessage ??
           lang.translate('invalid_token');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -114,8 +117,9 @@ class _LoginPageState extends State<LoginPage> {
                   Positioned.fill(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final horizontalPadding =
-                            isCompact ? sw * 0.1 : sw * 0.18;
+                        final horizontalPadding = isCompact
+                            ? sw * 0.1
+                            : sw * 0.18;
                         final contentWidth = math.min(
                           isCompact ? 420.0 : 520.0,
                           constraints.maxWidth,
@@ -170,8 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                                           keyboardType:
                                               TextInputType.emailAddress,
                                           controller: userID,
-                                          textInputAction:
-                                              TextInputAction.next,
+                                          textInputAction: TextInputAction.next,
                                           autofillHints: const [
                                             AutofillHints.username,
                                           ],
@@ -179,8 +182,9 @@ class _LoginPageState extends State<LoginPage> {
                                             prefixIcon: const Icon(
                                               Icons.person_outline,
                                             ),
-                                            hintText:
-                                                lang.translate('enter_id'),
+                                            hintText: lang.translate(
+                                              'enter_id',
+                                            ),
                                             hintStyle: const TextStyle(
                                               color: Colors.black,
                                               fontSize: 14,
@@ -196,8 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                                         child: TextField(
                                           controller: password,
                                           obscureText: !_isPasswordVisible,
-                                          textInputAction:
-                                              TextInputAction.done,
+                                          textInputAction: TextInputAction.done,
                                           autofillHints: const [
                                             AutofillHints.password,
                                           ],
@@ -212,8 +215,9 @@ class _LoginPageState extends State<LoginPage> {
                                             prefixIcon: const Icon(
                                               Icons.lock_open,
                                             ),
-                                            hintText:
-                                                lang.translate('password'),
+                                            hintText: lang.translate(
+                                              'password',
+                                            ),
                                             hintStyle: const TextStyle(
                                               color: Colors.black,
                                               fontSize: 14,
@@ -241,36 +245,34 @@ class _LoginPageState extends State<LoginPage> {
                                         child: Align(
                                           alignment: Alignment.centerRight,
                                           child: TextButton(
-                                            onPressed: () {},
+                                            onPressed: () {
+                                              context.go('/forgot-password');
+                                            },
                                             child: Text(
-                                              lang.translate(
-                                                'forgot_password',
-                                              ),
+                                              lang.translate('forgot_password'),
                                             ),
                                           ),
                                         ),
                                       ),
                                       SizedBox(
-                                        width: contentWidth *
+                                        width:
+                                            contentWidth *
                                             (isCompact ? 0.75 : 0.6),
                                         child: Selector<AuthProvider, bool>(
                                           selector: (_, auth) => auth.isLoading,
-                                          builder:
-                                              (
-                                                context,
-                                                isLoading,
-                                                _,
-                                              ) => ElevatedButton(
+                                          builder: (context, isLoading, _) =>
+                                              ElevatedButton(
                                                 onPressed: isLoading
                                                     ? null
                                                     : _handleLogin,
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       AppColors.primaryBlue,
-                                                  padding: const EdgeInsets.symmetric(
-                                                    vertical: 16,
-                                                    horizontal: 12,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 16,
+                                                        horizontal: 12,
+                                                      ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -284,13 +286,12 @@ class _LoginPageState extends State<LoginPage> {
                                                         width: 20,
                                                         child:
                                                             CircularProgressIndicator(
-                                                          color: Colors.grey,
-                                                        ),
+                                                              color:
+                                                                  Colors.grey,
+                                                            ),
                                                       )
                                                     : Text(
-                                                        lang.translate(
-                                                          'login',
-                                                        ),
+                                                        lang.translate('login'),
                                                       ),
                                               ),
                                         ),
