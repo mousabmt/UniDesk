@@ -845,10 +845,10 @@ class _SubmissionTile extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: submission.file!.badgeColor.withOpacity(0.1),
+                        color: submission.file!.badgeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: submission.file!.badgeColor.withOpacity(0.3),
+                          color: submission.file!.badgeColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(

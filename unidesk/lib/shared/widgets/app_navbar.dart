@@ -10,6 +10,7 @@ import '../../features/entities/student/materials/models/student_material_course
 import '../../features/entities/student/materials/providers/student_materials_provider.dart';
 import '../../features/entities/student/providers_std/annouc_provider.dart';
 import '../../features/entities/student/providers_std/course_provider.dart';
+import '../../features/notifications/presentation/providers/notification_provider.dart';
 import '../../features/entities/student/providers_std/currentSem_provider.dart';
 import '../../features/entities/student/providers_std/prevSemesters_provider.dart';
 import '../../features/entities/student/providers_std/profile_provider.dart';
@@ -34,8 +35,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final announcementsProvider = context.read<AnnoucProvider>();
     final studentMaterialsProvider = context.read<StudentMaterialsProvider>();
     final prevSemestersProvider = context.read<PrevsemestersProvider>();
-    final currentSemesterProvider = context.read<CurrentSemesterProvider>();
-    final instructorCoursesProvider = context.read<InstructorCoursesProvider>();
+    final currentSemesterProvider = context.read<CurrentSemesterProvider>();    final notificationProvider = context.read<NotificationProvider>();    final instructorCoursesProvider = context.read<InstructorCoursesProvider>();
     final instructorAssignmentsProvider = context
         .read<InstructorAssignmentsProvider>();
 
@@ -60,6 +60,8 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
         await instructorAssignmentsProvider.refresh(instructorId: userId);
       }
     }
+
+    await notificationProvider.refreshUnreadCount();
   }
 
   List<StudentMaterialCourseOption> _buildStudentMaterialCourseOptions(
@@ -135,6 +137,9 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final isStudent = context.select<AuthProvider, bool>(
       (auth) => auth.isStudent,
     );
+    final unreadCount = context.select<NotificationProvider, int>(
+      (notification) => notification.unreadCount,
+    );
     final navigator = navigatorKey?.currentState;
     final canGoBack = navigator?.canPop() ?? context.canPop();
 
@@ -164,9 +169,36 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
 
       actions: [
         IconButton(
-          icon: const Icon(Icons.notifications_outlined),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.notifications_outlined),
+              if (unreadCount > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           color: AppColors.black,
-          onPressed: () {},
+          onPressed: () => context.push('/notifications'),
         ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.menu, color: AppColors.black),

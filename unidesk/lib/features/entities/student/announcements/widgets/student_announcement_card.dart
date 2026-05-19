@@ -66,52 +66,61 @@ class StudentAnnouncementCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.iconBackgroundColor,
+                const SizedBox(height: 14),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.iconBackgroundColor,
+                        ),
+                        child: Icon(
+                          theme.icon,
+                          color: theme.iconColor,
+                          size: 28,
+                        ),
                       ),
-                      child: Icon(theme.icon, color: theme.iconColor, size: 30),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            announcement.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E2630),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              announcement.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                height: 1.15,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E2630),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            announcement.previewText,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.45,
-                              color: theme.secondaryTextColor,
+                            const SizedBox(height: 6),
+                            Flexible(
+                              child: Text(
+                                announcement.previewText,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.35,
+                                  color: theme.secondaryTextColor,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     if (announcement.creatorName.isNotEmpty)

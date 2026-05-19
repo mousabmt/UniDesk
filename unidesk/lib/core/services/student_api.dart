@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,14 +42,35 @@ class StudentApi {
     return headers;
   }
 
+  static final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
   static Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', token);
+      return;
+    }
+
+    await _secureStorage.write(key: 'token', value: token);
   }
 
   static Future<String?> _readToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('token');
+    }
+
+    return _secureStorage.read(key: 'token');
+  }
+
+  static Future<void> _deleteToken() async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
+      return;
+    }
+
+    await _secureStorage.delete(key: 'token');
   }
 
   static Future<String?> readToken() async => _readToken();
@@ -199,8 +222,7 @@ class StudentApi {
         body: jsonEncode(const <String, dynamic>{}),
       );
     } finally {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
+      await _deleteToken();
     }
   }
 
@@ -268,6 +290,115 @@ class StudentApi {
       'data': body['data'],
       ...body,
     };
+  }
+
+  static Future<Map<String, dynamic>> getNotificationsHistory({
+    int page = 1,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/notifications/history', queryParameters: {'page': page}),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to load notification history'),
+      );
+    }
+
+    return Map<String, dynamic>.from(body);
+  }
+
+  static Future<Map<String, dynamic>> markNotificationRead(
+    int notificationId, {
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/notifications/$notificationId/read'),
+      headers: _headers(token: token),
+      body: jsonEncode(const <String, dynamic>{}),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected mark notification read response (${response.statusCode})',
+      );
+    }
+
+    return {
+      'success': _isSuccessStatus(response.statusCode),
+      'message': _messageFromBody(
+        body,
+        fallback: _isSuccessStatus(response.statusCode)
+            ? 'Notification marked as read'
+            : 'Failed to mark notification as read',
+      ),
+      'data': body['data'],
+      ...body,
+    };
+  }
+
+  static Future<Map<String, dynamic>> markAllNotificationsRead({
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/notifications/read-all'),
+      headers: _headers(token: token),
+      body: jsonEncode(const <String, dynamic>{}),
+    );
+
+    final body = await _decode(response);
+    if (body is! Map<String, dynamic>) {
+      throw Exception(
+        'Unexpected mark all notifications read response (${response.statusCode})',
+      );
+    }
+
+    return {
+      'success': _isSuccessStatus(response.statusCode),
+      'message': _messageFromBody(
+        body,
+        fallback: _isSuccessStatus(response.statusCode)
+            ? 'All notifications marked as read'
+            : 'Failed to mark all notifications as read',
+      ),
+      'data': body['data'],
+      ...body,
+    };
+  }
+
+  static Future<int> getUnreadNotificationCount({String? token}) async {
+    token ??= await _readToken();
+    final response = await http.get(
+      _uri('/notifications/unread-count'),
+      headers: _headers(token: token, contentType: null),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(
+          body,
+          fallback: 'Failed to load unread notification count',
+        ),
+      );
+    }
+
+    final countValue = body['data'] is int
+        ? body['data'] as int
+        : body['data'] is Map<String, dynamic>
+        ? int.tryParse(body['data']['count']?.toString() ?? '') ?? 0
+        : int.tryParse(body['data']?.toString() ?? '') ?? 0;
+
+    return countValue;
   }
 
   static Future<List<Map<String, dynamic>>> getCourses({String? token}) async {
@@ -461,6 +592,42 @@ class StudentApi {
         'imageUrl': _resolveAnnouncementImageUrl(map['image_url']?.toString()),
       };
     }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getInstructorAnnouncements({
+    String? token,
+  }) {
+    return getAds(token: token);
+  }
+
+  static Future<Map<String, dynamic>> createInstructorAnnouncement({
+    required Map<String, dynamic> fields,
+    String? token,
+  }) async {
+    token ??= await _readToken();
+    final response = await http.post(
+      _uri('/announcements'),
+      headers: _headers(token: token),
+      body: jsonEncode(fields),
+    );
+
+    final body = await _decode(response);
+    if (!_isSuccessStatus(response.statusCode) ||
+        body is! Map<String, dynamic>) {
+      throw Exception(
+        _messageFromBody(body, fallback: 'Failed to create announcement'),
+      );
+    }
+
+    final data = body['data'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(body['data'] as Map<String, dynamic>)
+        : Map<String, dynamic>.from(body);
+    if (data.isEmpty) {
+      throw Exception(
+        'Unexpected create announcement response (${response.statusCode})',
+      );
+    }
+    return data;
   }
 
   static Future<Map<String, dynamic>> registerAttendance({

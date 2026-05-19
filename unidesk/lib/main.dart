@@ -10,6 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:unidesk/features/auth/authProvider.dart';
 import 'package:unidesk/features/auth/pages/login.dart';
+import 'package:unidesk/features/entities/instructor/announcements/data/api_instructor_announcements_data_source.dart';
+import 'package:unidesk/features/entities/instructor/announcements/data/instructor_announcements_repository.dart';
+import 'package:unidesk/features/entities/instructor/announcements/providers/instructor_announcements_provider.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/api_instructor_assignments_data_source.dart';
 import 'package:unidesk/features/entities/instructor/assignments/data/instructor_assignments_repository.dart';
 import 'package:unidesk/features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
@@ -46,6 +49,11 @@ import 'package:unidesk/features/entities/student/pages/profile_page.dart'
 import 'package:unidesk/features/entities/student/pages/techinalSupportPage.dart';
 import 'package:unidesk/features/entities/student/announcements/data/api_student_announcements_data_source.dart';
 import 'package:unidesk/features/entities/student/announcements/data/student_announcements_repository.dart';
+import 'package:unidesk/features/notifications/data/notification_history_data_source.dart';
+import 'package:unidesk/features/notifications/data/notification_repository_impl.dart';
+import 'package:unidesk/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:unidesk/features/notifications/presentation/pages/notification_history_page.dart';
+import 'package:unidesk/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/annouc_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/course_provider.dart';
 import 'package:unidesk/features/entities/student/providers_std/currentSem_provider.dart';
@@ -101,6 +109,11 @@ void main() async {
             ApiInstructorAssignmentsDataSource(),
           ),
         ),
+        Provider<InstructorAnnouncementsRepository>(
+          create: (_) => const InstructorAnnouncementsRepositoryImpl(
+            ApiInstructorAnnouncementsDataSource(),
+          ),
+        ),
         Provider<StudentAssignmentsRepository>(
           create: (_) => const StudentAssignmentsRepositoryImpl(
             ApiStudentAssignmentsDataSource(),
@@ -114,6 +127,16 @@ void main() async {
         Provider<StudentAnnouncementsRepository>(
           create: (_) => const StudentAnnouncementsRepositoryImpl(
             ApiStudentAnnouncementsDataSource(),
+          ),
+        ),
+        Provider<NotificationRepository>(
+          create: (_) => NotificationRepositoryImpl(
+            const ApiNotificationHistoryDataSource(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => NotificationProvider(
+            context.read<NotificationRepository>(),
           ),
         ),
         ChangeNotifierProvider(
@@ -136,6 +159,12 @@ void main() async {
         ChangeNotifierProvider(
           create: (context) => InstructorAssignmentsProvider(
             context.read<InstructorAssignmentsRepository>(),
+            context.read<InstructorCoursesRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => InstructorAnnouncementsProvider(
+            context.read<InstructorAnnouncementsRepository>(),
             context.read<InstructorCoursesRepository>(),
           ),
         ),
@@ -189,7 +218,9 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     final auth = context.read<AuthProvider>();
-    FlutterNativeSplash.remove();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FlutterNativeSplash.remove();
+    });
 
     _router = GoRouter(
       initialLocation: '/login',
@@ -404,6 +435,12 @@ class _MyAppState extends State<MyApp> {
           name: 'register-attendance',
           redirect: (context, state) => _guardRoute(auth, 'student'),
           builder: (context, state) => const QRScannerPage(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          name: 'notifications',
+          redirect: (context, state) => auth.isLoggedIn ? null : '/login',
+          builder: (context, state) => const NotificationHistoryPage(),
         ),
         GoRoute(
           path: '/unauthorized',

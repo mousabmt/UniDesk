@@ -24,6 +24,14 @@ class NotificationTokenRepository {
     String deviceToken, {
     String? authToken,
   }) async {
+    authToken ??= await StudentApi.readToken();
+    if (authToken == null || authToken.isEmpty) {
+      debugPrint(
+        'NotificationTokenRepository: no auth token available, skipping device token registration.',
+      );
+      return;
+    }
+
     final response = await StudentApi.registerDeviceToken(
       deviceToken: deviceToken,
       deviceType: _resolveDeviceType(),
@@ -59,6 +67,14 @@ class NotificationTokenRepository {
     String deviceToken, {
     String? authToken,
   }) async {
+    authToken ??= await StudentApi.readToken();
+    if (authToken == null || authToken.isEmpty) {
+      debugPrint(
+        'NotificationTokenRepository: no auth token available, skipping device token removal.',
+      );
+      return;
+    }
+
     final response = await StudentApi.removeDeviceToken(
       deviceToken: deviceToken,
       token: authToken,

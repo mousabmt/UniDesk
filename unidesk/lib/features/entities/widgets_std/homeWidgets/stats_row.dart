@@ -70,7 +70,7 @@ class StatsRow extends StatelessWidget {
               return Container(
                 width: 1,
                 margin: const EdgeInsets.symmetric(vertical: 10),
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               );
             }
 

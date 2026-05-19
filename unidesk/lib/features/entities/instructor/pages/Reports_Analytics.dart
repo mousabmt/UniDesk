@@ -432,8 +432,8 @@ class _LineChartPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            kTeal.withOpacity(0.25),
-            kTeal.withOpacity(0.0),
+            kTeal.withValues(alpha: 0.25),
+            kTeal.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromLTWH(0, 0, size.width, chartH)),
     );
@@ -465,7 +465,7 @@ class _LineChartPainter extends CustomPainter {
         points[i],
         6,
         Paint()
-          ..color = kTeal.withOpacity(0.2)
+          ..color = kTeal.withValues(alpha: 0.2)
           ..style = PaintingStyle.fill,
       );
       canvas.drawCircle(
