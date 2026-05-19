@@ -101,4 +101,13 @@ class NotificationProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void clear() {
+    _notifications = const [];
+    _isLoading = false;
+    _error = null;
+    _unreadCount = 0;
+    _hasLoadedOnce = false;
+    notifyListeners();
+  }
 }

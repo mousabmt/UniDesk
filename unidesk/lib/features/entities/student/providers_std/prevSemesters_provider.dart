@@ -31,4 +31,11 @@ class PrevsemestersProvider extends ChangeNotifier {
     _completedCourses = null;
     await loadIfNeeded();
   }
+
+  void clear() {
+    _completedCourses = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

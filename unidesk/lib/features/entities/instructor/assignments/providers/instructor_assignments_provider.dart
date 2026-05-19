@@ -107,7 +107,8 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       return const [];
     }
     return _allAssignments.where((assignment) {
-      return _normalized(assignment.courseId) == _normalized(currentCourse.id) &&
+      return _normalized(assignment.courseId) ==
+              _normalized(currentCourse.id) &&
           _normalized(assignment.sectionId) == _normalized(sectionId);
     }).toList();
   }
@@ -350,16 +351,18 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
         submissionId: submissionId,
         score: score,
       );
-      _submissions = _submissions.map((submission) {
-        if (submission.id != submissionId) {
-          return submission;
-        }
-        return submission.copyWith(
-          status: graded.status,
-          score: graded.score,
-          feedback: graded.feedback,
-        );
-      }).toList(growable: false);
+      _submissions = _submissions
+          .map((submission) {
+            if (submission.id != submissionId) {
+              return submission;
+            }
+            return submission.copyWith(
+              status: graded.status,
+              score: graded.score,
+              feedback: graded.feedback,
+            );
+          })
+          .toList(growable: false);
       return true;
     } catch (e) {
       _gradeError = e.toString();
@@ -376,6 +379,28 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
       return;
     }
     _gradeError = null;
+    notifyListeners();
+  }
+
+  void clear() {
+    _courses = const [];
+    _isCoursesLoading = false;
+    _coursesError = null;
+    _selectedCourseGroupKey = null;
+    _selectedSectionId = null;
+    _isCourseLocked = false;
+    _allAssignments = const [];
+    _isAssignmentsLoading = false;
+    _assignmentsError = null;
+    _selectedAssignmentId = null;
+    _submissions = const [];
+    _isSubmissionsLoading = false;
+    _submissionsError = null;
+    _isGrading = false;
+    _gradingSubmissionId = null;
+    _gradeError = null;
+    _isCreating = false;
+    _createError = null;
     notifyListeners();
   }
 
@@ -422,10 +447,11 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
         _submissions = const [];
       } else {
         final nextAssignmentId =
-            preferredAssignmentId ?? _selectedAssignmentId ?? visibleAssignments.first.id;
-        _selectedAssignmentId = visibleAssignments.any(
-              (item) => item.id == nextAssignmentId,
-            )
+            preferredAssignmentId ??
+            _selectedAssignmentId ??
+            visibleAssignments.first.id;
+        _selectedAssignmentId =
+            visibleAssignments.any((item) => item.id == nextAssignmentId)
             ? nextAssignmentId
             : visibleAssignments.first.id;
       }
@@ -553,7 +579,9 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     final normalizedCourseGroupKey = _normalized(courseGroupKey);
     final sections = _courses
         .where(
-          (course) => _normalized(_courseIdentityKey(course)) == normalizedCourseGroupKey,
+          (course) =>
+              _normalized(_courseIdentityKey(course)) ==
+              normalizedCourseGroupKey,
         )
         .toList();
     if (sections.isEmpty) {
@@ -563,7 +591,8 @@ class InstructorAssignmentsProvider extends ChangeNotifier {
     final preferred = preferredSectionId;
     if (preferred != null && preferred.isNotEmpty) {
       for (final course in sections) {
-        if (_scopeIdFor(course) == preferred || course.selectionKey == preferred) {
+        if (_scopeIdFor(course) == preferred ||
+            course.selectionKey == preferred) {
           return _scopeIdFor(course);
         }
       }

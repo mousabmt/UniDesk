@@ -4,8 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/constants.dart';
 import '../../features/auth/authProvider.dart';
+import '../../features/entities/instructor/announcements/providers/instructor_announcements_provider.dart';
+import '../../features/entities/instructor/attendance/providers/attendance_courses_provider.dart';
+import '../../features/entities/instructor/attendance/providers/attendance_session_provider.dart';
+import '../../features/entities/instructor/attendance/providers/attendance_students_provider.dart';
 import '../../features/entities/instructor/assignments/providers/instructor_assignments_provider.dart';
 import '../../features/entities/instructor/course_management/providers/instructor_courses_provider.dart';
+import '../../features/entities/student/assignments/providers/student_assignments_provider.dart';
 import '../../features/entities/student/materials/models/student_material_course_option.dart';
 import '../../features/entities/student/materials/providers/student_materials_provider.dart';
 import '../../features/entities/student/providers_std/annouc_provider.dart';
@@ -35,7 +40,9 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     final announcementsProvider = context.read<AnnoucProvider>();
     final studentMaterialsProvider = context.read<StudentMaterialsProvider>();
     final prevSemestersProvider = context.read<PrevsemestersProvider>();
-    final currentSemesterProvider = context.read<CurrentSemesterProvider>();    final notificationProvider = context.read<NotificationProvider>();    final instructorCoursesProvider = context.read<InstructorCoursesProvider>();
+    final currentSemesterProvider = context.read<CurrentSemesterProvider>();
+    final notificationProvider = context.read<NotificationProvider>();
+    final instructorCoursesProvider = context.read<InstructorCoursesProvider>();
     final instructorAssignmentsProvider = context
         .read<InstructorAssignmentsProvider>();
 
@@ -62,6 +69,31 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     await notificationProvider.refreshUnreadCount();
+  }
+
+  T? _maybeRead<T>(BuildContext context) {
+    try {
+      return context.read<T>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _clearSessionProviders(BuildContext context) {
+    _maybeRead<ProfileProvider>(context)?.clear();
+    _maybeRead<CoursesProvider>(context)?.clear();
+    _maybeRead<AnnoucProvider>(context)?.clear();
+    _maybeRead<StudentMaterialsProvider>(context)?.clear();
+    _maybeRead<PrevsemestersProvider>(context)?.clear();
+    _maybeRead<CurrentSemesterProvider>(context)?.clear();
+    _maybeRead<StudentAssignmentsProvider>(context)?.clear();
+    _maybeRead<NotificationProvider>(context)?.clear();
+    _maybeRead<InstructorCoursesProvider>(context)?.clear();
+    _maybeRead<InstructorAssignmentsProvider>(context)?.clear();
+    _maybeRead<InstructorAnnouncementsProvider>(context)?.clear();
+    _maybeRead<AttendanceCoursesProvider>(context)?.clear();
+    _maybeRead<AttendanceStudentsProvider>(context)?.clear();
+    _maybeRead<AttendanceSessionProvider>(context)?.reset();
   }
 
   List<StudentMaterialCourseOption> _buildStudentMaterialCourseOptions(
@@ -183,7 +215,10 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
                     child: Text(
                       unreadCount.toString(),
                       style: const TextStyle(
@@ -202,7 +237,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
         ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.menu, color: AppColors.black),
-          onSelected: (value) {
+          onSelected: (value) async {
             switch (value) {
               case 'home':
                 context.go(isStudent ? '/' : '/instructor/home');
@@ -223,7 +258,15 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
                 _refreshAllProviders(context);
                 break;
               case 'logout':
-                context.read<AuthProvider>().logout();
+                final auth = context.read<AuthProvider>();
+                if (auth.isLoggingOut) {
+                  return;
+                }
+                _clearSessionProviders(context);
+                await auth.logout();
+                if (!context.mounted) {
+                  return;
+                }
                 context.go('/login');
                 break;
             }

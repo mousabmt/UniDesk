@@ -21,17 +21,12 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-      final storedUser = prefs.getString('user');
+      final resolvedToken = token ?? await StudentApi.readToken();
 
-      if (token != null && token.isNotEmpty) {
-        final rawProfile = await StudentApi.getProfile(token: token);
+      if (resolvedToken != null && resolvedToken.isNotEmpty) {
+        final rawProfile = await StudentApi.getProfile(token: resolvedToken);
         _profile = _normalizeProfile(rawProfile);
         await prefs.setString('user', jsonEncode(_profile));
-      } else if (storedUser != null) {
-        _profile = _normalizeProfile(
-          jsonDecode(storedUser) as Map<String, dynamic>,
-        );
       }
     } catch (e) {
       _error = e.toString();
@@ -44,6 +39,13 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> refresh() async {
     _profile = null;
     await loadIfNeeded();
+  }
+
+  void clear() {
+    _profile = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
   }
 
   Map<String, dynamic> _normalizeProfile(Map<String, dynamic> rawProfile) {
@@ -63,12 +65,11 @@ class ProfileProvider extends ChangeNotifier {
               : '-');
 
     final completedCredits =
-       profile['credits'] ?? profile['total_credits_attempted'];
+        profile['credits'] ?? profile['total_credits_attempted'];
     final attemptedCredits =
         profile['total_credits_attempted'] ?? profile['totalHours'];
     final completedCourses = profile['completed_courses'];
     final currentCourses = profile['current_courses'];
-
 
     return {
       ...profile,
@@ -94,12 +95,5 @@ class ProfileProvider extends ChangeNotifier {
         profile['national_id']?.toString(),
       ].whereType<String>().where((value) => value.isNotEmpty).toList(),
     };
-  }
-
-
-
-  double? _toDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '');
   }
 }

@@ -5,14 +5,17 @@ import 'package:unidesk/core/services/student_api.dart';
 
 class NotificationTokenRepository {
   NotificationTokenRepository({FirebaseMessaging? messaging})
-    : _messaging = messaging ?? FirebaseMessaging.instance;
+    : _messaging = messaging;
 
   static const String _lastRegisteredTokenKey = 'last_registered_device_token';
 
-  final FirebaseMessaging _messaging;
+  final FirebaseMessaging? _messaging;
+
+  FirebaseMessaging get _resolvedMessaging =>
+      _messaging ?? FirebaseMessaging.instance;
 
   Future<void> registerCurrentDeviceToken({String? authToken}) async {
-    final token = await _messaging.getToken();
+    final token = await _resolvedMessaging.getToken();
     if (token == null || token.isEmpty) {
       return;
     }
@@ -49,7 +52,7 @@ class NotificationTokenRepository {
   }
 
   Future<void> removeCurrentDeviceToken({String? authToken}) async {
-    final currentToken = await _messaging.getToken();
+    final currentToken = await _resolvedMessaging.getToken();
     final prefs = await SharedPreferences.getInstance();
     final storedToken = prefs.getString(_lastRegisteredTokenKey);
     final tokenToRemove = currentToken?.isNotEmpty == true

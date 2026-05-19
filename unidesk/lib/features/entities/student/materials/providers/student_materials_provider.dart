@@ -63,6 +63,15 @@ class StudentMaterialsProvider extends ChangeNotifier {
     await _loadMaterialsForSelectedCourse();
   }
 
+  void clear() {
+    _materials = const [];
+    _isLoading = false;
+    _error = null;
+    _selectedCourseSelectionValue = null;
+    _lastResolvedOptions = const [];
+    notifyListeners();
+  }
+
   void _syncSelection(
     List<StudentMaterialCourseOption> courseOptions, {
     String? preferredSelectionValue,

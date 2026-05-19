@@ -147,6 +147,22 @@ class StudentAssignmentsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    _assignments = const [];
+    _isLoadingAssignments = false;
+    _assignmentsError = null;
+    _selectedAssignment = null;
+    _isLoadingAssignmentDetail = false;
+    _assignmentDetailError = null;
+    _submissions = const [];
+    _isLoadingSubmissions = false;
+    _submissionsError = null;
+    _isSubmitting = false;
+    _submitError = null;
+    _submitSuccess = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     clearErrors();

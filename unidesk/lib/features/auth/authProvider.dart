@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,17 +9,19 @@ import 'package:unidesk/features/notifications/data/notification_token_repositor
 
 class AuthProvider extends ChangeNotifier {
   final NotificationTokenRepository _notificationTokenRepository;
+  final Future<void> Function(String token) _logoutRequest;
 
   static const _secureStorage = FlutterSecureStorage();
   static const _tokenKey = 'token';
 
-  late final SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
   String? _token;
   String? _userId;
   Map<String, dynamic>? _user;
   String? _role;
   bool _isLoading = false;
+  bool _isLoggingOut = false;
   String? _errorMessage;
 
   String? get token => _token;
@@ -26,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get user => _user;
   String? get role => _role;
   bool get isLoading => _isLoading;
+  bool get isLoggingOut => _isLoggingOut;
   String? get errorMessage => _errorMessage;
 
   bool get isValidToken => _token != null && _token!.isNotEmpty;
@@ -39,17 +43,25 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider({
     NotificationTokenRepository? notificationTokenRepository,
+    Future<void> Function(String token)? logoutRequest,
   }) : _notificationTokenRepository =
-            notificationTokenRepository ?? NotificationTokenRepository() {
+           notificationTokenRepository ?? NotificationTokenRepository(),
+       _logoutRequest =
+           logoutRequest ?? ((token) => StudentApi.logout(token: token)) {
     loadToken();
   }
 
   // ── Secure-storage abstraction (web ↔ native) ──────────────────────────────
 
+  Future<SharedPreferences> _preferences() async {
+    return _prefs ??= await SharedPreferences.getInstance();
+  }
+
   /// Reads the token from the appropriate storage for the current platform.
   Future<String?> _readToken() async {
     if (kIsWeb) {
-      return _prefs.getString(_tokenKey);
+      final prefs = await _preferences();
+      return prefs.getString(_tokenKey);
     }
     return _secureStorage.read(key: _tokenKey);
   }
@@ -57,7 +69,8 @@ class AuthProvider extends ChangeNotifier {
   /// Writes the token to the appropriate storage for the current platform.
   Future<void> _writeToken(String value) async {
     if (kIsWeb) {
-      await _prefs.setString(_tokenKey, value);
+      final prefs = await _preferences();
+      await prefs.setString(_tokenKey, value);
     } else {
       await _secureStorage.write(key: _tokenKey, value: value);
     }
@@ -66,7 +79,8 @@ class AuthProvider extends ChangeNotifier {
   /// Deletes the token from the appropriate storage for the current platform.
   Future<void> _deleteToken() async {
     if (kIsWeb) {
-      await _prefs.remove(_tokenKey);
+      final prefs = await _preferences();
+      await prefs.remove(_tokenKey);
     } else {
       await _secureStorage.delete(key: _tokenKey);
     }
@@ -86,15 +100,15 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> loadToken() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
+      final prefs = await _preferences();
 
       // Must init _prefs before calling _readToken()
       _token = await _readToken();
 
-      _userId = _prefs.getString('userId');
-      _role = _prefs.getString('role');
+      _userId = prefs.getString('userId');
+      _role = prefs.getString('role');
 
-      final storedUser = _prefs.getString('user');
+      final storedUser = prefs.getString('user');
       if (storedUser != null) {
         try {
           final decoded = jsonDecode(storedUser);
@@ -103,7 +117,7 @@ class AuthProvider extends ChangeNotifier {
           }
         } catch (e) {
           debugPrint('Corrupt user JSON in prefs, clearing: $e');
-          await _prefs.remove('user');
+          await prefs.remove('user');
         }
       }
 
@@ -145,9 +159,10 @@ class AuthProvider extends ChangeNotifier {
 
         await _writeToken(_token!);
 
-        if (_userId != null) await _prefs.setString('userId', _userId!);
-        await _prefs.setString('user', jsonEncode(_user ?? {}));
-        if (_role != null) await _prefs.setString('role', _role!);
+        final prefs = await _preferences();
+        if (_userId != null) await prefs.setString('userId', _userId!);
+        await prefs.setString('user', jsonEncode(_user ?? {}));
+        if (_role != null) await prefs.setString('role', _role!);
 
         await _syncDeviceToken();
 
@@ -172,30 +187,58 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    final tokenToRevoke = _token;
+    _isLoggingOut = true;
+    _isLoading = false;
+    _token = null;
+    _userId = null;
+    _user = null;
+    _role = null;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _deleteToken();
+    } catch (e) {
+      debugPrint('Error deleting local auth token during logout: $e');
+    }
+
+    try {
+      final prefs = await _preferences();
+      await prefs.remove('userId');
+      await prefs.remove('user');
+      await prefs.remove('role');
+    } catch (e) {
+      debugPrint('Error clearing local auth metadata during logout: $e');
+    } finally {
+      _isLoggingOut = false;
+      notifyListeners();
+    }
+
+    if (tokenToRevoke == null || tokenToRevoke.isEmpty) {
+      return;
+    }
+
+    unawaited(_finishRemoteLogout(tokenToRevoke));
+  }
+
+  Future<void> _finishRemoteLogout(String tokenToRevoke) async {
     try {
       await _notificationTokenRepository.removeCurrentDeviceToken(
-        authToken: _token,
+        authToken: tokenToRevoke,
       );
     } catch (e) {
       debugPrint('Error removing device token during logout: $e');
     }
 
     try {
-      await StudentApi.logout(token: _token);
-    } catch (_) {}
-
-    _token = null;
-    _userId = null;
-    _user = null;
-    _role = null;
-    _errorMessage = null;
-
-    await _deleteToken();
-
-    await _prefs.remove('userId');
-    await _prefs.remove('user');
-    await _prefs.remove('role');
-
-    notifyListeners();
+      await _logoutRequest(tokenToRevoke);
+    } catch (e) {
+      debugPrint('Error calling backend logout: $e');
+    }
   }
 }

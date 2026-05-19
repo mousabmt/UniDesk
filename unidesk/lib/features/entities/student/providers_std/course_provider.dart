@@ -40,7 +40,8 @@ class CoursesProvider extends ChangeNotifier {
 
         return {
           ...course,
-          'grade': grade['final_score']?.toString() ??
+          'grade':
+              grade['final_score']?.toString() ??
               grade['grade_symbol']?.toString() ??
               course['grade'],
         };
@@ -57,5 +58,13 @@ class CoursesProvider extends ChangeNotifier {
     _courses = null;
     _academicProgress = null;
     await loadIfNeeded(token: token);
+  }
+
+  void clear() {
+    _courses = null;
+    _academicProgress = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
   }
 }

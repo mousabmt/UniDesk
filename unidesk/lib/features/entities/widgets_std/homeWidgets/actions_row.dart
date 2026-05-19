@@ -23,7 +23,7 @@ class QuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = context.watch<LangProvider>(); // ✅
+    final lang = context.watch<LangProvider>();
     const spacing = 10.0;
 
     final actions = [
@@ -73,7 +73,7 @@ class _QuickActionCard extends StatelessWidget {
           onTap: item.onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            height: 90, // ✅ fixed height — consistent across devices
+            height: 90,
             padding: const EdgeInsets.symmetric(
               vertical: 10,
               horizontal: 8,
@@ -82,7 +82,7 @@ class _QuickActionCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8), // ✅ icon background
+                  padding: const EdgeInsets.all(8), 
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
@@ -101,7 +101,7 @@ class _QuickActionCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 11, // ✅ slightly smaller to avoid wrapping
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),

@@ -31,4 +31,11 @@ class CurrentSemesterProvider extends ChangeNotifier {
     _schedule = null;
     await loadIfNeeded();
   }
+
+  void clear() {
+    _schedule = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }

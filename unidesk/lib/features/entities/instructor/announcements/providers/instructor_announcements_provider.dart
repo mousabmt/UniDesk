@@ -331,6 +331,21 @@ class InstructorAnnouncementsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    _courses = const [];
+    _isCoursesLoading = false;
+    _coursesError = null;
+    _selectedCourseGroupKey = null;
+    _selectedSectionId = null;
+    _allAnnouncements = const [];
+    _isAnnouncementsLoading = false;
+    _announcementsError = null;
+    _hasLoadedAnnouncements = false;
+    _isCreating = false;
+    _createError = null;
+    notifyListeners();
+  }
+
   InstructorAnnouncementType typeFor(String value) {
     return announcementTypes.firstWhere(
       (type) => type.value == value,

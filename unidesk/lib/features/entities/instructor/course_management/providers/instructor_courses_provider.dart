@@ -219,6 +219,20 @@ class InstructorCoursesProvider extends ChangeNotifier {
     );
   }
 
+  void clear() {
+    _courses = const [];
+    _isCoursesLoading = false;
+    _coursesError = null;
+    _selectedCourseGroupKey = null;
+    _selectedSectionId = null;
+    _currentCourseDetails = null;
+    _isDetailsLoading = false;
+    _detailsError = null;
+    _isUploading = false;
+    _uploadError = null;
+    notifyListeners();
+  }
+
   Future<bool> uploadCourseFile({
     required String instructorId,
     required String fileName,
@@ -388,7 +402,8 @@ class InstructorCoursesProvider extends ChangeNotifier {
   }) {
     final normalizedCourseGroupKey = _normalized(courseGroupKey);
     final sections = _courses.where((course) {
-      return _normalized(_courseIdentityKey(course)) == normalizedCourseGroupKey;
+      return _normalized(_courseIdentityKey(course)) ==
+          normalizedCourseGroupKey;
     }).toList();
     if (sections.isEmpty) {
       return null;
@@ -397,7 +412,8 @@ class InstructorCoursesProvider extends ChangeNotifier {
     final preferred = preferredSectionId;
     if (preferred != null && preferred.isNotEmpty) {
       for (final course in sections) {
-        if (_scopeIdFor(course) == preferred || course.selectionKey == preferred) {
+        if (_scopeIdFor(course) == preferred ||
+            course.selectionKey == preferred) {
           return _scopeIdFor(course);
         }
       }

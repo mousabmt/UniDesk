@@ -28,6 +28,14 @@ class StudentAnnouncementsProvider extends ChangeNotifier {
     await _loadAnnouncements();
   }
 
+  void clear() {
+    _announcements = const [];
+    _isLoading = false;
+    _error = null;
+    _hasLoadedOnce = false;
+    notifyListeners();
+  }
+
   Future<void> _loadAnnouncements() async {
     _isLoading = true;
     _error = null;

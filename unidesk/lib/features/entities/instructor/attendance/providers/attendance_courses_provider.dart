@@ -62,6 +62,14 @@ class AttendanceCoursesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    _courses = const [];
+    _isLoading = false;
+    _errorMessage = null;
+    _selectedCourseKey = null;
+    notifyListeners();
+  }
+
   String? _resolveSelectionKey(String? value) {
     if (value == null || value.isEmpty) {
       return null;
